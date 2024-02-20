@@ -1,14 +1,40 @@
 # Project
 
-> This repo has been populated by an initial template to help get you started. Please
-> make sure to update the content to build a great experience for community-building.
+This project contains a Edge/Chrome/Firefox browser extension that can validate [C2PA](https://c2pa.org) assets, and specifically, content signed by members of the [project Origin](https://www.originproject.info/).
 
-As the maintainer of this project, please make a few updates:
+## Setup
 
-- Improving this README.MD file to provide a great experience
-- Updating SUPPORT.MD with content about this project's support experience
-- Understanding the security reporting process in SECURITY.MD
-- Remove this section from the README
+
+1. Install dependencies
+```
+npm install
+```
+
+2. Build the extension
+```
+npm run build
+```
+
+3. Install the extension in a browser:  
+
+Follow the side-loading instruction for your browser to load the extension:
+
+* [Edge](https://learn.microsoft.com/en-us/microsoft-edge/extensions-chromium/getting-started/extension-sideloading)  
+* [Chrome](https://developer.chrome.com/docs/extensions/mv3/getstarted/development-basics/#load-unpacked)  
+* [Firefox](https://extensionworkshop.com/documentation/develop/temporary-installation-in-firefox/) 
+
+The Edge/Chrome `manifest.json` file is located at `dist/chrome`. The Firefox `manifest.json` file is located at `dist/firefox`.
+
+Firefox requires additional extension permissions to download manifests from external sites
+1. In the Firefox address bar go to `about:addons` to see the installed extensions
+2. Find **Cross-Platform Origin of Content Extension** and click the `...` button to the right
+3. Select **Manage** from the pop-up menu
+4. Click the **Permission** tab
+5. Enable **Access your data for all websites**
+
+## Usage
+
+TODO
 
 ## Contributing
 
