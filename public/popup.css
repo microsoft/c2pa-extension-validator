@@ -1,0 +1,62 @@
+/* Reset some basic elements */
+html,
+body,
+p,
+ol,
+ul,
+li,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+pre,
+form,
+fieldset,
+input,
+textarea,
+blockquote {
+    margin: 0;
+    padding: 0;
+}
+
+/* Set up a common box-sizing */
+*,
+*:before,
+*:after {
+    box-sizing: border-box;
+}
+
+/* Basic typography settings */
+body {
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: #333;
+    background-color: #fff;
+}
+
+/* Links */
+a {
+    color: #0066cc;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Common classes for layout */
+.container {
+    width: 80%;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+/* Helper classes */
+.hidden {
+    display: none;
+}
+
+/* Add your custom styles below */
