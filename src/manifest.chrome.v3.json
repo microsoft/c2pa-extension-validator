@@ -5,7 +5,8 @@
     "permissions": [
         "storage",
         "scripting",
-        "offscreen"
+        "offscreen",
+        "notifications"
     ],
     "background": {
         "service_worker": "background.js",
@@ -30,5 +31,19 @@
             ],
             "run_at": "document_idle"
         }
-    ]
+    ],
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "c2pa.worker.js",
+                "toolkit_bg.wasm"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
+    ],
+    "content_security_policy": {
+        "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
+    }
 }

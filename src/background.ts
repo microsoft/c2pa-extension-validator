@@ -15,14 +15,21 @@ Browser.runtime.onInstalled.addListener((details) => {
   }
 })
 
-Browser.runtime.onMessage.addListener(
-  async (request: MESSAGE_PAYLOAD, _sender) => {
-    if (request.action === MESSAGE_SAMPLE && request.data != null) {
-      console.debug(request.data)
-      return 'background.js: response'
-    }
-  }
-)
+/*
+
+  Having multiple listeners for the same event is not recommended.
+  If we have a listener in offscreen.ts, we should remove this one.
+  Whichever listener responds first will prevent receiving a response from the other.
+
+*/
+// Browser.runtime.onMessage.addListener(
+//   async (request: MESSAGE_PAYLOAD, _sender) => {
+//     if (request.action === MESSAGE_SAMPLE && request.data != null) {
+//       console.debug(request.data)
+//       return 'background.js: response'
+//     }
+//   }
+// )
 
 void (async () => {
   if (chrome.offscreen !== undefined) {
