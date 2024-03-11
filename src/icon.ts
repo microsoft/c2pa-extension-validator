@@ -33,22 +33,19 @@ export async function c2pa (parentImage: HTMLImageElement): Promise<c2paImage | 
     console.warn(`No manifest store found for ${url}`)
     return null
   }
-  const activeManifest = c2paResult.manifestStore.activeManifest
-  const signature = activeManifest.signature
-  const assertions = activeManifest.assertions
-  const ingredients = activeManifest.ingredients
-  const main = {
-    title: activeManifest.title,
-    format: activeManifest.format
-  }
+  // const activeManifest = c2paResult.manifestStore.activeManifest
+  // const signature = activeManifest.signature
+  // const assertions = activeManifest.assertions
+  // const ingredients = activeManifest.ingredients
+  // const main = {
+  //   title: activeManifest.title,
+  //   format: activeManifest.format
+  // }
 
   const failure = (c2paResult.manifestStore?.validationStatus ?? []).length > 0
   const img = createImg(failure ? CRX_ICON : CR_ICON)
   const c2paImage: c2paImage = { img, parent: parentImage, url, c2paResult }
   const c2paStatus = new ContentPopup(c2paImage.c2paResult)
-  c2paStatus.panel()
-  c2paStatus.panel()
-  c2paStatus.panel()
   img.addEventListener('click', (event) => {
     c2paStatus.position(img)
     c2paStatus.show()

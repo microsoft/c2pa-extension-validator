@@ -2,6 +2,7 @@
 // Licensed under the MIT license.
 
 import { type C2paReadResult } from 'c2pa'
+import { type Manifest } from 'webextension-polyfill'
 
 const template = document.createElement('TEMPLATE')
 template.innerHTML = `
@@ -32,7 +33,7 @@ template.innerHTML = `
     }
 
     .panel {
-      border: 1px solid red;
+      // border: 1px solid red;
       border-radius: 0.8em;
       display: block;
     }
@@ -116,18 +117,12 @@ export class ContentPopup /* extends HTMLElement */ {
     this.container = document.createElement('DIV')
     this.#shadowRoot = this.container.attachShadow({ mode: 'open' })
     this.#shadowRoot.appendChild((template.cloneNode(true) as HTMLTemplateElement).content)
+    // this.container.style.display = 'none'
 
     if (this.c2paImage.manifestStore?.activeManifest != null) {
-      const activeManifest = this.c2paImage.manifestStore.activeManifest
-      const signature = activeManifest.signatureInfo
-      const assertions = activeManifest.assertions
-      const ingredients = activeManifest.ingredients
-      const main = {
-        title: activeManifest.title,
-        format: activeManifest.format
-      }
+      const panel = this.panel()
+      panel.appendChild(this.l2() as Node)
     }
-    this.container.style.display = 'none'
 
     const thumbnail = c2paImage.manifestStore?.activeManifest.thumbnail
 
@@ -137,8 +132,10 @@ export class ContentPopup /* extends HTMLElement */ {
       const url = URL.createObjectURL(blob)
 
       const imgThumbnail = document.createElement('IMG') as HTMLImageElement
-      imgThumbnail.src = url;
-      (this.#shadowRoot.getElementById('container') as HTMLDivElement).appendChild(imgThumbnail)
+      imgThumbnail.src = url
+      imgThumbnail.style.display = 'block'
+      const container = this.#shadowRoot.getElementById('container') as HTMLDivElement
+      container.appendChild(imgThumbnail)
       document.body.appendChild(this.container)
     }
 
@@ -183,10 +180,38 @@ export class ContentPopup /* extends HTMLElement */ {
   panel (): HTMLDivElement {
     const panel = document.createElement('div')
     panel.className = 'panel'
-    const text = document.createTextNode('Panel')
-    panel.appendChild(text);
-    (this.#shadowRoot.getElementById('container') as HTMLDivElement).appendChild(panel)
+    // const text = document.createTextNode('Panel')
+    // panel.appendChild(text);
+    const container = this.#shadowRoot.getElementById('container') as HTMLDivElement
+    container.appendChild(panel)
     return panel
+  }
+
+  l2 (): HTMLTableElement | null {
+    if (this.c2paImage.manifestStore?.activeManifest == null) return null
+    const activeManifest = this.c2paImage.manifestStore.activeManifest
+    const signature = activeManifest.signatureInfo
+    const assertions = activeManifest.assertions.data
+    const ingredients = activeManifest.ingredients
+    const main = {
+      title: activeManifest.title,
+      format: activeManifest.format
+    }
+    const table = document.createElement('TABLE') as HTMLTableElement
+    const tbody = document.createElement('TBODY') as HTMLTableSectionElement
+    table.appendChild(tbody)
+    tbody.appendChild(row(['Title', main.title]))
+    tbody.appendChild(row(['Format', main.format]))
+    tbody.appendChild(row(['cert_serial_number', signature?.cert_serial_number ?? '']))
+    tbody.appendChild(row(['issuer', signature?.issuer ?? '']))
+    tbody.appendChild(row(['time', signature?.time ?? '']))
+    for (const assertion of assertions) {
+      tbody.appendChild(row(['assertion', assertion.label]))
+    }
+    for (const ingredient of ingredients) {
+      tbody.appendChild(row(['ingredient', ingredient.title]))
+    }
+    return table
   }
 }
 
@@ -206,4 +231,14 @@ function title (panel: HTMLDivElement, title: string, thumbnail?: HTMLImageEleme
   const label = document.createElement('label')
   label.textContent = title
   panel.appendChild(label)
+}
+
+function row (cellValues: string[]): HTMLTableRowElement {
+  const tr = document.createElement('TR') as HTMLTableRowElement
+  cellValues.forEach(value => {
+    const td = document.createElement('TD') as HTMLTableDataCellElement
+    td.appendChild(document.createTextNode(value))
+    tr.appendChild(td)
+  })
+  return tr
 }
