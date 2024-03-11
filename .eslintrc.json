@@ -3,26 +3,30 @@
     "browser": true,
     "es2021": true
   },
-  "extends": [
-    "plugin:@typescript-eslint/recommended",
-    "standard-with-typescript"
-  ],
   "overrides": [
     {
       "files": [
-        "rollup.config.js"
+        "*.ts"
+      ], // Your TypeScript files extension
+      "extends": [
+        "plugin:@typescript-eslint/recommended",
+        "standard-with-typescript"
       ],
-      "parser": "espree",
-      "env": {
-        "node": true
+      "parserOptions": {
+        "ecmaVersion": "latest",
+        "sourceType": "module",
+        "project": [
+          "tsconfig.json"
+        ]
       }
+    },
+    {
+      "files": [
+        "*.js"
+      ],
+      "extends": [
+        "standard"
+      ]
     }
-  ],
-  "parserOptions": {
-    "ecmaVersion": "latest",
-    "sourceType": "module",
-    "project" : [
-      "tsconfig.json"
-    ]
-  }
+  ]
 }

@@ -1,15 +1,18 @@
-import commonjs from "@rollup/plugin-commonjs";
-import json from "@rollup/plugin-json";
-import resolve from "@rollup/plugin-node-resolve";
-import replace from "@rollup/plugin-replace";
-import terser from "@rollup/plugin-terser";
-import { config as loadEnvFile } from "dotenv";
-import path, { dirname } from 'path';
-import copy from "rollup-plugin-copy";
-import typescript from "rollup-plugin-typescript2";
-import { fileURLToPath } from 'url';
+import commonjs from '@rollup/plugin-commonjs'
+import json from '@rollup/plugin-json'
+import resolve from '@rollup/plugin-node-resolve'
+import replace from '@rollup/plugin-replace'
+import terser from '@rollup/plugin-terser'
+import { config as loadEnvFile } from 'dotenv'
+import path, { dirname } from 'path'
+import copy from 'rollup-plugin-copy'
+import typescript from 'rollup-plugin-typescript2'
+import { fileURLToPath } from 'url'
+import { ESLint } from 'eslint'
+import nodePolyfills from 'rollup-plugin-node-polyfills';
 
 // Get the directory name when using ESM
+// eslint-disable-next-line @typescript-eslint/naming-convention
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 /*
@@ -32,14 +35,14 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 
 */
 
-loadEnvFile();
+loadEnvFile()
 
-const DEBUG = process.env.NODE_ENV?.toUpperCase() !== "PRODUCTION";
+const DEBUG = process.env.NODE_ENV?.toUpperCase() !== 'PRODUCTION'
 
 const COPYRIGHT = `/*!
 *  Copyright (c) Microsoft Corporation.
 *  Licensed under the MIT license.
-*/`;
+*/`
 
 /*
   Common output options for each bundle
@@ -47,14 +50,17 @@ const COPYRIGHT = `/*!
 const output = {
   // in debug, we want to see the sourcemap inline to let chrome dev tools debug through the original TS source
   // using separate source map files is blocked by chrome for some reason and requires user interaction to enable
-  sourcemap: DEBUG ? "inline" : false,
+  sourcemap: DEBUG ? 'inline' : false,
   // Put the webextension-polyfill code in a separate file
   // manualChunks: { "webextension-polyfill": ["webextension-polyfill"], },
+
   // TODO: don't add copyright to webextension-polyfill.js
-  // chunkFileNames: "webextension-polyfill.js",
+  // TODO: for now this separate bundle will be webextension-polyfill, in the future it may contain additional polyfills
+  chunkFileNames: 'polyfill.js',
+
   // put a copyright banner at the top of the bundle
-  banner: DEBUG ? undefined : COPYRIGHT,
-};
+  banner: DEBUG ? undefined : COPYRIGHT
+}
 
 /*
   Files to watch for changes and recompile the bundle
@@ -76,24 +82,25 @@ const plugins = [
   replace({
     preventAssignment: true,
     ...Object.keys(process.env).reduce((acc, key) => {
-      acc[`process.env.${key}`] = JSON.stringify(process.env[key]);
-      return acc;
-    }, {}),
+      acc[`process.env.${key}`] = JSON.stringify(process.env[key])
+      return acc
+    }, {})
   }),
   json(),
   resolve({ browser: true }),
   commonjs(),
+  nodePolyfills(),
   // minify the bundle in production
   !DEBUG &&
   terser({
     output: {
       comments: function (node, comment) {
         // remove all comment except those starting with '!'
-        return comment.value.startsWith("!");
-      },
-    },
+        return comment.value.startsWith('!')
+      }
+    }
   }),
-  typescript({ tsconfig: "tsconfig.json" }),
+  typescript({ tsconfig: 'tsconfig.json' }),
   {
     /*
       This will allow the watch command to recompile the bundle when these files change.
@@ -102,7 +109,7 @@ const plugins = [
     */
     /** TODO: Add public folder */
     name: 'watch-json',
-    buildStart() {
+    buildStart () {
       [
         '.env',
         'src/manifest.chrome.v3.json',
@@ -112,69 +119,79 @@ const plugins = [
         'public/options.css',
         'public/options.html',
         'public/popup.css',
-        'public/popup.html',
+        'public/popup.html'
       ].forEach((file) => {
         this.addWatchFile(path.resolve(__dirname, file))
       })
     }
   }
-];
+  // eslint()
+]
 
 /*
   Common error handler for each bundle
 */
 const onwarn = (warning, warn) => {
   // suppress circular dependency warnings in production
-  if (warning.code === "CIRCULAR_DEPENDENCY" && !DEBUG) return;
-  warn(warning);
-};
-
+  if (warning.code === 'CIRCULAR_DEPENDENCY' && !DEBUG) return
+  warn(warning)
+}
 
 /*
   background.js
 */
 const background = {
-  input: ["src/background.ts", "src/popup.ts", "src/options.ts", "src/offscreen.ts"],
-  treeshake: { moduleSideEffects: [], },
+  input: ['src/background.ts', 'src/popup.ts', 'src/options.ts', 'src/offscreen.ts'],
+  treeshake: { moduleSideEffects: [] },
   output: {
-    dir: "dist/chrome",
-    format: "esm",
+    dir: 'dist/chrome',
+    format: 'esm',
     ...output
   },
   watch,
   plugins: [
     copy({
       targets: [
-        { src: "public/*", dest: "dist/chrome" },
-        { src: `node_modules/c2pa/dist/c2pa.worker${DEBUG ? '' : '.min'}.js`, dest: "dist/chrome", rename: "c2pa.worker.js" },
-        { src: "node_modules/c2pa/dist/assets/wasm/toolkit_bg.wasm", dest: "dist/chrome" },
-        { src: "dist/chrome", dest: "dist", rename: "firefox" },
-        { src: `src/manifest.chrome.v3.json`, dest: "dist/chrome", rename: "manifest.json", },
-        { src: `src/manifest.firefox.v3.json`, dest: "dist/firefox", rename: "manifest.json", },
+        { src: 'public/*', dest: 'dist/chrome' },
+        { src: `node_modules/c2pa/dist/c2pa.worker${DEBUG ? '' : '.min'}.js`, dest: 'dist/chrome', rename: 'c2pa.worker.js' },
+        { src: 'node_modules/c2pa/dist/assets/wasm/toolkit_bg.wasm', dest: 'dist/chrome' },
+        { src: 'dist/chrome', dest: 'dist', rename: 'firefox' },
+        { src: 'src/manifest.chrome.v3.json', dest: 'dist/chrome', rename: 'manifest.json' },
+        { src: 'src/manifest.firefox.v3.json', dest: 'dist/firefox', rename: 'manifest.json' }
       ],
       // Wait for the bundle to be written to disk before copying the files, otherwise the firefox folder will be empty
-      hook: "writeBundle",
+      hook: 'writeBundle'
     }),
-    ...plugins,
+    ...plugins
   ],
-  onwarn,
-};
-
+  onwarn
+}
 
 /*
   content.js
 */
 const content = {
-  input: "src/content.ts",
-  treeshake: { moduleSideEffects: [], },
+  input: 'src/content.ts',
+  treeshake: { moduleSideEffects: [] },
   output: {
-    file: "dist/chrome/content.js",
-    format: "iife", // always iife as this code is injected into the tab and not imported
+    file: 'dist/chrome/content.js',
+    format: 'iife', // always iife as this code is injected into the tab and not imported
     ...output
   },
   watch,
   plugins,
-  onwarn,
-};
+  onwarn
+}
 
 export default [background, content]
+
+function eslint (options = {}) {
+  const eslint = new ESLint({ fix: true, ignore: false, ...options })
+  return {
+    name: 'rollup-plugin-eslint',
+    async writeBundle () {
+      const results = await eslint.lintFiles(['dist/chrome/**/*.js']) // Adjust the glob pattern to match your files
+      await ESLint.outputFixes(results)
+    }
+  }
+}

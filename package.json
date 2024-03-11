@@ -8,7 +8,7 @@
     "clean": "rimraf dist/*",
     "build": "cross-env NODE_ENV=production rollup -c",
     "build:debug": "cross-env NODE_ENV=development rollup -c",
-    "build:watch": "pnpm exec build:debug -- -w",
+    "build:watch": "cross-env NODE_ENV=development rollup -c --watch",
     "test": "echo \"Error: no tests\" && exit 1"
   },
   "author": "",

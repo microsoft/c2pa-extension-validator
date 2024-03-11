@@ -4,11 +4,11 @@
  */
 
 import { Certificate } from '@fidm/x509'
-import { type JumbfBox, type JumbfResult, type ContentBox, decode as jumbfDecode } from './jumbf.js'
+import { type JumbfResult, type ContentBox, decode as jumbfDecode } from './jumbf.js'
 import { decode as cborDecode } from './cbor.js'
 import { decode as jxtDecode } from './jpegxt.js'
 import { exportApp11 } from './jpeg.js'
-import { Buffer } from 'buffer'; // required for polyfill
+import { Buffer } from 'buffer' // required for polyfill
 
 interface COSE {
   0: Uint8Array
@@ -17,7 +17,7 @@ interface COSE {
   3: Uint8Array
 }
 
-export function getCertChainFromJpeg(jpegBuffer: Uint8Array): Certificate[] | null {
+export function getCertChainFromJpeg (jpegBuffer: Uint8Array): Certificate[] | null {
   /*
     Raw byte data is extracted from the JPEG APP11 metadata section.
   */
@@ -36,7 +36,7 @@ export function getCertChainFromJpeg(jpegBuffer: Uint8Array): Certificate[] | nu
   */
   const jumpf = jumbfDecode(jumpfBuffer)
 
-  /* 
+  /*
     The JUMBF structure is parsed to extract the COSE cbor data
     The COSE cbor data is parsed to extract the x5chain array of buffers
   */
@@ -50,21 +50,21 @@ export function getCertChainFromJpeg(jpegBuffer: Uint8Array): Certificate[] | nu
     The PEM strings are parsed into Certificate objects
   */
   return x5chain.map((buffer) => {
-    let base64UrlString = Buffer.from(buffer).toString('base64')
+    const base64UrlString = Buffer.from(buffer).toString('base64')
     const pem = toPEM(base64UrlString)
     const cert = Certificate.fromPEM(Buffer.from(pem, 'utf-8'))
     return cert
   })
 }
 
-function toPEM(base64String: string): string {
-  const PEM_HEADER = '-----BEGIN CERTIFICATE-----\n';
-  const PEM_FOOTER = '\n-----END CERTIFICATE-----';
-  let formattedBase64 = base64String.match(/.{1,64}/g)?.join('\n');
-  return PEM_HEADER + formattedBase64 + PEM_FOOTER;
+function toPEM (base64String: string): string {
+  const PEM_HEADER = '-----BEGIN CERTIFICATE-----\n'
+  const PEM_FOOTER = '\n-----END CERTIFICATE-----'
+  const formattedBase64 = base64String.match(/.{1,64}/g)?.join('\n')
+  return PEM_HEADER + formattedBase64 + PEM_FOOTER
 }
 
-function getCertChain(jumbf: JumbfResult): Uint8Array[] | null {
+function getCertChain (jumbf: JumbfResult): Uint8Array[] | null {
   const jumbfBox = jumbf.labels['c2pa.signature']
   if (jumbfBox == null || jumbfBox.boxes.length === 0 || jumbfBox.boxes[0].type !== 'cbor') {
     return null

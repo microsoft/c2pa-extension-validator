@@ -36,6 +36,8 @@
         {
             "resources": [
                 "c2pa.worker.js",
+                "icons/cr.svg",
+                "icons/crx.svg",
                 "toolkit_bg.wasm"
             ],
             "matches": [

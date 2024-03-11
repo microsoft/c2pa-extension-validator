@@ -12,10 +12,15 @@
     "strict": true,
     "target": "ES2020",
     "moduleResolution": "node",
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "importHelpers": true,
   },
   "include": [
     "src/**/*.ts",
     "rollup.config.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "src/c2paOverlay.ts",
   ]
 }

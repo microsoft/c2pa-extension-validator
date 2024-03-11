@@ -16,7 +16,7 @@ const SECTION_START = 0xFF
  * @param {Uint8Array} buffer - The Uint8Array buffer containing JPEG data to be processed.
  * @returns {Uint8Array[]} An array of Uint8Array buffers containing the extracted APP11 marker data.
  */
-export function exportApp11(buffer: Uint8Array): Uint8Array[] {
+export function exportApp11 (buffer: Uint8Array): Uint8Array[] {
   const reader = new ByteReader(buffer)
 
   const app11Buffers: Uint8Array[] = []

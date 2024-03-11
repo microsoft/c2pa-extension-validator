@@ -39,13 +39,13 @@ export interface JumbfResult extends JumbfBox {
 let _labels: Record<string, JumbfBox>
 let reader: ByteReader
 
-export function decode(buffer: Uint8Array): JumbfResult {
+export function decode (buffer: Uint8Array): JumbfResult {
   reader = new ByteReader(buffer)
   _labels = {}
   return { labels: _labels, ..._decode() as JumbfBox }
 }
 
-function _decode(): JumbfBox | DescriptionBox | ContentBox {
+function _decode (): JumbfBox | DescriptionBox | ContentBox {
   let length = reader.uint32()
   const type: string = reader.string(4)
 
@@ -89,7 +89,7 @@ function _decode(): JumbfBox | DescriptionBox | ContentBox {
   return dataBox
 }
 
-function jumbd(): DescriptionBox {
+function jumbd (): DescriptionBox {
   const uuid = bytesToHex(reader.peek.Uint8Array(16))
   const uuidStr = reader.peek.string(0)
   reader.move(16)
@@ -109,11 +109,11 @@ function jumbd(): DescriptionBox {
   return result
 }
 
-function bytesToHex(uint8Array: Uint8Array): string {
+function bytesToHex (uint8Array: Uint8Array): string {
   return Array.from(uint8Array).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
-function getToggles(byte: number): Toggles {
+function getToggles (byte: number): Toggles {
   return {
     request: (byte & 0x01) > 0,
     label: (byte & 0x02) > 0,
@@ -122,6 +122,6 @@ function getToggles(byte: number): Toggles {
   }
 }
 
-function formatUUID(uuid: string): string {
+function formatUUID (uuid: string): string {
   return `${uuid.substring(0, 8)}-${uuid.substring(8, 12)}-${uuid.substring(12, 16)}-${uuid.substring(16, 20)}-${uuid.substring(20)}`
 }

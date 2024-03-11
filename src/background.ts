@@ -3,7 +3,6 @@
  *  Licensed under the MIT license.
  */
 import Browser from 'webextension-polyfill'
-import { MESSAGE_SAMPLE } from './constants.js'
 
 console.debug('background.js: load')
 

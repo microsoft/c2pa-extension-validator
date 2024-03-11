@@ -18,12 +18,12 @@ let reader: ByteReader
 
 export type CBORType = number | Record<string, unknown> | string | unknown[] | Uint8Array | boolean | null | undefined
 
-export function decode(buffer: Uint8Array): CBORType {
+export function decode (buffer: Uint8Array): CBORType {
   reader = new ByteReader(buffer)
   return _decode()
 }
 
-function _decode(): CBORType {
+function _decode (): CBORType {
   const header = reader.byte()
   const majorType = header >>> 5
   const additionalInformation = header & 0b00011111
@@ -95,7 +95,7 @@ function _decode(): CBORType {
   throw new Error('Unknown major type')
 }
 
-function getLength(additionalInformation: number): number {
+function getLength (additionalInformation: number): number {
   if (additionalInformation < 24) {
     return additionalInformation
   }
