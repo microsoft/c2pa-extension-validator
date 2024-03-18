@@ -1,62 +1,25 @@
-/* Reset some basic elements */
-html,
-body,
-p,
-ol,
-ul,
-li,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-pre,
-form,
-fieldset,
-input,
-textarea,
-blockquote {
-    margin: 0;
-    padding: 0;
+/* Tab button styles */
+.tab {
+    display: inline-block;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-bottom: none;
+    cursor: pointer;
+    background-color: #f1f1f1;
 }
 
-/* Set up a common box-sizing */
-*,
-*:before,
-*:after {
-    box-sizing: border-box;
-}
-
-/* Basic typography settings */
-body {
-    font-family: Arial, sans-serif;
-    font-size: 16px;
-    line-height: 1.6;
-    color: #333;
+.active {
     background-color: #fff;
+    border-bottom: 1px solid #ccc;
 }
 
-/* Links */
-a {
-    color: #0066cc;
-    text-decoration: none;
-}
-
-a:hover {
-    text-decoration: underline;
-}
-
-/* Common classes for layout */
-.container {
-    width: 80%;
-    margin: 0 auto;
-    padding: 20px;
-}
-
-/* Helper classes */
-.hidden {
+/* Tab content styles */
+.tab-content {
     display: none;
+    padding: 10px;
+    border: 1px solid #ccc;
 }
 
-/* Add your custom styles below */
+.active-content {
+    display: block;
+}

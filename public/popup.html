@@ -1,15 +1,60 @@
 <!DOCTYPE html>
-<html>
+<html lang="en" style="height: 400px; width: 400px;">
+
 <head>
     <meta charset='utf-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
-    <title>Page Title</title>
+    <title>C2PA Validator</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <link rel='stylesheet' type='text/css' media='screen' href='popup.css'>
     <!-- TODO: dynamically add attribute type='module' if using manifest v3 and building popup.js as ESM -->
     <script type='module' src='popup.js'></script>
 </head>
+
 <body>
-    <h1>Popup</h1>
+    <div>
+        <button class="tab active" data-tab="validation">Validation</button>
+        <button class="tab" data-tab="about">About</button>
+        <button class="tab" data-tab="options">Options</button>
+    </div>
+    <div>
+        <div id="validation" class="tab-content active-content">
+            <h1>C2PA Validation</h1>
+            <div id="no-c2pa">
+                <p>No content credential found.</p>
+            </div>
+            <div id="c2pa-info"></div>
+        </div>
+
+        <div id="about" class="tab-content">
+            <h1>C2PA Validator</h1>
+            <p>This is a prototype browser extension for validating <a href="https://c2pa.org/" target="_blank">C2PA
+                    Content Credentials</a>.</p>
+
+            <p>See the <a href="https://github.com/microsoft/c2pa-extension-validator" target="_blank">project page</a>
+                for details.</p>
+        </div>
+
+        <div id="options" class="tab-content">
+            <h1>Options</h1>
+            <hr>
+            <div id="auto-verify-toggle-option">
+                <p>Check the following box to auto-validate C2PA assets in a page, instead of manually validating them
+                    through the context menu.</p>
+                <input type="checkbox" id="auto-verify-c2pa-assets-toggle">
+                <label for="auto-verify-c2pa-assets-toggle">Verify C2PA assets automatically</label>
+            </div>
+            <hr>
+            <div id="trust-list-option">
+                <p>Import a trust list. For format details, see the <a
+                        href="https://github.com/christianpaquin/c2pa-explorations/blob/main/trust-lists/trust-lists.md"
+                        target="_blank">specification</a>.</p>
+                <input type="file" id="trust-list-input" accept=".json">
+                <div id="trust-list-info"></div>
+            </div>
+        </div>
+    </div>
+
 </body>
+
 </html>
