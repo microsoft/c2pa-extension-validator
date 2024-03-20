@@ -6,7 +6,11 @@
         "storage",
         "scripting",
         "offscreen",
-        "notifications"
+        "notifications",
+        "webRequest"
+    ],
+    "host_permissions": [
+        "<all_urls>"
     ],
     "background": {
         "service_worker": "background.js",
@@ -19,7 +23,9 @@
         "page": "options.html"
     },
     "icons": {
-        "128": "icons/icon128.png"
+        "16": "icons/cr16.png",
+        "48": "icons/cr48.png",
+        "128": "icons/cr128.png"
     },
     "content_scripts": [
         {
@@ -38,7 +44,9 @@
                 "c2pa.worker.js",
                 "icons/cr.svg",
                 "icons/crx.svg",
-                "toolkit_bg.wasm"
+                "toolkit_bg.wasm",
+                "iframe.html",
+                "iframe.js"
             ],
             "matches": [
                 "<all_urls>"

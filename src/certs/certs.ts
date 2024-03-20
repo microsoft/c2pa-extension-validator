@@ -6,9 +6,8 @@
 import { Certificate } from '@fidm/x509'
 import { type JumbfResult, type ContentBox, decode as jumbfDecode } from './jumbf.js'
 import { decode as cborDecode } from './cbor.js'
-import { decode as jxtDecode } from './jpegxt.js'
-import { exportApp11 } from './jpeg.js'
 import { Buffer } from 'buffer' // required for polyfill
+import { getManifestFromMetadata } from './metadata.js'
 
 interface COSE {
   0: Uint8Array
@@ -17,24 +16,15 @@ interface COSE {
   3: Uint8Array
 }
 
-export function getCertChainFromJpeg (jpegBuffer: Uint8Array): Certificate[] | null {
-  /*
-    Raw byte data is extracted from the JPEG APP11 metadata section.
-  */
-  const app11Buffers = exportApp11(jpegBuffer)
-  if (app11Buffers.length === 0) {
+export function extractCertChain (type: string, mediaBuffer: Uint8Array): Certificate[] | null {
+  const rawManifestBuffer = getManifestFromMetadata(type, mediaBuffer)
+  if (rawManifestBuffer == null) {
     return null
   }
-
   /*
-    The APP11 sections are decoded as JpegXT sections and merged into a single JUMBF buffer.
+    The manifest buffer is decoded into a JUMBF structure.
   */
-  const jumpfBuffer = jxtDecode(app11Buffers)
-
-  /*
-    The JUMBF buffer is decoded into a JUMBF structure.
-  */
-  const jumpf = jumbfDecode(jumpfBuffer)
+  const jumpf = jumbfDecode(rawManifestBuffer)
 
   /*
     The JUMBF structure is parsed to extract the COSE cbor data

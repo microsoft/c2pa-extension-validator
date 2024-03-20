@@ -14,6 +14,15 @@ Browser.runtime.onInstalled.addListener((details) => {
   }
 })
 
+chrome.webRequest.onBeforeRequest.addListener(
+  function (details) {
+    console.log('Intercepted image request: ', details.url)
+    // You can perform actions here based on the request URL or other details.
+    // For example, redirect the request, block it, etc.
+  },
+  { urls: ['*://*/*.jpg', '*://*/*.mp4'] }
+)
+
 /*
 
   Having multiple listeners for the same event is not recommended.
@@ -60,7 +69,7 @@ async function loadData (): Promise<void> {
     }
     await Browser.notifications.create({
       type: 'basic',
-      iconUrl: 'icons/icon128.png',
+      iconUrl: 'icons/cr128.png',
       title: 'Data',
       message: `Your data is: ${data.myData}`
     })

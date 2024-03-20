@@ -38,6 +38,9 @@ export class ByteReader {
      * @param buffer The Uint8Array buffer to be read.
      */
   constructor (buffer: Uint8Array) {
+    /*
+      TODO: Read from a stream instead of a buffer so we don't have to download an entire file into memory.
+    */
     this.#view = new DataView(buffer.buffer, buffer.byteOffset)
     this.#index = 0
     this.#end = buffer.length
@@ -61,6 +64,14 @@ export class ByteReader {
   }
 
   /**
+     * Reads a 24-bit unsigned integer from the buffer.
+     * @returns {number} The next 24-bit unsigned integer in the buffer.
+     */
+  uint24 = (): number => {
+    return this.#view.getUint16(this.advance(3), false)
+  }
+
+  /**
      * Reads a 32-bit unsigned integer from the buffer.
      * @returns {number} The next 32-bit unsigned integer in the buffer.
      */
@@ -69,12 +80,17 @@ export class ByteReader {
   }
 
   /**
-     * Reads a 64-bit unsigned integer from the buffer.
-     * @returns {number} The next 64-bit unsigned integer in the buffer.
-     */
+   * Reads a 64-bit unsigned integer from the buffer.
+   * Throws error if the number exceeds MAX_SAFE_INTEGER.
+   * @returns {number} The next 64-bit unsigned integer in the buffer.
+   */
   uint64 = (): number => {
     const peeking = this.#noAdvance
-    return this.uint32() * 0x100000000 + (peeking ? this.peek.uint32() : this.uint32())
+    const uint64 = (this.uint32() * 0x100000000) + (peeking ? this.peek.uint32() : this.uint32())
+    if (uint64 > Number.MAX_SAFE_INTEGER) {
+      throw new RangeError('Number exceeds MAX_SAFE_INTEGER')
+    }
+    return uint64
   }
 
   /**
@@ -85,9 +101,9 @@ export class ByteReader {
      *                            the remaining bytes in the buffer from the current position.
      * @returns {Uint8Array} A new Uint8Array view of the buffer starting from the current position with the specified length.
      */
-  Uint8Array = (length?: number): Uint8Array => {
-    if (length == null) {
-      length = this.remaining
+  Uint8Array = (length = this.remaining): Uint8Array => {
+    if (length > this.remaining) {
+      throw new RangeError('Buffer too small')
     }
     return new Uint8Array(this.#view.buffer, this.#view.byteOffset + this.advance(length), length)
   }

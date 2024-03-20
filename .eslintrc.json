@@ -18,7 +18,8 @@
         "project": [
           "tsconfig.json"
         ]
-      }
+      },
+      "rules": {}
     },
     {
       "files": [

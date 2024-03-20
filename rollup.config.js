@@ -9,7 +9,7 @@ import copy from 'rollup-plugin-copy'
 import typescript from 'rollup-plugin-typescript2'
 import { fileURLToPath } from 'url'
 import { ESLint } from 'eslint'
-import nodePolyfills from 'rollup-plugin-node-polyfills';
+import nodePolyfills from 'rollup-plugin-node-polyfills'
 
 // Get the directory name when using ESM
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -109,7 +109,7 @@ const plugins = [
     */
     /** TODO: Add public folder */
     name: 'watch-json',
-    buildStart () {
+    buildStart() {
       [
         '.env',
         'src/manifest.chrome.v3.json',
@@ -141,7 +141,7 @@ const onwarn = (warning, warn) => {
   background.js
 */
 const background = {
-  input: ['src/background.ts', 'src/popup.ts', 'src/options.ts', 'src/offscreen.ts'],
+  input: ['src/background.ts', 'src/popup.ts', 'src/options.ts', 'src/offscreen.ts', 'src/iframe.ts'],
   treeshake: { moduleSideEffects: [] },
   output: {
     dir: 'dist/chrome',
@@ -185,11 +185,11 @@ const content = {
 
 export default [background, content]
 
-function eslint (options = {}) {
+function eslint(options = {}) {
   const eslint = new ESLint({ fix: true, ignore: false, ...options })
   return {
     name: 'rollup-plugin-eslint',
-    async writeBundle () {
+    async writeBundle() {
       const results = await eslint.lintFiles(['dist/chrome/**/*.js']) // Adjust the glob pattern to match your files
       await ESLint.outputFixes(results)
     }

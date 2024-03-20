@@ -3,6 +3,7 @@
  *  Licensed under the MIT license.
  */
 
+import { bytesToHex, formatUUID } from '../utils.js'
 import { ByteReader } from './byteReader.js'
 
 export interface DescriptionBox {
@@ -46,7 +47,7 @@ export function decode (buffer: Uint8Array): JumbfResult {
 }
 
 function _decode (): JumbfBox | DescriptionBox | ContentBox {
-  let length = reader.uint32()
+  let length: number = reader.uint32()
   const type: string = reader.string(4)
 
   if (type === 'jumb') {
@@ -109,10 +110,6 @@ function jumbd (): DescriptionBox {
   return result
 }
 
-function bytesToHex (uint8Array: Uint8Array): string {
-  return Array.from(uint8Array).map(b => b.toString(16).padStart(2, '0')).join('')
-}
-
 function getToggles (byte: number): Toggles {
   return {
     request: (byte & 0x01) > 0,
@@ -120,8 +117,4 @@ function getToggles (byte: number): Toggles {
     id: (byte & 0x04) > 0,
     signature: (byte & 0x08) > 0
   }
-}
-
-function formatUUID (uuid: string): string {
-  return `${uuid.substring(0, 8)}-${uuid.substring(8, 12)}-${uuid.substring(12, 16)}-${uuid.substring(16, 20)}-${uuid.substring(20)}`
 }
