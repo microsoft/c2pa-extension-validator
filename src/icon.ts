@@ -28,7 +28,7 @@ interface c2paImage {
 
 export function icon (parent: HTMLElement, url: string, status: boolean, listener: (this: HTMLImageElement, ev: MouseEvent) => unknown): c2paImage | null {
   // const url = parent.src
-  // const c2paResult = await c2aValidateImage(url)
+  // const c2paResult = await c2paValidateImage(url)
   // if (c2paResult.manifestStore?.activeManifest == null) {
   //   console.warn(`No manifest store found for ${url}`)
   //   return null
@@ -97,7 +97,7 @@ function setIcon (icon: c2paImage): void {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-// async function c2aValidateImage (url: string): Promise<c2paResultWithChain> {
+// async function c2paValidateImage (url: string): Promise<c2paResultWithChain> {
 //   return await Browser.runtime.sendMessage({ action: MESSAGE_C2PA_INSPECT_URL, data: url })
 //     .then((result) => {
 //       if (result != null) {
