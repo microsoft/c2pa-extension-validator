@@ -14,7 +14,7 @@ void (async () => {
   const images = document.images
   for (const img of Array.from(images)) {
     // const { message } = await createFrame(img)
-    let c2paImage = await c2aValidateImage(img.src)
+    let c2paImage = await c2paValidateImage(img.src)
     c2paImage = deserialize(c2paImage as unknown as Record<string, unknown>) as c2paResultWithChain
     const c2paDialog = await C2PADialog.create(c2paImage)
     if (c2paImage !== null) {
@@ -28,7 +28,7 @@ void (async () => {
 
   const mp4Videos = document.querySelectorAll('[src$=".mp4"]') as unknown as Array<{ src: string }>
   for (const video of Array.from(mp4Videos)) {
-    let c2paVideo = await c2aValidateImage(video.src)
+    let c2paVideo = await c2paValidateImage(video.src)
     c2paVideo = deserialize(c2paVideo as unknown as Record<string, unknown>) as c2paResultWithChain
     const c2paDialog = await C2PADialog.create(c2paVideo)
     if (c2paVideo !== null) {
@@ -52,7 +52,7 @@ chrome.runtime.onMessage.addListener(function (message, sender, sendResponse) {
   return true // For asynchronous response
 })
 
-async function c2aValidateImage (url: string): Promise<c2paResultWithChain> {
+async function c2paValidateImage (url: string): Promise<c2paResultWithChain> {
   return await Browser.runtime.sendMessage({ action: MESSAGE_C2PA_INSPECT_URL, data: url })
     .then((result) => {
       if (result != null) {
