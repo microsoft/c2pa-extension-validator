@@ -16,6 +16,22 @@ interface COSE {
   3: Uint8Array
 }
 
+export type CertificateWithThumbprint = Certificate & {sha256Thumbprint: string}
+
+function calculateSha256CertThumbprint(der: Uint8Array) : string {
+    return ""
+  }
+
+export function createCertificateFromDer(der: Uint8Array): CertificateWithThumbprint {
+  const sha256Thumbprint = calculateSha256CertThumbprint(der)
+  const base64UrlString = Buffer.from(der).toString('base64')
+  const pem = toPEM(base64UrlString)
+  const cert = Certificate.fromPEM(Buffer.from(pem, 'utf-8'))
+  const certWithTP = cert as CertificateWithThumbprint
+  certWithTP.sha256Thumbprint = sha256Thumbprint
+  return certWithTP
+}
+
 export function extractCertChain (type: string, mediaBuffer: Uint8Array): Certificate[] | null {
   const rawManifestBuffer = getManifestFromMetadata(type, mediaBuffer)
   if (rawManifestBuffer == null) {
@@ -40,9 +56,7 @@ export function extractCertChain (type: string, mediaBuffer: Uint8Array): Certif
     The PEM strings are parsed into Certificate objects
   */
   return x5chain.map((buffer) => {
-    const base64UrlString = Buffer.from(buffer).toString('base64')
-    const pem = toPEM(base64UrlString)
-    const cert = Certificate.fromPEM(Buffer.from(pem, 'utf-8'))
+    const cert = createCertificateFromDer(buffer)
     return cert
   })
 }

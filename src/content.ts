@@ -4,7 +4,7 @@
 */
 import Browser from 'webextension-polyfill'
 import { type C2paReadResult } from 'c2pa'
-import { type Certificate } from '@fidm/x509'
+import { type CertificateWithThumbprint } from './certs/certs.js'
 import { MESSAGE_C2PA_INSPECT_URL } from './constants.js'
 import { icon } from './icon.js'
 import { C2PADialog } from './c2paStatus.js'
@@ -42,7 +42,7 @@ void (async () => {
 })()
 
 interface c2paResultWithChain extends C2paReadResult {
-  certChain: Certificate[] | null
+  certChain: CertificateWithThumbprint[] | null
   tabId: number
 }
 

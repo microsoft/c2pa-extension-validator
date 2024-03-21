@@ -3,7 +3,7 @@
 *  Licensed under the MIT license.
 */
 
-import { type Certificate } from '@fidm/x509'
+import { type CertificateWithThumbprint } from './certs/certs.js'
 import { type C2paReadResult } from 'c2pa'
 
 // put global types here
@@ -15,6 +15,6 @@ export interface MESSAGE_PAYLOAD {
 }
 
 export interface c2paResultWithChain extends C2paReadResult {
-  certChain: Certificate[] | null
+  certChain: CertificateWithThumbprint[] | null
   tabId?: number
 }

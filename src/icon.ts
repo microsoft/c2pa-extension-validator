@@ -6,7 +6,7 @@
 // import Browser from 'webextension-polyfill'
 // import { MESSAGE_C2PA_INSPECT_URL } from './constants.js'
 import { type C2paReadResult } from 'c2pa'
-import { type Certificate } from '@fidm/x509'
+// import { type CertificateWithThumbprint } from './certs/certs.js'
 // import { ContentPopup } from './c2paStatus2.js'
 
 const CR_ICON: string = chrome.runtime.getURL('icons/cr.svg')
