@@ -2,7 +2,6 @@
 *  Copyright (c) Microsoft Corporation.
 *  Licensed under the MIT license.
 */
-
 import { MESSAGE_C2PA_INSPECT_URL } from './constants.js'
 import { icon } from './icon.js'
 import { C2PADialog } from './c2paStatus.js'

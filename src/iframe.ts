@@ -1,8 +1,8 @@
 import Browser from 'webextension-polyfill'
 import { type C2paResult } from './types'
 import { decimalStringToHex, localDateTime, logDebug, logError } from './utils'
-import { type Certificate } from '@fidm/x509'
 import { type CreativeWorkAssertion, type Assertion, type Ingredient } from 'c2pa'
+import { type CertificateWithThumbprint } from './certs/certs'
 
 const urlParams = new URLSearchParams(window.location.search)
 const randomParam = urlParams.get('id')
@@ -113,7 +113,7 @@ function createIngredient (ingredient: Ingredient): HTMLDivElement {
   return container
 }
 
-function createCertificate (certificate: Certificate): HTMLDivElement {
+function createCertificate (certificate: CertificateWithThumbprint): HTMLDivElement {
   // Create the container div
   const container: HTMLDivElement = document.createElement('div')
   container.className = 'certs'

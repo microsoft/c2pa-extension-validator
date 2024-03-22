@@ -3,13 +3,31 @@
 *  Licensed under the MIT license.
 */
 
-import { logDebug } from './utils'
+import { type CertificateWithThumbprint } from './certs/certs'
 
-export interface TrustedSigner {
-  id: string
+// valid JWK key types (to adhere to C2PA cert profile: https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_certificate_profile)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const VALID_KTY = [
+  'RSA', // sha*WithRSAEncryption and id-RSASSA-PSS
+  'EC', // ecdsa-with-*
+  'OKP' // id-Ed25519
+]
+
+// JWKS format (https://www.rfc-editor.org/rfc/rfc7517#section-4.6)
+export interface JWKS {
+  keys: Array<{
+    kty: string
+    'x5t#S256'?: string
+    x5c?: string[]
+  }>
+}
+
+export interface TrustedEntity {
+  name: string
   display_name: string
   contact: string
-  jwks_url: string
+  isCA: boolean
+  jwks: JWKS
 }
 
 export interface TrustList {
@@ -23,8 +41,10 @@ export interface TrustList {
   website: string
   // last updated date of the trust list (ISO 8601 format)
   last_updated: string
-  // list of trusted signers
-  signers: TrustedSigner[]
+  // logo of the trust list
+  logo: string
+  // list of trusted entities
+  entities: TrustedEntity[]
 }
 
 let globalTrustList: TrustList | undefined
@@ -36,7 +56,8 @@ export interface TrustListInfo {
   download_url: string
   website: string
   last_updated: string
-  signers_count: number
+  logo: string
+  entities_count: number
 }
 
 const getInfoFromTrustList = (tl: TrustList): TrustListInfo => {
@@ -46,7 +67,8 @@ const getInfoFromTrustList = (tl: TrustList): TrustListInfo => {
     download_url: tl.download_url,
     website: tl.website,
     last_updated: tl.last_updated,
-    signers_count: tl.signers.length
+    logo: tl.logo,
+    entities_count: tl.entities.length
   }
 }
 
@@ -66,11 +88,11 @@ export function getTrustListInfo (): TrustListInfo | undefined {
  * Sets the trust list, returns the trust list info or throws an error
  */
 export function setTrustList (tl: TrustList): TrustListInfo {
-  logDebug('setTrustList called')
+  console.log('setTrustList called')
 
-  if (!tl) {
+  if (typeof tl === 'undefined') {
     // TODO: more validation
-    throw 'Invalid trust list'
+    throw new Error('Invalid trust list')
   }
 
   // set the global trust list
@@ -78,7 +100,7 @@ export function setTrustList (tl: TrustList): TrustListInfo {
 
   // store the trust list
   chrome.storage.local.set({ trustList: tl }, function () {
-    logDebug(`Trust list stored: ${tl.name}`)
+    console.log(`Trust list stored: ${tl.name}`)
   })
 
   return getInfoFromTrustList(tl)
@@ -87,19 +109,19 @@ export function setTrustList (tl: TrustList): TrustListInfo {
 /**
  * Retrieves the trust list from storage.
  */
-function loadTrustList () {
+function loadTrustList (): void {
   // load the trust list from storage
   chrome.storage.local.get(['trustList'], (result) => {
-    logDebug('getTrustList result:', result)
+    console.log('getTrustList result:', result)
     const storedTrustList =
             result?.trustList as TrustList
-    if (storedTrustList) {
+    if (storedTrustList != null) {
       globalTrustList = storedTrustList
-      logDebug(
+      console.log(
                 `Trust list loaded: ${storedTrustList.name}`
       )
     } else {
-      logDebug('No trust list found')
+      console.log('No trust list found')
     }
   })
 }
@@ -109,6 +131,50 @@ function loadTrustList () {
  */
 export function getTrustList (): TrustList | undefined {
   return globalTrustList
+}
+
+/**
+ * Information about a trust list match
+ */
+export interface TrustListMatch {
+  // trust list info
+  tlInfo: TrustListInfo
+  // trusted entity that matched the certificate chain
+  entity: TrustedEntity
+  // certificate that matched the trust list
+  cert: CertificateWithThumbprint
+}
+
+/**
+ * Checks if a certificate chain is included in the trust list (either the leaf certificate or one of the CA anchors)
+ * @param certChain a certificate chain
+ * @returns a trust list match object if found, otherwise null
+ */
+export function checkTrustListInclusion (certChain: CertificateWithThumbprint[]): TrustListMatch | null {
+  if (globalTrustList != null) {
+    // for each entity's certs in the list (current and expired), check if it matches a cert in the chain
+    for (const entity of globalTrustList.entities) {
+      const jwks = entity.jwks
+      for (const jwkCert of jwks.keys) {
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        if (!jwkCert['x5t#S256']) {
+          continue // TODO: implement full cert (x5c) comparison
+        }
+        for (const cert of certChain) {
+          if (jwkCert['x5t#S256'].toLowerCase() === cert.sha256Thumbprint && entity.isCA === cert.isCA) {
+            // found a match
+            return {
+              tlInfo: getInfoFromTrustList(globalTrustList), // TODO: avoid recomputing this
+              entity,
+              cert
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return null
 }
 
 // load the trust list from storage at startup

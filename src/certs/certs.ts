@@ -9,7 +9,6 @@ import { decode as cborDecode } from './cbor.js'
 import { Buffer } from 'buffer' // required for polyfill
 import { getManifestFromMetadata } from './metadata.js'
 import { bytesToHex } from '../utils.js'
-import { type CertificateWithThumbprint } from '../types.js'
 
 interface COSE {
   0: Uint8Array
@@ -18,7 +17,28 @@ interface COSE {
   3: Uint8Array
 }
 
-export async function extractCertChain (type: string, mediaBuffer: Uint8Array): Promise<CertificateWithThumbprint[] | null> {
+export interface CertificateWithThumbprint extends Certificate {
+  sha256Thumbprint: string
+}
+
+async function calculateSha256CertThumbprint (der: Uint8Array): Promise<string> {
+  const digest = await crypto.subtle.digest({ name: 'SHA-256' }, der)
+  const hex = bytesToHex(new Uint8Array(digest))
+  return hex
+}
+
+export async function createCertificateFromDer (der: Uint8Array): Promise<CertificateWithThumbprint> {
+  const sha256Thumbprint = await calculateSha256CertThumbprint(der)
+  const base64UrlString = Buffer.from(der).toString('base64')
+  const pem = toPEM(base64UrlString)
+  const cert = Certificate.fromPEM(Buffer.from(pem, 'utf-8'))
+  const certWithTP = cert as unknown as CertificateWithThumbprint
+  certWithTP.sha256Thumbprint = sha256Thumbprint
+  console.log('sha256Thumbprint: ', sha256Thumbprint)
+  return certWithTP
+}
+
+export async function extractCertChain (type: string, mediaBuffer: Uint8Array): Promise<Certificate[] | null> {
   const rawManifestBuffer = getManifestFromMetadata(type, mediaBuffer)
   if (rawManifestBuffer == null) {
     return null
@@ -41,15 +61,11 @@ export async function extractCertChain (type: string, mediaBuffer: Uint8Array): 
     The x5chain array of buffers is converted into PEM strings
     The PEM strings are parsed into Certificate objects
   */
-  return await Promise.all(x5chain.map(async (buffer) => {
-    const base64UrlString = Buffer.from(buffer).toString('base64')
-    const pem = toPEM(base64UrlString)
-    const cert = Certificate.fromPEM(Buffer.from(pem, 'utf-8'))
-    const tp = await thumbprint(buffer)
-    const certWithThumbprint: CertificateWithThumbprint = cert as CertificateWithThumbprint
-    certWithThumbprint.thumbprint = tp
-    return certWithThumbprint
+  const certificates = await Promise.all(x5chain.map(async (buffer) => {
+    const cert = await createCertificateFromDer(buffer)
+    return cert
   }))
+  return certificates
 }
 
 function toPEM (base64String: string): string {
@@ -69,9 +85,4 @@ function getCertChain (jumbf: JumbfResult): Uint8Array[] | null {
   const cose = (cbor as { tag: number | string, value: COSE }).value
   const x5chain = cose[1].x5chain
   return x5chain
-}
-
-async function thumbprint (certBytes: Uint8Array): Promise<string> {
-  const digest = await crypto.subtle.digest('SHA-256', certBytes)
-  return bytesToHex(new Uint8Array(digest))
 }
