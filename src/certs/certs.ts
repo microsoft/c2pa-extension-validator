@@ -8,6 +8,8 @@ import { type JumbfResult, type ContentBox, decode as jumbfDecode } from './jumb
 import { decode as cborDecode } from './cbor.js'
 import { Buffer } from 'buffer' // required for polyfill
 import { getManifestFromMetadata } from './metadata.js'
+import { bytesToHex } from '../utils.js'
+import { type CertificateWithThumbprint } from '../types.js'
 
 interface COSE {
   0: Uint8Array
@@ -16,7 +18,7 @@ interface COSE {
   3: Uint8Array
 }
 
-export function extractCertChain (type: string, mediaBuffer: Uint8Array): Certificate[] | null {
+export async function extractCertChain (type: string, mediaBuffer: Uint8Array): Promise<CertificateWithThumbprint[] | null> {
   const rawManifestBuffer = getManifestFromMetadata(type, mediaBuffer)
   if (rawManifestBuffer == null) {
     return null
@@ -39,12 +41,15 @@ export function extractCertChain (type: string, mediaBuffer: Uint8Array): Certif
     The x5chain array of buffers is converted into PEM strings
     The PEM strings are parsed into Certificate objects
   */
-  return x5chain.map((buffer) => {
+  return await Promise.all(x5chain.map(async (buffer) => {
     const base64UrlString = Buffer.from(buffer).toString('base64')
     const pem = toPEM(base64UrlString)
     const cert = Certificate.fromPEM(Buffer.from(pem, 'utf-8'))
-    return cert
-  })
+    const tp = await thumbprint(buffer)
+    const certWithThumbprint: CertificateWithThumbprint = cert as CertificateWithThumbprint
+    certWithThumbprint.thumbprint = tp
+    return certWithThumbprint
+  }))
 }
 
 function toPEM (base64String: string): string {
@@ -64,4 +69,9 @@ function getCertChain (jumbf: JumbfResult): Uint8Array[] | null {
   const cose = (cbor as { tag: number | string, value: COSE }).value
   const x5chain = cose[1].x5chain
   return x5chain
+}
+
+async function thumbprint (certBytes: Uint8Array): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', certBytes)
+  return bytesToHex(new Uint8Array(digest))
 }

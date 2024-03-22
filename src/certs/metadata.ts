@@ -9,7 +9,7 @@ import { parseMP4Header } from './mp4'
 
 export function getManifestFromMetadata (type: string, buffer: Uint8Array): Uint8Array | null {
   switch (type) {
-    case 'jpg':
+    case 'image/jpeg':
       return jpeg(buffer)
     case 'mp4':
       return mp4(buffer)

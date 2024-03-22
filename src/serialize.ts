@@ -3,9 +3,10 @@
 *  Licensed under the MIT license.
 */
 
-import { arrayBufferToBase64, base64ToArrayBuffer, blobToBase64, isKeyedObject, isObject } from './utils.js'
+import { arrayBufferToBase64, base64ToArrayBuffer, blobToBase64, isKeyedObject, isObject, logDebug } from './utils.js'
 
-const DEBUG = true
+// Set to true to enable debug logging for this module
+const LOCAL_DEBUG = false
 
 // Define a type for the serialized data
 type SerializedData = {
@@ -21,6 +22,7 @@ export async function serialize (obj: unknown): Promise<unknown> {
 
 /**
  * Objects with binary data cannot be sent between background and content scripts
+ * Nor can object with circular references be sent
  * This function serializes the binary data into a string
  * @param obj
  */
@@ -29,12 +31,7 @@ async function _serialize (obj: unknown, alreadySerialized: WeakMap<object, stri
     path = path.substring(1)
   }
 
-  DEBUG && console.debug(path)
-
-  if (path.split('.').pop() === 'getUrl') {
-    // eslint-disable-next-line no-debugger
-    debugger
-  }
+  LOCAL_DEBUG && logDebug(path)
 
   if (!isObject(obj)) {
     return obj
@@ -43,7 +40,7 @@ async function _serialize (obj: unknown, alreadySerialized: WeakMap<object, stri
   const object = obj as Record<string, unknown>
   if ((alreadySerialized).has(object)) {
     const previousPath = alreadySerialized.get(object)
-    DEBUG && console.debug('Circular reference detected in object', path, previousPath)
+    LOCAL_DEBUG && logDebug('Circular reference detected in object', path, previousPath)
     return { circle: previousPath }
   }
 
@@ -51,18 +48,18 @@ async function _serialize (obj: unknown, alreadySerialized: WeakMap<object, stri
 
   if (obj instanceof Blob) {
     const base64 = await blobToBase64(obj)
-    DEBUG && console.debug('Serialized Blob', base64.substring(0, 20) + '...')
+    LOCAL_DEBUG && logDebug('Serialized Blob', base64.substring(0, 20) + '...')
     return { type: 'Blob', data: base64 }
   }
 
   if (obj instanceof ArrayBuffer) {
     const base64 = arrayBufferToBase64(obj)
-    DEBUG && console.debug('Serialized ArrayBuffer', base64.substring(0, 20) + '...')
+    LOCAL_DEBUG && logDebug('Serialized ArrayBuffer', base64.substring(0, 20) + '...')
     return { type: 'ArrayBuffer', data: base64 }
   }
 
   if (typeof obj === 'function') {
-    DEBUG && console.debug('Serialized Function', obj.toString().substring(0, 20) + '...')
+    LOCAL_DEBUG && logDebug('Serialized Function', obj.toString().substring(0, 20) + '...')
     return { type: 'Function', data: obj.toString() }
   }
 
@@ -92,80 +89,10 @@ function isSerializedObject (obj: unknown): obj is SerializedData {
   return isKeyedObject(obj) && ('type' in (obj as object)) && ('data' in (obj as object))
 }
 
-// /**
-//  * Deserializes the given object, reversing the serialization process
-//  * @param serializedObj The serialized object
-//  */
-// export async function deserialize (serializedObj: SerializedData): Promise<unknown> {
-//   // This function will restore circular references and complex objects
-//   const map = new Map<string, any>()
-
-//   async function _deserialize (obj: SerializedData, path = ''): Promise<unknown> {
-//     if (isSerializedObject(obj)) {
-//       switch (obj.type) {
-//         case 'ArrayBuffer':
-//           return base64ToArrayBuffer(obj.data as string)
-//         case 'Blob':
-//           // Since Blob is already a usable URL string, directly return it.
-//           return obj.data
-//         default:
-//           throw new Error(`Unknown type: ${obj.type}`)
-//       }
-//     } else if (Array.isArray(obj)) {
-//       const array: unknown[] = []
-//       for (let i = 0; i < obj.length; i++) {
-//         array.push(await _deserialize(obj[i] as SerializedData, `${path}[${i}]`))
-//       }
-//       return array
-//     } else if (typeof obj === 'object' && obj !== null) {
-//       const entries = Object.entries(obj)
-//       const result: Record<string, unknown> = {}
-//       for (const [key, value] of entries) {
-//         if (typeof value === 'object' && value !== null && 'circle' in value) {
-//           // Handle circular reference
-//           const circlePath = (value as SerializedData).circle as string
-//           if (map.has(circlePath)) {
-//             result[key] = map.get(circlePath)
-//           } else {
-//             throw new Error(`Circular reference to ${circlePath} not resolved`)
-//           }
-//         } else {
-//           result[key] = await _deserialize(value as SerializedData, `${path}.${key}`)
-//         }
-//       }
-//       map.set(path, result)
-//       return result
-//     }
-//     // Primitive types or functions
-//     return obj
-//   }
-
-//   const deserializedData = await _deserialize(serializedObj)
-//   return deserializedData
-// }
-
-type AnyObject = Record<string, unknown>
-
-// function getValueByPath (obj: AnyObject, path: string): AnyObject | undefined {
-//   const parts = path.replace(/\[(\w+)\]/g, '.$1').split('.')
-
-//   let currentPart: string | undefined
-//   let currentObject: AnyObject = obj
-
-//   while ((currentPart = parts.shift()) !== undefined) {
-//     if (currentObject[currentPart] === undefined) {
-//       return undefined
-//     }
-//     currentObject = currentObject[currentPart] as AnyObject
-//   }
-
-//   return currentObject
-// }
-
-export function deserialize (object: Record<string, unknown>): unknown {
+export function deserialize (object: unknown): unknown {
   const map = new Map<string, unknown>()
 
-  function _deserialize (obj: AnyObject, path = ''): unknown {
+  function _deserialize (obj: unknown, path = ''): unknown {
     path = path.startsWith('.') ? path.substring(1) : path
     if (isSerializedObject(obj)) {
       switch (obj.type) {
@@ -183,9 +110,9 @@ export function deserialize (object: Record<string, unknown>): unknown {
       }
     } else if (Array.isArray(obj)) {
       const array = [] as unknown[]
-      const objArray = obj as unknown[]
+      const objArray = obj
       for (let i = 0; i < objArray.length; i++) {
-        array.push(_deserialize(objArray[i] as AnyObject))
+        array.push(_deserialize(objArray[i]))
       }
       return array
     } else if (typeof obj === 'object' && obj !== null) {
@@ -203,7 +130,7 @@ export function deserialize (object: Record<string, unknown>): unknown {
             // do nothing. A second pass will resolve the circular reference
           }
         } else {
-          result[key] = _deserialize(value as AnyObject, `${path}.${key}`)
+          result[key] = _deserialize(value, `${path}.${key}`)
         }
       }
       map.set(path, result)
@@ -213,6 +140,6 @@ export function deserialize (object: Record<string, unknown>): unknown {
     return obj
   }
 
-  const deserializedData = _deserialize(_deserialize(object) as AnyObject)
+  const deserializedData = _deserialize(_deserialize(object))
   return deserializedData
 }

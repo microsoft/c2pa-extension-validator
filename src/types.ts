@@ -14,7 +14,14 @@ export interface MESSAGE_PAYLOAD {
   frame?: string
 }
 
-export interface c2paResultWithChain extends C2paReadResult {
-  certChain: Certificate[] | null
-  tabId?: number
+export interface C2paResult extends C2paReadResult {
+  certChain: CertificateWithThumbprint[] | null
+}
+
+export interface C2paError extends Error {
+  url: string
+}
+
+export interface CertificateWithThumbprint extends Certificate {
+  thumbprint: string
 }

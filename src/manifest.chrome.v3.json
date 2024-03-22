@@ -7,7 +7,9 @@
         "scripting",
         "offscreen",
         "notifications",
-        "webRequest"
+        "webRequest",
+        "tabs",
+        "webNavigation"
     ],
     "host_permissions": [
         "<all_urls>"
@@ -35,7 +37,7 @@
             "js": [
                 "content.js"
             ],
-            "run_at": "document_idle"
+            "run_at": "document_start"
         }
     ],
     "web_accessible_resources": [

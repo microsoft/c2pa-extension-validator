@@ -3,12 +3,13 @@
 *  Licensed under the MIT license.
 */
 
-import Browser from 'webextension-polyfill'
-import { MESSAGE_SAMPLE } from './constants.js'
+import { logDebug } from './utils.js'
 
-console.debug('options.js: load')
+logDebug('Options: Script: start')
 
 // void (async () => {
 //   const response: unknown = await Browser.runtime.sendMessage({ action: MESSAGE_SAMPLE, data: 'options.js: message' })
-//   console.debug(response)
+//   logDebug(response)
 // })()
+
+logDebug('Options: Script: end')

@@ -6,7 +6,8 @@
   "overrides": [
     {
       "files": [
-        "*.ts"
+        "*.ts",
+        "*.js"
       ], // Your TypeScript files extension
       "extends": [
         "plugin:@typescript-eslint/recommended",

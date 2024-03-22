@@ -3,6 +3,8 @@
 *  Licensed under the MIT license.
 */
 
+import { logDebug } from './utils'
+
 export interface TrustedSigner {
   id: string
   display_name: string
@@ -64,7 +66,7 @@ export function getTrustListInfo (): TrustListInfo | undefined {
  * Sets the trust list, returns the trust list info or throws an error
  */
 export function setTrustList (tl: TrustList): TrustListInfo {
-  console.log('setTrustList called')
+  logDebug('setTrustList called')
 
   if (!tl) {
     // TODO: more validation
@@ -76,7 +78,7 @@ export function setTrustList (tl: TrustList): TrustListInfo {
 
   // store the trust list
   chrome.storage.local.set({ trustList: tl }, function () {
-    console.log(`Trust list stored: ${tl.name}`)
+    logDebug(`Trust list stored: ${tl.name}`)
   })
 
   return getInfoFromTrustList(tl)
@@ -88,16 +90,16 @@ export function setTrustList (tl: TrustList): TrustListInfo {
 function loadTrustList () {
   // load the trust list from storage
   chrome.storage.local.get(['trustList'], (result) => {
-    console.log('getTrustList result:', result)
+    logDebug('getTrustList result:', result)
     const storedTrustList =
             result?.trustList as TrustList
     if (storedTrustList) {
       globalTrustList = storedTrustList
-      console.log(
+      logDebug(
                 `Trust list loaded: ${storedTrustList.name}`
       )
     } else {
-      console.log('No trust list found')
+      logDebug('No trust list found')
     }
   })
 }

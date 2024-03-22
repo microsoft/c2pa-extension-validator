@@ -1,6 +1,6 @@
 import Browser from 'webextension-polyfill'
-import { type c2paResultWithChain } from './types'
-import { decimalStringToHex, localDateTime } from './utils'
+import { type C2paResult } from './types'
+import { decimalStringToHex, localDateTime, logDebug, logError } from './utils'
 import { type Certificate } from '@fidm/x509'
 import { type CreativeWorkAssertion, type Assertion, type Ingredient } from 'c2pa'
 
@@ -8,10 +8,10 @@ const urlParams = new URLSearchParams(window.location.search)
 const randomParam = urlParams.get('id')
 const DEBUG = false
 
-DEBUG && console.debug('IFrame page load start')
+DEBUG && logDebug('IFrame page load start')
 
 if (randomParam === null) {
-  console.error('No id found')
+  logError('No id found')
   throw new Error('No id found')
 }
 
@@ -21,32 +21,24 @@ void (async () => {
   const { [randomParam]: ids } = await Browser.storage.local.get(randomParam)
   const [id, tabId] = ids.split(':') as [string, string]
   _tabId = parseInt(tabId)
-  DEBUG && console.debug('id currently is ' + id)
+  DEBUG && logDebug('id currently is ' + id)
   await Browser.storage.local.remove(randomParam)
 
   window.addEventListener('message', function (event) {
     if (event.data.id !== ids) {
       return
     }
-    populate(event.data.data as c2paResultWithChain)
+    populate(event.data.data as C2paResult)
     void sendMessageToContent('hello from iframe', parseInt(tabId))
-    DEBUG && console.debug(`IFrame ${id} message received:`, event.data as c2paResultWithChain)
+    DEBUG && logDebug(`IFrame ${id} message received:`, event.data as C2paResult)
   })
 
-  DEBUG && console.debug('IFrame message listener added')
+  DEBUG && logDebug('IFrame message listener added')
 })()
 
 function createAssertion (asserion: Assertion): HTMLDivElement {
   const container: HTMLDivElement = document.createElement('div')
   container.className = 'assertion'
-
-  // Iterate over the text parameters and create h2 elements
-  // texts.forEach((text) => {
-  //   const p: HTMLParagraphElement = document.createElement('p')
-  //   p.className = 'text-item'
-  //   p.textContent = text
-  //   container.appendChild(p)
-  // })
 
   container.innerHTML = parseAssertion(asserion)
 
@@ -153,12 +145,12 @@ function createCertificate (certificate: Certificate): HTMLDivElement {
   return container
 }
 
-function populate (c2paData: c2paResultWithChain): void {
-  DEBUG && console.debug('populate', c2paData)
+function populate (c2paData: C2paResult): void {
+  DEBUG && logDebug('populate', c2paData)
 
   const activeManifest = c2paData.manifestStore?.activeManifest
   if (activeManifest == null) {
-    console.error('No activeManifest found')
+    logError('No activeManifest found')
     return
   }
 
@@ -168,7 +160,7 @@ function populate (c2paData: c2paResultWithChain): void {
 
   const assertions = activeManifest?.assertions.data
   if (assertions == null) {
-    console.error('No assertions found')
+    logError('No assertions found')
     return
   }
   if (assertions.length === 0) {
@@ -182,7 +174,7 @@ function populate (c2paData: c2paResultWithChain): void {
 
   const validationErrors = c2paData.manifestStore?.validationStatus
   if (validationErrors == null) {
-    console.error('No validationStatus found')
+    logError('No validationStatus found')
     return
   }
   if (validationErrors.length === 0) {
@@ -196,7 +188,7 @@ function populate (c2paData: c2paResultWithChain): void {
 
   const certificates = c2paData.certChain
   if (certificates == null) {
-    console.error('No certificates found')
+    logError('No certificates found')
     return
   }
   if (certificates.length === 0) {
@@ -210,7 +202,7 @@ function populate (c2paData: c2paResultWithChain): void {
 
   const ingredients = activeManifest.ingredients
   if (ingredients == null) {
-    console.error('No ingredients found')
+    logError('No ingredients found')
     document.getElementById('ingredients')?.remove()
     return
   }
@@ -226,7 +218,7 @@ function populate (c2paData: c2paResultWithChain): void {
   createSignature(c2paData.manifestStore?.activeManifest?.signatureInfo?.issuer ?? '???', c2paData.manifestStore?.activeManifest?.signatureInfo?.cert_serial_number ?? '???')
 }
 
-DEBUG && console.debug('IFrame page load end')
+DEBUG && logDebug('IFrame page load end')
 
 async function sendMessageToContent (message: unknown, tabId: number): Promise<void> {
   const height = document.documentElement.scrollHeight

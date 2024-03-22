@@ -2,13 +2,12 @@
 // Copyright (c) Microsoft Corporation.
 // Licensed under the MIT license.
 
-import Browser from 'webextension-polyfill'
+import browser from 'webextension-polyfill'
 import { type C2paReadResult } from 'c2pa'
-import { type MESSAGE_PAYLOAD, type c2paResultWithChain } from './types'
+import { type MESSAGE_PAYLOAD, type C2paResult } from './types'
+import { logDebug } from './utils'
 
-const DEBUG = false
-
-DEBUG && console.debug('c2paStatus.ts: load')
+logDebug('c2paStatus.ts: load')
 
 const iframeStore = new Map<string, HTMLIFrameElement>()
 
@@ -17,10 +16,10 @@ export class C2PADialog /* extends HTMLElement */ {
     this.hide()
   }
 
-  static async create (c2paResult: c2paResultWithChain): Promise<C2PADialog> {
+  static async create (c2paResult: C2paResult, tabId: number): Promise<C2PADialog> {
     const random1 = randomString(16)
-    const random2 = randomString(16) + ':' + c2paResult.tabId
-    await Browser.storage.local.set({ [random1]: random2 })
+    const random2 = randomString(16) + ':' + tabId
+    await browser.storage.local.set({ [random1]: random2 })
     const iframe: HTMLIFrameElement = document.createElement('iframe')
     iframe.className = 'c2paDialog'
     iframe.id = random1
@@ -37,7 +36,7 @@ export class C2PADialog /* extends HTMLElement */ {
 
     return await new Promise((resolve, reject) => {
       iframe.onload = () => {
-        DEBUG && console.debug('iframe onload event fired: sending message to iframe.')
+        logDebug('iframe onload event fired: sending message to iframe.')
         setTimeout(() => {
           iframe.contentWindow?.postMessage({ id: random2, data: c2paResult }, iframe.src)
           resolve(new C2PADialog(c2paResult, iframe))
@@ -139,7 +138,7 @@ function randomString (length: number): string {
   content script, and the content script resizes the IFrame.
 
 */
-Browser.runtime.onMessage.addListener(
+browser.runtime.onMessage.addListener(
   async (request: MESSAGE_PAYLOAD, _sender) => {
     if (request.action === 'updateFrame' && request.data != null && request.frame != null) {
       const iframe = iframeStore.get(request.frame)

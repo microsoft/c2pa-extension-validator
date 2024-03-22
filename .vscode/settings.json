@@ -1,18 +1,30 @@
 {
-  "eslint.format.enable": true,
-  "editor.formatOnSave": true,
-  "eslint.validate": [
-    "javascript",
-    "typescript"
-  ],
-  "[typescript]": {
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint"
-  },
-  "[javascript]": {
-    "editor.defaultFormatter": "vscode.typescript-language-features"
-  },
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit"
-  },
-  "files.exclude": {}
+    "eslint.format.enable": true,
+    "editor.formatOnSave": true,
+    "eslint.validate": [
+        "javascript",
+        "typescript"
+    ],
+    "[typescript]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    },
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+    },
+    "files.exclude": {
+        ".eslintignore": true,
+        ".git": true,
+        ".gitignore": true,
+        ".npmignore": true,
+        "CODE_OF_CONDUCT.md": true,
+        "LICENSE": true,
+        "package-lock.json": true,
+        "pnpm-lock.yaml": true,
+        "README.md": true,
+        "SECURITY.md": true,
+        "SUPPORT.md": true
+    }
 }

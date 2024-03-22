@@ -3,13 +3,13 @@ import json from '@rollup/plugin-json'
 import resolve from '@rollup/plugin-node-resolve'
 import replace from '@rollup/plugin-replace'
 import terser from '@rollup/plugin-terser'
-import { config as loadEnvFile } from 'dotenv'
+import 'dotenv/config'
+import { ESLint } from 'eslint'
 import path, { dirname } from 'path'
 import copy from 'rollup-plugin-copy'
+import nodePolyfills from 'rollup-plugin-node-polyfills'
 import typescript from 'rollup-plugin-typescript2'
 import { fileURLToPath } from 'url'
-import { ESLint } from 'eslint'
-import nodePolyfills from 'rollup-plugin-node-polyfills'
 
 // Get the directory name when using ESM
 // eslint-disable-next-line @typescript-eslint/naming-convention
@@ -34,8 +34,6 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
   I did not see a cause/solution at https://github.com/ezolenko/rollup-plugin-typescript2/issues
 
 */
-
-loadEnvFile()
 
 const DEBUG = process.env.NODE_ENV?.toUpperCase() !== 'PRODUCTION'
 
@@ -109,7 +107,7 @@ const plugins = [
     */
     /** TODO: Add public folder */
     name: 'watch-json',
-    buildStart() {
+    buildStart () {
       [
         '.env',
         'src/manifest.chrome.v3.json',
@@ -185,11 +183,12 @@ const content = {
 
 export default [background, content]
 
-function eslint(options = {}) {
+// eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
+function eslint (options = {}) {
   const eslint = new ESLint({ fix: true, ignore: false, ...options })
   return {
     name: 'rollup-plugin-eslint',
-    async writeBundle() {
+    async writeBundle () {
       const results = await eslint.lintFiles(['dist/chrome/**/*.js']) // Adjust the glob pattern to match your files
       await ESLint.outputFixes(results)
     }

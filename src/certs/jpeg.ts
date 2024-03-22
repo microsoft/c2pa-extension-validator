@@ -3,6 +3,7 @@
  *  Licensed under the MIT license.
  */
 
+import { logError } from '../utils.js'
 import { ByteReader } from './byteReader.js'
 
 const APP11_MARKER = 0xEB
@@ -21,13 +22,13 @@ export function exportApp11 (buffer: Uint8Array): Uint8Array[] {
 
   const app11Buffers: Uint8Array[] = []
   if (reader.byte() !== SECTION_START || reader.byte() !== SOI_MARKER) {
-    console.error('Invalid JPEG format or marker not found.')
+    logError('Invalid JPEG format or marker not found.')
     return app11Buffers
   }
 
   while (!reader.finished) {
     if (reader.byte() !== SECTION_START) {
-      console.error('Invalid JPEG format or marker not found.')
+      logError('Invalid JPEG format or marker not found.')
       return app11Buffers
     }
     const marker = reader.byte()
