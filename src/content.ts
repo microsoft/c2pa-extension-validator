@@ -57,7 +57,7 @@ async function inspectMediaElements (mediaElements: MediaElements[]): Promise<vo
       continue
     }
 
-    const c2paManifestData = await c2aValidateImage(img.src)
+    const c2paManifestData = await c2paValidateImage(img.src)
     if (c2paManifestData instanceof Error) {
       logError(c2paManifestData)
       continue
@@ -79,7 +79,7 @@ async function inspectMediaElements (mediaElements: MediaElements[]): Promise<vo
   }
 }
 
-async function c2aValidateImage (url: string): Promise<C2paResult | C2paError> {
+async function c2paValidateImage (url: string): Promise<C2paResult | C2paError> {
   return await sendMessageWithTimeout<C2paResult | C2paError>({ action: MESSAGE_C2PA_INSPECT_URL, data: url }, DEBUG ? 5000 : undefined /* use default */)
     .then((result) => {
       if (result instanceof Error) {
