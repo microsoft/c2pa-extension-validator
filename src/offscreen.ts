@@ -65,7 +65,7 @@ Browser.runtime.onMessage.addListener(
       // result.certChain = getCertChainFromJpeg(new Uint8Array(arrayBuffer))
       const result = {
         ...(await serialize(c2paResult)) as Record<string, unknown>,
-        certChain: extractCertChain(extension, new Uint8Array(arrayBuffer)),
+        certChain: await extractCertChain(extension, new Uint8Array(arrayBuffer)),
         tabId: _sender.tab?.id
       }
 

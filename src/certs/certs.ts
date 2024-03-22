@@ -18,21 +18,24 @@ interface COSE {
 
 export type CertificateWithThumbprint = Certificate & {sha256Thumbprint: string}
 
-function calculateSha256CertThumbprint(der: Uint8Array) : string {
-    return ""
-  }
+async function calculateSha256CertThumbprint(der: Uint8Array) : Promise<string> {
+  const digest = await crypto.subtle.digest({ name: "SHA-256" }, der );
+  const hex = Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+  return hex;
+}
 
-export function createCertificateFromDer(der: Uint8Array): CertificateWithThumbprint {
-  const sha256Thumbprint = calculateSha256CertThumbprint(der)
+export async function createCertificateFromDer(der: Uint8Array): Promise<CertificateWithThumbprint> {
+  const sha256Thumbprint = await calculateSha256CertThumbprint(der)
   const base64UrlString = Buffer.from(der).toString('base64')
   const pem = toPEM(base64UrlString)
   const cert = Certificate.fromPEM(Buffer.from(pem, 'utf-8'))
   const certWithTP = cert as CertificateWithThumbprint
   certWithTP.sha256Thumbprint = sha256Thumbprint
+  console.log("sha256Thumbprint: ", sha256Thumbprint)
   return certWithTP
 }
 
-export function extractCertChain (type: string, mediaBuffer: Uint8Array): Certificate[] | null {
+export async function extractCertChain (type: string, mediaBuffer: Uint8Array): Promise<Certificate[] | null> {
   const rawManifestBuffer = getManifestFromMetadata(type, mediaBuffer)
   if (rawManifestBuffer == null) {
     return null
@@ -55,10 +58,11 @@ export function extractCertChain (type: string, mediaBuffer: Uint8Array): Certif
     The x5chain array of buffers is converted into PEM strings
     The PEM strings are parsed into Certificate objects
   */
-  return x5chain.map((buffer) => {
-    const cert = createCertificateFromDer(buffer)
+  const certificates = await Promise.all(x5chain.map(async (buffer) => {
+    const cert = await createCertificateFromDer(buffer)
     return cert
-  })
+  }))
+  return certificates
 }
 
 function toPEM (base64String: string): string {

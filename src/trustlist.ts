@@ -131,7 +131,7 @@ export function checkTrustListInclusion (certChain: CertificateWithThumbprint[])
     // for each cert in the chain, check if it matches a cert in the trust list
     for (const cert of certChain) {
       for (const entity of globalTrustList.entities) {
-        if (entity.x5tS256 === cert.sha256Thumbprint && entity.isCA === cert.isCA) {
+        if (entity.x5tS256.toLowerCase() === cert.sha256Thumbprint && entity.isCA === cert.isCA) {
           // found a match
           return {
             tlInfo: getInfoFromTrustList(globalTrustList), // TODO: avoid recomputing this
