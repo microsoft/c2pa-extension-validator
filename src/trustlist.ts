@@ -5,12 +5,28 @@
 
 import { CertificateWithThumbprint } from './certs/certs'
 
+// valid JWK key types (to adhere to C2PA cert profile: https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_certificate_profile)
+const VALID_KTY = [
+  'RSA', // sha*WithRSAEncryption and id-RSASSA-PSS
+  'EC', // ecdsa-with-*
+  'OKP' // id-Ed25519
+]
+
+// JWKS format (https://www.rfc-editor.org/rfc/rfc7517#section-4.6)
+export interface JWKS {
+  keys: Array<{
+    kty: string
+    'x5t#S256'?: string
+    x5c?: string[]
+  }>
+}
+
 export interface TrustedEntity {
   name: string
   display_name: string
   contact: string
   isCA: boolean
-  x5tS256: string
+  jwks: JWKS
 }
 
 export interface TrustList {
@@ -116,27 +132,40 @@ export function getTrustList (): TrustList | undefined {
   return globalTrustList
 }
 
+/**
+ * Information about a trust list match
+ */
 export interface TrustListMatch {
+  // trust list info
   tlInfo: TrustListInfo
+  // trusted entity that matched the certificate chain
   entity: TrustedEntity
+  // certificate that matched the trust list
   cert: CertificateWithThumbprint
 }
+
 /**
- * Checks if a certificate chain is included in the trust list (either the leaf certificate or one of the anchors)
+ * Checks if a certificate chain is included in the trust list (either the leaf certificate or one of the CA anchors)
  * @param certChain a certificate chain
- * @returns the trusted entity from the trust list matching the certificate chain
+ * @returns a trust list match object if found, otherwise null 
  */
 export function checkTrustListInclusion (certChain: CertificateWithThumbprint[]): TrustListMatch | null {
   if (globalTrustList) {
-    // for each cert in the chain, check if it matches a cert in the trust list
-    for (const cert of certChain) {
-      for (const entity of globalTrustList.entities) {
-        if (entity.x5tS256.toLowerCase() === cert.sha256Thumbprint && entity.isCA === cert.isCA) {
-          // found a match
-          return {
-            tlInfo: getInfoFromTrustList(globalTrustList), // TODO: avoid recomputing this
-            entity: entity,
-            cert: cert
+    // for each entity's certs in the list (current and expired), check if it matches a cert in the chain
+    for (const entity of globalTrustList.entities) {
+      const jwks = entity.jwks
+      for (const jwkCert of jwks.keys) {
+        if (!jwkCert['x5t#S256']) {
+          continue // TODO: implement full cert (x5c) comparison
+        }
+        for (const cert of certChain) {
+          if (jwkCert['x5t#S256'].toLowerCase() === cert.sha256Thumbprint && entity.isCA === cert.isCA) {
+            // found a match
+            return {
+              tlInfo: getInfoFromTrustList(globalTrustList), // TODO: avoid recomputing this
+              entity: entity,
+              cert: cert
+            }
           }
         }
       }
