@@ -1,8 +1,8 @@
 import Browser from 'webextension-polyfill'
-import { type C2paResult } from './types'
 import { decimalStringToHex, localDateTime, logDebug, logError } from './utils'
 import { type CreativeWorkAssertion, type Assertion, type Ingredient } from 'c2pa'
 import { type CertificateWithThumbprint } from './certs/certs'
+import { type C2paResult } from './c2pa'
 
 const urlParams = new URLSearchParams(window.location.search)
 const randomParam = urlParams.get('id')

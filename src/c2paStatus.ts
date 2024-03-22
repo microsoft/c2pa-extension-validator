@@ -4,8 +4,9 @@
 
 import browser from 'webextension-polyfill'
 import { type C2paReadResult } from 'c2pa'
-import { type MESSAGE_PAYLOAD, type C2paResult } from './types'
+import { type MESSAGE_PAYLOAD } from './types'
 import { logDebug } from './utils'
+import { type C2paResult } from './c2pa'
 
 logDebug('c2paStatus.ts: load')
 

@@ -6,7 +6,6 @@ import { MESSAGE_C2PA_INSPECT_URL } from './constants.js'
 import { icon } from './icon.js'
 import { C2PADialog } from './c2paStatus.js'
 import { deserialize } from './serialize.js'
-import { type C2paResult, type C2paError } from './types.js'
 import { DEBUG, logDebug, logError, logWarn, sendMessageWithTimeout } from './utils.js'
 
 /*
@@ -16,6 +15,7 @@ import { DEBUG, logDebug, logError, logWarn, sendMessageWithTimeout } from './ut
 */
 import './manifest.chrome.v3.json'
 import './manifest.firefox.v3.json'
+import { type C2paError, type C2paResult } from './c2pa.js'
 
 logDebug('Content: Script: start')
 

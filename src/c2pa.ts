@@ -6,10 +6,22 @@
 import { createC2pa, type C2pa, type C2paReadResult } from 'c2pa'
 import { extractCertChain } from './certs/certs.js'
 import { serialize } from './serialize.js'
-import { type CertificateWithThumbprint, type C2paError, type C2paResult } from './types.js'
 import { logDebug, logError } from './utils.js'
+import { type Certificate } from '@fidm/x509'
 
 logDebug('C2pa: Script: start')
+
+export interface C2paResult extends C2paReadResult {
+  certChain: CertificateWithThumbprint[] | null
+}
+
+export interface CertificateWithThumbprint extends Certificate {
+  sha256Thumbprint: string
+}
+
+export interface C2paError extends Error {
+  url: string
+}
 
 let c2pa: C2pa | null = null
 

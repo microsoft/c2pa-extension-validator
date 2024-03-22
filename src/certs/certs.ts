@@ -38,7 +38,7 @@ export async function createCertificateFromDer (der: Uint8Array): Promise<Certif
   return certWithTP
 }
 
-export async function extractCertChain (type: string, mediaBuffer: Uint8Array): Promise<Certificate[] | null> {
+export async function extractCertChain (type: string, mediaBuffer: Uint8Array): Promise<CertificateWithThumbprint[] | null> {
   const rawManifestBuffer = getManifestFromMetadata(type, mediaBuffer)
   if (rawManifestBuffer == null) {
     return null
