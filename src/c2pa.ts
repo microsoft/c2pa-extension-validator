@@ -8,11 +8,13 @@ import { extractCertChain } from './certs/certs.js'
 import { serialize } from './serialize.js'
 import { logDebug, logError } from './utils.js'
 import { type Certificate } from '@fidm/x509'
+import { checkTrustListInclusionRemote, type TrustListMatch } from './trustlist.js'
 
 logDebug('C2pa: Script: start')
 
 export interface C2paResult extends C2paReadResult {
   certChain: CertificateWithThumbprint[] | null
+  trustList: TrustListMatch | null
 }
 
 export interface CertificateWithThumbprint extends Certificate {
@@ -54,8 +56,11 @@ export async function validateUrl (url: string): Promise<C2paResult | C2paError>
     certChain = await extractCertChain(c2paResult.source.type, new Uint8Array(arrayBuffer)) ?? []
   }
 
+  const trusListMatch = await checkTrustListInclusionRemote(certChain)
+
   const result: C2paResult = {
     ...(await serialize(c2paResult)) as C2paReadResult,
+    trustList: trusListMatch,
     certChain
   }
 

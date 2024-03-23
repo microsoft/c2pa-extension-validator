@@ -1,8 +1,18 @@
-import Browser from 'webextension-polyfill'
+import browser from 'webextension-polyfill'
 import { decimalStringToHex, localDateTime, logDebug, logError } from './utils'
 import { type CreativeWorkAssertion, type Assertion, type Ingredient } from 'c2pa'
 import { type CertificateWithThumbprint } from './certs/certs'
 import { type C2paResult } from './c2pa'
+import { type TrustListMatch } from './trustlist'
+
+/*
+  SignatureInfo is from c2pa lib but not exported
+*/
+export interface SignatureInfo {
+  issuer?: string
+  time?: string
+  cert_serial_number?: string
+}
 
 const urlParams = new URLSearchParams(window.location.search)
 const randomParam = urlParams.get('id')
@@ -18,11 +28,11 @@ if (randomParam === null) {
 let _tabId: number
 
 void (async () => {
-  const { [randomParam]: ids } = await Browser.storage.local.get(randomParam)
+  const { [randomParam]: ids } = await browser.storage.local.get(randomParam)
   const [id, tabId] = ids.split(':') as [string, string]
   _tabId = parseInt(tabId)
   DEBUG && logDebug('id currently is ' + id)
-  await Browser.storage.local.remove(randomParam)
+  await browser.storage.local.remove(randomParam)
 
   window.addEventListener('message', function (event) {
     if (event.data.id !== ids) {
@@ -67,20 +77,25 @@ function createValidationErrors (...texts: string[]): HTMLDivElement {
   return container
 }
 
-function createSignature (issuer: string, serial: string): HTMLDivElement {
+function createSignature (signatureInfo: SignatureInfo, trustListMatch: TrustListMatch | null): HTMLDivElement {
   // Create the container div
   const container: HTMLDivElement = document.createElement('div')
   container.className = 'signature'
 
   const i: HTMLParagraphElement = document.createElement('p')
   i.className = 'text-item'
-  i.textContent = issuer
+  i.textContent = signatureInfo.issuer ?? '???'
   container.appendChild(i)
 
   const s: HTMLParagraphElement = document.createElement('p')
   s.className = 'text-item'
-  s.textContent = decimalStringToHex(serial)
+  s.textContent = decimalStringToHex(signatureInfo.cert_serial_number ?? '???')
   container.appendChild(s)
+
+  const t: HTMLParagraphElement = document.createElement('p')
+  t.className = 'text-item'
+  t.textContent = 'TrustList: ' + (trustListMatch === null ? '<none>' : decimalStringToHex(trustListMatch.entity.display_name))
+  container.appendChild(t)
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const signature = document.querySelector('#signature .collapsible-content')!
@@ -215,14 +230,14 @@ function populate (c2paData: C2paResult): void {
     createIngredient(ingredient)
   }
 
-  createSignature(c2paData.manifestStore?.activeManifest?.signatureInfo?.issuer ?? '???', c2paData.manifestStore?.activeManifest?.signatureInfo?.cert_serial_number ?? '???')
+  createSignature(activeManifest?.signatureInfo as SignatureInfo, c2paData.trustList)
 }
 
 DEBUG && logDebug('IFrame page load end')
 
 async function sendMessageToContent (message: unknown, tabId: number): Promise<void> {
   const height = document.documentElement.scrollHeight
-  await Browser.tabs.sendMessage(tabId, { action: 'updateFrame', data: height, frame: randomParam })
+  await browser.tabs.sendMessage(tabId, { action: 'updateFrame', data: height, frame: randomParam })
 }
 
 document.addEventListener('DOMContentLoaded', () => {

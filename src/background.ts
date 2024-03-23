@@ -5,7 +5,8 @@
 import browser from 'webextension-polyfill'
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { type MESSAGE_PAYLOAD } from './types'
-import { logDebug, logError } from './utils'
+import { logDebug, logError, logWarn } from './utils'
+import { loadTrustList } from './trustlist'
 
 logDebug('Background: Script: start')
 
@@ -53,26 +54,32 @@ void (async () => {
         logError('Failed to create offscreen document', error)
       })
   }
-  await loadData()
+  await browser.notifications.create({
+    type: 'basic',
+    iconUrl: 'icons/cr128.png',
+    title: 'Content Credentials',
+    message: 'Loaded'
+  })
+  await loadTrustList()
 })()
 
-async function loadData (): Promise<void> {
-  try {
-    let data = await browser.storage.local.get('myData')
-    if (data === undefined) {
-      data = { myData: 'Hello, World!' }
-      await browser.storage.local.set(data)
-    }
-    await browser.notifications.create({
-      type: 'basic',
-      iconUrl: 'icons/cr128.png',
-      title: 'Data',
-      message: `Your data is: ${data.myData}`
-    })
-  } catch (error) {
-    logError(`An error occurred while reloading tabs: ${(error as Error)?.message}`)
-  }
-}
+// async function loadData (): Promise<void> {
+//   try {
+//     let data = await browser.storage.local.get('myData')
+//     if (data === undefined) {
+//       data = { myData: 'Hello, World!' }
+//       await browser.storage.local.set(data)
+//     }
+//     await browser.notifications.create({
+//       type: 'basic',
+//       iconUrl: 'icons/cr128.png',
+//       title: 'Data',
+//       message: `Your data is: ${data.myData}`
+//     })
+//   } catch (error) {
+//     logError(`An error occurred while reloading tabs: ${(error as Error)?.message}`)
+//   }
+// }
 
 /*
 
@@ -96,7 +103,7 @@ browser.webNavigation.onCompleted.addListener(function (details) {
   browser.tabs.get(details.tabId).then(tab => {
     logDebug(`Background: Event: webNavigation.onCompleted: Tab ${details.tabId} has fully loaded. URL: ${tab.url}`)
   }).catch(error => {
-    logError(`Error fetching tab details: ${error}`)
+    logWarn(`Error fetching tab details: ${error}`, details.url)
   })
 }, { url: [{ urlMatches: 'http://*/*' }, { urlMatches: 'https://*/*' }] })
 

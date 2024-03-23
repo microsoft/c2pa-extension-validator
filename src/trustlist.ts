@@ -3,7 +3,10 @@
 *  Licensed under the MIT license.
 */
 
+import browser from 'webextension-polyfill'
 import { type CertificateWithThumbprint } from './certs/certs'
+import { logDebug } from './utils'
+import { type MESSAGE_PAYLOAD } from './types'
 
 // valid JWK key types (to adhere to C2PA cert profile: https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_certificate_profile)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -14,12 +17,14 @@ const VALID_KTY = [
 ]
 
 // JWKS format (https://www.rfc-editor.org/rfc/rfc7517#section-4.6)
-export interface JWKS {
-  keys: Array<{
-    kty: string
-    'x5t#S256'?: string
-    x5c?: string[]
-  }>
+interface JWK {
+  kty: string
+  'x5t#S256'?: string
+  x5c?: string[]
+}
+
+interface JWKS {
+  keys: JWK[]
 }
 
 export interface TrustedEntity {
@@ -109,21 +114,17 @@ export function setTrustList (tl: TrustList): TrustListInfo {
 /**
  * Retrieves the trust list from storage.
  */
-function loadTrustList (): void {
+export async function loadTrustList (): Promise<void> {
   // load the trust list from storage
-  chrome.storage.local.get(['trustList'], (result) => {
-    console.log('getTrustList result:', result)
-    const storedTrustList =
-            result?.trustList as TrustList
-    if (storedTrustList != null) {
-      globalTrustList = storedTrustList
-      console.log(
-                `Trust list loaded: ${storedTrustList.name}`
-      )
-    } else {
-      console.log('No trust list found')
-    }
-  })
+  const trustListStore = await browser.storage.local.get('trustList') as { trustList: TrustList }
+  logDebug('getTrustList result:', trustListStore)
+  const storedTrustList = trustListStore.trustList
+  if (storedTrustList != null) {
+    globalTrustList = storedTrustList
+    logDebug(`Trust list loaded: ${storedTrustList.name}`)
+  } else {
+    logDebug('No trust list found')
+  }
 }
 
 /**
@@ -151,31 +152,42 @@ export interface TrustListMatch {
  * @returns a trust list match object if found, otherwise null
  */
 export function checkTrustListInclusion (certChain: CertificateWithThumbprint[]): TrustListMatch | null {
-  if (globalTrustList != null) {
-    // for each entity's certs in the list (current and expired), check if it matches a cert in the chain
-    for (const entity of globalTrustList.entities) {
-      const jwks = entity.jwks
-      for (const jwkCert of jwks.keys) {
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-        if (!jwkCert['x5t#S256']) {
-          continue // TODO: implement full cert (x5c) comparison
-        }
-        for (const cert of certChain) {
-          if (jwkCert['x5t#S256'].toLowerCase() === cert.sha256Thumbprint && entity.isCA === cert.isCA) {
-            // found a match
-            return {
-              tlInfo: getInfoFromTrustList(globalTrustList), // TODO: avoid recomputing this
-              entity,
-              cert
-            }
-          }
-        }
-      }
-    }
-  }
-
+  // if (globalTrustList != null) {
+  //   // for each entity's certs in the list (current and expired), check if it matches a cert in the chain
+  //   for (const entity of globalTrustList.entities) {
+  //     const jwks = entity.jwks
+  //     for (const jwkCert of jwks.keys) {
+  //       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  //       if (!jwkCert['x5t#S256']) {
+  //         continue // TODO: implement full cert (x5c) comparison
+  //       }
+  //       for (const cert of certChain) {
+  //         if (jwkCert['x5t#S256'].toLowerCase() === cert.sha256Thumbprint && entity.isCA === cert.isCA) {
+  //           // found a match
+  //           return {
+  //             tlInfo: getInfoFromTrustList(globalTrustList), // TODO: avoid recomputing this
+  //             entity,
+  //             cert
+  //           }
+  //         }
+  //       }
+  //     }
+  //   }
+  // }
   return null
 }
 
-// load the trust list from storage at startup
-loadTrustList()
+export async function checkTrustListInclusionRemote (certChain: CertificateWithThumbprint[]): Promise<TrustListMatch | null> {
+  const trustListMatch = await browser.runtime.sendMessage({ action: 'checkTrustListInclusion', data: certChain })
+  return trustListMatch
+}
+
+browser.runtime.onMessage.addListener(
+  // eslint-disable-next-line @typescript-eslint/promise-function-async
+  (request: MESSAGE_PAYLOAD, _sender) => {
+    if (request.action === 'checkTrustListInclusion') {
+      return Promise.resolve(checkTrustListInclusion(request.data as CertificateWithThumbprint[]))
+    }
+    return true // do not handle this request; allow the next listener to handle it
+  }
+)

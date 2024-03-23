@@ -145,14 +145,21 @@ function getStaticMediaElements (): MediaElements[] {
   Initialize the content script
 
 */
-void (async (): Promise<void> => {
-  logDebug('Content: Initialization started')
+
+async function init (): Promise<void> {
+  logDebug('Content: Initialization: started')
+  logDebug(`Content: Initialization: document.readyState ${document.readyState}`)
   const tabId = await getTabId()
   _context.tabId = tabId
-  _context.observer.observe(document.body, { childList: true, subtree: true })
+  logDebug(`Content: Initialization: document.readyState ${document.readyState}`)
+  try {
+    _context.observer.observe(document.body, { childList: true, subtree: true })
+  } catch (e) {
+    logError('Content: Initialization: error', document.readyState)
+  }
   await onMediaElementAdded(getStaticMediaElements())
-  logDebug('Content: Initialization complete')
-})()
+  logDebug('Content: Initialization: complete')
+}
 
 /*
 
@@ -171,6 +178,7 @@ if (DEBUG) {
 
   window.addEventListener('load', function () {
     logDebug('Content: Event: load')
+    void init()
   })
 }
 
