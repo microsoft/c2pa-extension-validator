@@ -151,28 +151,31 @@ export interface TrustListMatch {
  * @returns a trust list match object if found, otherwise null
  */
 export function checkTrustListInclusion (certChain: CertificateWithThumbprint[]): TrustListMatch | null {
-  // if (globalTrustList != null) {
-  //   // for each entity's certs in the list (current and expired), check if it matches a cert in the chain
-  //   for (const entity of globalTrustList.entities) {
-  //     const jwks = entity.jwks
-  //     for (const jwkCert of jwks.keys) {
-  //       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-  //       if (!jwkCert['x5t#S256']) {
-  //         continue // TODO: implement full cert (x5c) comparison
-  //       }
-  //       for (const cert of certChain) {
-  //         if (jwkCert['x5t#S256'].toLowerCase() === cert.sha256Thumbprint && entity.isCA === cert.isCA) {
-  //           // found a match
-  //           return {
-  //             tlInfo: getInfoFromTrustList(globalTrustList), // TODO: avoid recomputing this
-  //             entity,
-  //             cert
-  //           }
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
+  console.log('checkTrustListInclusion called')
+  if (globalTrustList != null) {
+    // for each entity's certs in the list (current and expired), check if it matches a cert in the chain
+    for (const entity of globalTrustList.entities) {
+      const jwks = entity.jwks
+      for (const jwkCert of jwks.keys) {
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        if (!jwkCert['x5t#S256']) {
+          continue // TODO: implement full cert (x5c) comparison
+        }
+        for (const cert of certChain) {
+          if (jwkCert['x5t#S256'].toLowerCase() === cert.sha256Thumbprint && entity.isCA === cert.isCA) {
+            // found a match
+            const tlInfo = getInfoFromTrustList(globalTrustList) // TODO: don't recompute this
+            console.log('Trust list match:', entity, cert)
+            return {
+              tlInfo,
+              entity,
+              cert
+            }
+          }
+        }
+      }
+    }
+  }
   return null
 }
 
