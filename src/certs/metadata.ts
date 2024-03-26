@@ -11,7 +11,7 @@ export function getManifestFromMetadata (type: string, buffer: Uint8Array): Uint
   switch (type) {
     case 'image/jpeg':
       return jpeg(buffer)
-    case 'mp4':
+    case 'video/mp4':
       return mp4(buffer)
     default:
       return null
