@@ -93,7 +93,7 @@ function createSignature (signatureInfo: SignatureInfo, trustListMatch: TrustLis
 
   const t: HTMLParagraphElement = document.createElement('p')
   t.className = 'text-item'
-  t.textContent = 'TrustList: ' + (trustListMatch === null ? '<none>' : decimalStringToHex(trustListMatch.entity.display_name))
+  t.textContent = 'TrustList: ' + (trustListMatch === null ? '<none>' : trustListMatch.entity.display_name)
   container.appendChild(t)
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
