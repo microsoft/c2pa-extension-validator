@@ -91,10 +91,12 @@ function createSignature (signatureInfo: SignatureInfo, trustListMatch: TrustLis
   s.textContent = decimalStringToHex(signatureInfo.cert_serial_number ?? '???')
   container.appendChild(s)
 
-  const t: HTMLParagraphElement = document.createElement('p')
-  t.className = 'text-item'
-  t.textContent = 'TrustList: ' + (trustListMatch === null ? '<none>' : trustListMatch.entity.display_name)
-  container.appendChild(t)
+  if (trustListMatch) {
+    const t: HTMLParagraphElement = document.createElement('p')
+    t.className = 'text-item'
+    t.textContent = 'From ' + trustListMatch.tlInfo.name + " trust list (name: " + trustListMatch.entity.display_name + ")"
+    container.appendChild(t)
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const signature = document.querySelector('#signature .collapsible-content')!
