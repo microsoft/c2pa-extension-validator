@@ -51,7 +51,7 @@ const _context: ContentContext = {
 
 async function inspectMediaElements (mediaElements: MediaElements[]): Promise<void> {
   for (const img of Array.from(mediaElements)) {
-    const source = img.src ?? img.currentSrc
+    const source = img.src !== '' ? img.src : img.currentSrc
 
     if (_context.mediaElements.find((element) => element.media === img) !== undefined) {
       // TODO: We probably shouldn't see this, but we should handle it if we do
