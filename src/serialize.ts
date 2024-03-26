@@ -3,7 +3,7 @@
 *  Licensed under the MIT license.
 */
 
-import { arrayBufferToBase64, base64ToArrayBuffer, blobToBase64, isKeyedObject, isObject, logDebug } from './utils.js'
+import { arrayBufferToBase64, base64ToArrayBuffer, blobToBase64, isKeyedObject, isObject } from './utils.js'
 
 // Set to true to enable debug logging for this module
 const LOCAL_DEBUG = false
@@ -31,7 +31,7 @@ async function _serialize (obj: unknown, alreadySerialized: WeakMap<object, stri
     path = path.substring(1)
   }
 
-  LOCAL_DEBUG && logDebug(path)
+  LOCAL_DEBUG && console.debug(path)
 
   if (!isObject(obj)) {
     return obj
@@ -40,7 +40,7 @@ async function _serialize (obj: unknown, alreadySerialized: WeakMap<object, stri
   const object = obj as Record<string, unknown>
   if ((alreadySerialized).has(object)) {
     const previousPath = alreadySerialized.get(object)
-    LOCAL_DEBUG && logDebug('Circular reference detected in object', path, previousPath)
+    LOCAL_DEBUG && console.debug('Circular reference detected in object', path, previousPath)
     return { circle: previousPath }
   }
 
@@ -48,18 +48,18 @@ async function _serialize (obj: unknown, alreadySerialized: WeakMap<object, stri
 
   if (obj instanceof Blob) {
     const base64 = await blobToBase64(obj)
-    LOCAL_DEBUG && logDebug('Serialized Blob', base64.substring(0, 20) + '...')
+    LOCAL_DEBUG && console.debug('Serialized Blob', base64.substring(0, 20) + '...')
     return { type: 'Blob', data: base64 }
   }
 
   if (obj instanceof ArrayBuffer) {
     const base64 = arrayBufferToBase64(obj)
-    LOCAL_DEBUG && logDebug('Serialized ArrayBuffer', base64.substring(0, 20) + '...')
+    LOCAL_DEBUG && console.debug('Serialized ArrayBuffer', base64.substring(0, 20) + '...')
     return { type: 'ArrayBuffer', data: base64 }
   }
 
   if (typeof obj === 'function') {
-    LOCAL_DEBUG && logDebug('Serialized Function', obj.toString().substring(0, 20) + '...')
+    LOCAL_DEBUG && console.debug('Serialized Function', obj.toString().substring(0, 20) + '...')
     return { type: 'Function', data: obj.toString() }
   }
 

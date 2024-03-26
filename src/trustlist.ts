@@ -5,7 +5,6 @@
 
 import browser from 'webextension-polyfill'
 import { type CertificateWithThumbprint } from './certs/certs'
-import { logDebug } from './utils'
 import { type MESSAGE_PAYLOAD } from './types'
 
 // valid JWK key types (to adhere to C2PA cert profile: https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_certificate_profile)
@@ -117,13 +116,13 @@ export function setTrustList (tl: TrustList): TrustListInfo {
 export async function loadTrustList (): Promise<void> {
   // load the trust list from storage
   const trustListStore = await browser.storage.local.get('trustList') as { trustList: TrustList }
-  logDebug('getTrustList result:', trustListStore)
+  console.debug('getTrustList result:', trustListStore)
   const storedTrustList = trustListStore.trustList
   if (storedTrustList != null) {
     globalTrustList = storedTrustList
-    logDebug(`Trust list loaded: ${storedTrustList.name}`)
+    console.debug(`Trust list loaded: ${storedTrustList.name}`)
   } else {
-    logDebug('No trust list found')
+    console.debug('No trust list found')
   }
 }
 

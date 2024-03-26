@@ -3,13 +3,11 @@
 *  Licensed under the MIT license.
 */
 
-import { logDebug } from './utils.js'
-
-logDebug('Options: Script: start')
+console.debug('Options: Script: start')
 
 // void (async () => {
 //   const response: unknown = await Browser.runtime.sendMessage({ action: MESSAGE_SAMPLE, data: 'options.js: message' })
-//   logDebug(response)
+//   console.debug(response)
 // })()
 
-logDebug('Options: Script: end')
+console.debug('Options: Script: end')

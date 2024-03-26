@@ -3,14 +3,15 @@
 *  Licensed under the MIT license.
 */
 
+import browser from 'webextension-polyfill'
 import { createC2pa, type C2pa, type C2paReadResult } from 'c2pa'
 import { extractCertChain } from './certs/certs.js'
 import { serialize } from './serialize.js'
-import { logDebug, logError } from './utils.js'
 import { type Certificate } from '@fidm/x509'
 import { checkTrustListInclusionRemote, type TrustListMatch } from './trustlist.js'
+import { type MESSAGE_PAYLOAD } from './types.js'
 
-logDebug('C2pa: Script: start')
+console.debug('C2pa: Script: start')
 
 export interface C2paResult extends C2paReadResult {
   certChain: CertificateWithThumbprint[] | null
@@ -27,7 +28,7 @@ export interface C2paError extends Error {
 
 let c2pa: C2pa | null = null
 
-async function init (): Promise<void> {
+export async function init (): Promise<void> {
   const workerUrl = chrome.runtime.getURL('c2pa.worker.js')
   const wasmUrl = chrome.runtime.getURL('toolkit_bg.wasm')
 
@@ -35,15 +36,25 @@ async function init (): Promise<void> {
     .then(
       (newC2pa) => {
         c2pa = newC2pa
-        logDebug('C2PA initialized')
+        console.debug('C2PA initialized')
       },
       (error: unknown) => {
-        logError('Error initializing C2PA:', error)
+        console.error('Error initializing C2PA:', error)
       }
     )
+
+  browser.runtime.onMessage.addListener(
+    // eslint-disable-next-line @typescript-eslint/promise-function-async
+    (request: MESSAGE_PAYLOAD, _sender) => {
+      if (request.action === 'validateUrl') {
+        return Promise.resolve(_validateUrl(request.data as string))
+      }
+      return true // do not handle this request; allow another listener to handle it
+    }
+  )
 }
 
-export async function validateUrl (url: string): Promise<C2paResult | C2paError> {
+async function _validateUrl (url: string): Promise<C2paResult | C2paError> {
   if (c2pa == null) {
     return new Error('C2PA not initialized') as C2paError
   }
@@ -67,6 +78,9 @@ export async function validateUrl (url: string): Promise<C2paResult | C2paError>
   return result
 }
 
-void init()
+export async function validateUrl (url: string): Promise<C2paResult | C2paError> {
+  const trustListMatch = await browser.runtime.sendMessage({ action: 'validateUrl', data: url })
+  return trustListMatch
+}
 
-logDebug('C2pa: Script: end')
+console.debug('C2pa: Script: end')

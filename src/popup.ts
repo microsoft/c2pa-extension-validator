@@ -4,9 +4,8 @@
 */
 
 import { type TrustList, type TrustListInfo, getTrustListInfo, setTrustList } from './trustlist.js'
-import { logDebug } from './utils.js'
 
-logDebug('popup.js: load')
+console.debug('popup.js: load')
 
 document.addEventListener('DOMContentLoaded', function (): void {
   // Add event listeners to switch tabs
@@ -28,7 +27,7 @@ document.addEventListener('DOMContentLoaded', function (): void {
       // refresh the origin source in the option tab
       if (tabContentId === 'options') {
         const trustListInfo = getTrustListInfo()
-        logDebug(
+        console.debug(
           'trustListInfo obtained in options tab',
           trustListInfo
         )
@@ -39,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function (): void {
     })
   })
   void showResults().then(() => {
-    logDebug('results shown')
+    console.debug('results shown')
   })
 })
 
@@ -70,20 +69,20 @@ trustListInput.addEventListener('change', function (event) {
       try {
         // set the trust list
         const trustListInfo = setTrustList(json)
-        logDebug(`trust list loaded: ${trustListInfo.name}`)
+        console.debug(`trust list loaded: ${trustListInfo.name}`)
 
         displayTrustListInfo(trustListInfo)
       } catch (e) {
-        logDebug('Invalid origin data source: ' + String(e))
+        console.debug('Invalid origin data source: ' + String(e))
       }
     }
   } else {
-    logDebug('No file selected')
+    console.debug('No file selected')
   }
 })
 
 function displayTrustListInfo (tli: TrustListInfo): void {
-  logDebug('displayTrustListInfo called, source:' + tli.name)
+  console.debug('displayTrustListInfo called, source:' + tli.name)
   // display the trust list info
   const trustListInfo = document.getElementById(
     'trust-list-info'

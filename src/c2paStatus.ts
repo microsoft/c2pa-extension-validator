@@ -5,10 +5,9 @@
 import browser from 'webextension-polyfill'
 import { type C2paReadResult } from 'c2pa'
 import { type MESSAGE_PAYLOAD } from './types'
-import { logDebug } from './utils'
 import { type C2paResult } from './c2pa'
 
-logDebug('c2paStatus.ts: load')
+console.debug('c2paStatus.ts: load')
 
 const iframeStore = new Map<string, HTMLIFrameElement>()
 
@@ -37,7 +36,7 @@ export class C2PADialog /* extends HTMLElement */ {
 
     return await new Promise((resolve, reject) => {
       iframe.onload = () => {
-        logDebug('iframe onload event fired: sending message to iframe.')
+        console.debug('iframe onload event fired: sending message to iframe.')
         setTimeout(() => {
           iframe.contentWindow?.postMessage({ id: random2, data: c2paResult }, iframe.src)
           resolve(new C2PADialog(c2paResult, iframe))

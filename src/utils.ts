@@ -1,5 +1,6 @@
 import browser from 'webextension-polyfill'
 import 'dotenv/config'
+import { DEFAULT_MESSAGE_TIMEOUT } from './constants'
 
 export const DEBUG = process.env.NODE_ENV?.toUpperCase() !== 'PRODUCTION'
 
@@ -81,33 +82,13 @@ export function localDateTime (isoDateString: string): string {
   return formattedDate
 }
 
-const DEFAULT_MESSAGE_TIMEOUT = 5000 /* 5 sec */
-
 export async function sendMessageWithTimeout<T> (message: unknown, timeout: number = DEFAULT_MESSAGE_TIMEOUT): Promise<T> {
   const messagePromise = browser.runtime.sendMessage(message)
   const timeoutPromise = new Promise((resolve, reject) => {
     const id = setTimeout(() => {
       clearTimeout(id)
-      reject(new Error('Message response timeout'))
+      reject(new Error(`Message response timeout: ${JSON.stringify(message)}`))
     }, timeout)
   })
   return await Promise.race([messagePromise, timeoutPromise])
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function logDebug (message?: any, ...optionalParams: any[]): void {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  console.debug(`%c${message.toString()}`, 'color: #2784BC;', ...optionalParams)
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function logWarn (message?: any, ...optionalParams: any[]): void {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  console.warn(`%c${message.toString()}`, 'color: #FFAA47;', ...optionalParams)
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function logError (message?: any, ...optionalParams: any[]): void {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-  console.error(`%c${message.toString()}`, 'color: #B8281C;', ...optionalParams)
 }
