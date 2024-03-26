@@ -47,6 +47,9 @@ export class ByteReader {
     this.#noAdvance = false
   }
 
+  littleEndian = true
+  bigEndian = false
+
   /**
      * Reads a single byte from the buffer.
      * @returns {number} The next byte in the buffer.
@@ -59,24 +62,24 @@ export class ByteReader {
      * Reads a 16-bit unsigned integer from the buffer.
      * @returns {number} The next 16-bit unsigned integer in the buffer.
      */
-  uint16 = (): number => {
-    return this.#view.getUint16(this.advance(2), false)
+  uint16 = (littleEndian?: boolean | undefined): number => {
+    return this.#view.getUint16(this.advance(2), littleEndian)
   }
 
   /**
      * Reads a 24-bit unsigned integer from the buffer.
      * @returns {number} The next 24-bit unsigned integer in the buffer.
      */
-  uint24 = (): number => {
-    return this.#view.getUint16(this.advance(3), false)
+  uint24 = (littleEndian?: boolean | undefined): number => {
+    return this.#view.getUint16(this.advance(3), littleEndian)
   }
 
   /**
      * Reads a 32-bit unsigned integer from the buffer.
      * @returns {number} The next 32-bit unsigned integer in the buffer.
      */
-  uint32 = (): number => {
-    return this.#view.getUint32(this.advance(4), false)
+  uint32 = (littleEndian?: boolean | undefined): number => {
+    return this.#view.getUint32(this.advance(4), littleEndian)
   }
 
   /**
@@ -84,9 +87,9 @@ export class ByteReader {
    * Throws error if the number exceeds MAX_SAFE_INTEGER.
    * @returns {number} The next 64-bit unsigned integer in the buffer.
    */
-  uint64 = (): number => {
+  uint64 = (littleEndian?: boolean | undefined): number => {
     const peeking = this.#noAdvance
-    const uint64 = (this.uint32() * 0x100000000) + (peeking ? this.peek.uint32() : this.uint32())
+    const uint64 = (this.uint32(littleEndian) * 0x100000000) + (peeking ? this.peek.uint32(littleEndian) : this.uint32(littleEndian))
     if (uint64 > Number.MAX_SAFE_INTEGER) {
       throw new RangeError('Number exceeds MAX_SAFE_INTEGER')
     }
