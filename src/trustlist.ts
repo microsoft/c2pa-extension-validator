@@ -51,7 +51,7 @@ export interface TrustList {
   entities: TrustedEntity[]
 }
 
-let globalTrustList: TrustList | undefined
+let globalTrustLists: TrustList[] = []
 
 // trust list info (subset of the trust list data)
 export interface TrustListInfo {
@@ -77,22 +77,22 @@ const getInfoFromTrustList = (tl: TrustList): TrustListInfo => {
 }
 
 /**
- * Retrieves the trust list info.
- * @returns The trust list info if available, otherwise undefined.
+ * Retrieves the trust list infos.
+ * @returns The trust list infos if available, otherwise undefined.
  */
-export function getTrustListInfo (): TrustListInfo | undefined {
-  if (globalTrustList != null) {
-    return getInfoFromTrustList(globalTrustList)
+export function getTrustListInfos (): TrustListInfo[] | undefined {
+  if (globalTrustLists && globalTrustLists.length > 0) {
+    return globalTrustLists.map(tl => getInfoFromTrustList(tl))
   } else {
     return undefined
   }
 }
 
 /**
- * Sets the trust list, returns the trust list info or throws an error
+ * Adds a trust list, returns the corresponding trust list info or throws an error
  */
-export function setTrustList (tl: TrustList): TrustListInfo {
-  console.log('setTrustList called')
+export function addTrustList (tl: TrustList): TrustListInfo {
+  console.log('addTrustList called')
 
   if (typeof tl === 'undefined') {
     // TODO: more validation
@@ -100,10 +100,10 @@ export function setTrustList (tl: TrustList): TrustListInfo {
   }
 
   // set the global trust list
-  globalTrustList = tl
+  globalTrustLists.push(tl)
 
   // store the trust list
-  chrome.storage.local.set({ trustList: tl }, function () {
+  chrome.storage.local.set({ trustList: globalTrustLists }, function () {
     console.log(`Trust list stored: ${tl.name}`)
   })
 
@@ -111,26 +111,37 @@ export function setTrustList (tl: TrustList): TrustListInfo {
 }
 
 /**
- * Retrieves the trust list from storage.
+ * Removes a trust list from the trust list array.
+ * @param index index of the trust list to remove
  */
-export async function loadTrustList (): Promise<void> {
-  // load the trust list from storage
-  const trustListStore = await browser.storage.local.get('trustList') as { trustList: TrustList }
-  console.debug('getTrustList result:', trustListStore)
-  const storedTrustList = trustListStore.trustList
-  if (storedTrustList != null) {
-    globalTrustList = storedTrustList
-    console.debug(`Trust list loaded: ${storedTrustList.name}`)
-  } else {
-    console.debug('No trust list found')
-  }
+export function removeTrustList (index: number): void {
+  console.log('removeTrustList called')
+
+  const name = globalTrustLists[index].name
+
+  // remove the trust list
+  globalTrustLists.splice(index, 1)
+
+  // store the trust list
+  chrome.storage.local.set({ trustList: globalTrustLists }, function () {
+    console.log(`Trust list removed, index: ${index}, name: ${name}`)
+  })
 }
 
 /**
- * Get the current trust list.
+ * Retrieves the trust lists from storage.
  */
-export function getTrustList (): TrustList | undefined {
-  return globalTrustList
+export async function loadTrustLists (): Promise<void> {
+  // load the trust lists from storage
+  const trustListStore = await browser.storage.local.get('trustList') as { trustList: TrustList[] }
+  console.debug('getTrustList result:', trustListStore)
+  const storedTrustList = trustListStore.trustList
+  if (storedTrustList != null) {
+    globalTrustLists = storedTrustList
+    console.debug(`Trust lists loaded, count: ${storedTrustList.length}`)
+  } else {
+    console.debug('No trust list found')
+  }
 }
 
 /**
@@ -146,30 +157,33 @@ export interface TrustListMatch {
 }
 
 /**
- * Checks if a certificate chain is included in the trust list (either the leaf certificate or one of the CA anchors)
+ * Checks if a certificate chain is included in a trust list (either the leaf certificate or one of the CA anchors)
  * @param certChain a certificate chain
  * @returns a trust list match object if found, otherwise null
  */
 export function checkTrustListInclusion (certChain: CertificateWithThumbprint[]): TrustListMatch | null {
   console.log('checkTrustListInclusion called')
-  if (globalTrustList != null) {
-    // for each entity's certs in the list (current and expired), check if it matches a cert in the chain
-    for (const entity of globalTrustList.entities) {
-      const jwks = entity.jwks
-      for (const jwkCert of jwks.keys) {
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-        if (!jwkCert['x5t#S256']) {
-          continue // TODO: implement full cert (x5c) comparison
-        }
-        for (const cert of certChain) {
-          if (jwkCert['x5t#S256'].toLowerCase() === cert.sha256Thumbprint && entity.isCA === cert.isCA) {
-            // found a match
-            const tlInfo = getInfoFromTrustList(globalTrustList) // TODO: don't recompute this
-            console.log('Trust list match:', entity, cert)
-            return {
-              tlInfo,
-              entity,
-              cert
+  if (globalTrustLists && globalTrustLists.length > 0) {
+    // for each trust list
+    for (const trustList of globalTrustLists) {
+      // for each entity's certs in the list (current and expired), check if it matches a cert in the chain
+      for (const entity of trustList.entities) {
+        const jwks = entity.jwks
+        for (const jwkCert of jwks.keys) {
+          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+          if (!jwkCert['x5t#S256']) {
+            continue // TODO: implement full cert (x5c) comparison
+          }
+          for (const cert of certChain) {
+            if (jwkCert['x5t#S256'].toLowerCase() === cert.sha256Thumbprint && entity.isCA === cert.isCA) {
+              // found a match
+              const tlInfo = getInfoFromTrustList(trustList)
+              console.log('Trust list match:', entity, cert)
+              return {
+                tlInfo,
+                entity,
+                cert
+              }
             }
           }
         }
@@ -183,29 +197,35 @@ export async function checkTrustListInclusionRemote (certChain: CertificateWithT
   return await browser.runtime.sendMessage({ action: 'checkTrustListInclusion', data: certChain })
 }
 
-export async function getTrustListInfoRemote (): Promise<TrustListInfo | undefined> {
-  return await browser.runtime.sendMessage({ action: 'getTrustListInfo', data: undefined })
+export async function getTrustListInfosRemote (): Promise<TrustListInfo[] | undefined> {
+  return await browser.runtime.sendMessage({ action: 'getTrustListInfos', data: undefined })
 }
 
-export async function setTrustListRemote (tl: TrustList): Promise<TrustListInfo> {
-  return await browser.runtime.sendMessage({ action: 'setTrustList', data: tl })
+export async function addTrustListRemote (tl: TrustList): Promise<TrustListInfo> {
+  return await browser.runtime.sendMessage({ action: 'addTrustList', data: tl })
+}
+
+export async function removeTrustListRemote (index: number): Promise<void> {
+  return await browser.runtime.sendMessage({ action: 'removeTrustList', data: index })
 }
 
 export async function init (): Promise<void> {
-  void loadTrustList()
+  void loadTrustLists()
   browser.runtime.onMessage.addListener(
     // eslint-disable-next-line @typescript-eslint/promise-function-async
     (request: MESSAGE_PAYLOAD, _sender) => {
       if (request.action === 'checkTrustListInclusion') {
         return Promise.resolve(checkTrustListInclusion(request.data as CertificateWithThumbprint[]))
       }
-      if (request.action === 'getTrustListInfo') {
-        return Promise.resolve(getTrustListInfo())
+      if (request.action === 'getTrustListInfos') {
+        return Promise.resolve(getTrustListInfos())
       }
-      if (request.action === 'setTrustList') {
-        return Promise.resolve(setTrustList(request.data as TrustList))
+      if (request.action === 'addTrustList') {
+        return Promise.resolve(addTrustList(request.data as TrustList))
       }
-
+      if (request.action === 'removeTrustList') {
+        return Promise.resolve(removeTrustList(request.data as number))
+      }
       return true // do not handle this request; allow the next listener to handle it
     }
   )

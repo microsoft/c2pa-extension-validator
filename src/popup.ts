@@ -3,7 +3,7 @@
 *  Licensed under the MIT license.
 */
 
-import { type TrustList, type TrustListInfo, getTrustListInfoRemote, setTrustListRemote } from './trustlist.js'
+import { type TrustList, type TrustListInfo, getTrustListInfosRemote, addTrustListRemote, removeTrustListRemote } from './trustlist.js'
 
 console.debug('popup.js: load')
 
@@ -22,19 +22,11 @@ document.addEventListener('DOMContentLoaded', function (): void {
       const tabContentId = tab.getAttribute('data-tab') ?? ''
       document.getElementById(tabContentId)?.classList.add('active-content')
 
-      // refresh the origin source in the option tab
+      // refresh the trust lists info in the option tab
       if (tabContentId === 'options') {
-        void getTrustListInfoRemote()
-          .then(
-            (trustListInfo: TrustListInfo | undefined) => {
-              console.debug('trustListInfo obtained in options tab', trustListInfo)
-              if (trustListInfo != null) {
-                displayTrustListInfo(trustListInfo)
-              }
-            })
+        void displayTrustListInfos()
       }
-    }
-    )
+    })
     void showResults().then(() => {
       console.debug('results shown')
     })
@@ -53,6 +45,7 @@ const trustListInput = document.getElementById(
   'trust-list-input'
 ) as HTMLInputElement
 
+// Add event listener to the input to load a trust list
 trustListInput.addEventListener('change', function (event) {
   const eventTarget = event.target as HTMLInputElement
   if ((eventTarget.files != null) && eventTarget.files.length > 0) {
@@ -67,11 +60,10 @@ trustListInput.addEventListener('change', function (event) {
       ) as TrustList
       try {
         // set the trust list
-        // const trustListInfo =
-        void setTrustListRemote(json)
+        void addTrustListRemote(json)
           .then((trustListInfo: TrustListInfo) => {
             console.debug(`trust list loaded: ${trustListInfo.name}`)
-            displayTrustListInfo(trustListInfo)
+            displayTrustListInfos()
           })
       } catch (e) {
         console.debug('Invalid origin data source: ' + String(e))
@@ -82,14 +74,50 @@ trustListInput.addEventListener('change', function (event) {
   }
 })
 
-function displayTrustListInfo (tli: TrustListInfo): void {
-  console.debug('displayTrustListInfo called, source:' + tli.name)
-  // display the trust list info
-  const trustListInfo = document.getElementById(
-    'trust-list-info'
-  ) as HTMLDivElement
-  trustListInfo.style.display = 'block'
-  trustListInfo.innerHTML = `
-            <p>Trust List: <a href="${tli.website}" target="_blank">${tli.name}</a></p>
-        `
+/**
+ * Displays the trust list info in the popup.
+ */
+async function displayTrustListInfos(): Promise<void> {
+  console.debug('displayTrustListInfos called')
+  void getTrustListInfosRemote()
+  .then(
+    (tlis: TrustListInfo[] | undefined) => {
+      if (tlis) {
+        const trustListInfo = document.getElementById('trust-list-info') as HTMLDivElement;
+        trustListInfo.style.display = 'block';
+      
+        if (tlis.length === 0) {
+          trustListInfo.innerHTML = '<p>No trust list set</p>';
+        } else {
+          let listHtml = '<p>Trust Lists:</p><ul>';
+          tlis.forEach((tli, index) => {
+            const listItem = tli.website ?
+              `<li><a href="${tli.website}" target="_blank">${tli.name}</a>` :
+              `<li>${tli.name}`;
+      
+            // Add the delete link with a data-index attribute
+            listHtml += `${listItem} (<a href="#" class="delete-link" data-index="${index}">delete</a>)</li>`;
+          });
+          listHtml += '</ul>';
+          trustListInfo.innerHTML = listHtml;
+        }      
+      }
+    })
 }
+
+// event listener for trust lists delete link
+const trustListInfoElement = document.getElementById('trust-list-info')
+if (trustListInfoElement !== null) {
+  trustListInfoElement.addEventListener('click', function(event) {
+    const target = event.target as HTMLElement
+    if (target.classList.contains('delete-link')) {
+      event.preventDefault(); // Prevent default link action
+      const index = target.getAttribute('data-index')
+      if (index !== null) {
+        void removeTrustListRemote(parseInt(index))
+        .then(() => displayTrustListInfos())
+      }
+    }
+  });
+}
+
