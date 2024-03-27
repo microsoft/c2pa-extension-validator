@@ -3,7 +3,7 @@
 *  Licensed under the MIT license.
 */
 
-import { type TrustList, type TrustListInfo, getTrustListInfo, setTrustList } from './trustlist.js'
+import { type TrustList, type TrustListInfo, getTrustListInfoRemote, setTrustListRemote } from './trustlist.js'
 
 console.debug('popup.js: load')
 
@@ -20,25 +20,24 @@ document.addEventListener('DOMContentLoaded', function (): void {
       // Add active class to clicked tab and tab content
       tab.classList.add('active')
       const tabContentId = tab.getAttribute('data-tab') ?? ''
-      document
-        .getElementById(tabContentId)
-        ?.classList.add('active-content')
+      document.getElementById(tabContentId)?.classList.add('active-content')
 
       // refresh the origin source in the option tab
       if (tabContentId === 'options') {
-        const trustListInfo = getTrustListInfo()
-        console.debug(
-          'trustListInfo obtained in options tab',
-          trustListInfo
-        )
-        if (trustListInfo != null) {
-          displayTrustListInfo(trustListInfo)
-        }
+        void getTrustListInfoRemote()
+          .then(
+            (trustListInfo: TrustListInfo | undefined) => {
+              console.debug('trustListInfo obtained in options tab', trustListInfo)
+              if (trustListInfo != null) {
+                displayTrustListInfo(trustListInfo)
+              }
+            })
       }
+    }
+    )
+    void showResults().then(() => {
+      console.debug('results shown')
     })
-  })
-  void showResults().then(() => {
-    console.debug('results shown')
   })
 })
 
@@ -68,10 +67,12 @@ trustListInput.addEventListener('change', function (event) {
       ) as TrustList
       try {
         // set the trust list
-        const trustListInfo = setTrustList(json)
-        console.debug(`trust list loaded: ${trustListInfo.name}`)
-
-        displayTrustListInfo(trustListInfo)
+        // const trustListInfo =
+        void setTrustListRemote(json)
+          .then((trustListInfo: TrustListInfo) => {
+            console.debug(`trust list loaded: ${trustListInfo.name}`)
+            displayTrustListInfo(trustListInfo)
+          })
       } catch (e) {
         console.debug('Invalid origin data source: ' + String(e))
       }

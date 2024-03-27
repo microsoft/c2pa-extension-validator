@@ -180,16 +180,33 @@ export function checkTrustListInclusion (certChain: CertificateWithThumbprint[])
 }
 
 export async function checkTrustListInclusionRemote (certChain: CertificateWithThumbprint[]): Promise<TrustListMatch | null> {
-  const trustListMatch = await browser.runtime.sendMessage({ action: 'checkTrustListInclusion', data: certChain })
-  return trustListMatch
+  return await browser.runtime.sendMessage({ action: 'checkTrustListInclusion', data: certChain })
 }
 
-browser.runtime.onMessage.addListener(
-  // eslint-disable-next-line @typescript-eslint/promise-function-async
-  (request: MESSAGE_PAYLOAD, _sender) => {
-    if (request.action === 'checkTrustListInclusion') {
-      return Promise.resolve(checkTrustListInclusion(request.data as CertificateWithThumbprint[]))
+export async function getTrustListInfoRemote (): Promise<TrustListInfo | undefined> {
+  return await browser.runtime.sendMessage({ action: 'getTrustListInfo', data: undefined })
+}
+
+export async function setTrustListRemote (tl: TrustList): Promise<TrustListInfo> {
+  return await browser.runtime.sendMessage({ action: 'setTrustList', data: tl })
+}
+
+export async function init (): Promise<void> {
+  void loadTrustList()
+  browser.runtime.onMessage.addListener(
+    // eslint-disable-next-line @typescript-eslint/promise-function-async
+    (request: MESSAGE_PAYLOAD, _sender) => {
+      if (request.action === 'checkTrustListInclusion') {
+        return Promise.resolve(checkTrustListInclusion(request.data as CertificateWithThumbprint[]))
+      }
+      if (request.action === 'getTrustListInfo') {
+        return Promise.resolve(getTrustListInfo())
+      }
+      if (request.action === 'setTrustList') {
+        return Promise.resolve(setTrustList(request.data as TrustList))
+      }
+
+      return true // do not handle this request; allow the next listener to handle it
     }
-    return true // do not handle this request; allow the next listener to handle it
-  }
-)
+  )
+}

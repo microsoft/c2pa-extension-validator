@@ -3,12 +3,10 @@
  *  Licensed under the MIT license.
  */
 import browser from 'webextension-polyfill'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { type MESSAGE_PAYLOAD } from './types'
-import { loadTrustList } from './trustlist'
+import { init as initTrustList } from './trustlist'
 import { MESSAGE_C2PA_INSPECT_URL } from './constants'
 import { validateUrl } from './c2pa'
-
 console.debug('Background: Script: start')
 
 browser.runtime.onInstalled.addListener((details) => {
@@ -43,7 +41,7 @@ browser.runtime.onMessage.addListener(
   }
 )
 
-void (async () => {
+async function init (): Promise<void> {
   if (chrome.offscreen !== undefined) {
     if (await chrome.offscreen.hasDocument()) {
       return
@@ -58,14 +56,16 @@ void (async () => {
         console.error('Failed to create offscreen document', error)
       })
   }
+
   await browser.notifications.create({
     type: 'basic',
     iconUrl: 'icons/cr128.png',
     title: 'Content Credentials',
-    message: `URL: ${typeof URL}`
+    message: 'Loaded'
   })
-  await loadTrustList()
-})()
+
+  await initTrustList()
+}
 
 /*
 
@@ -101,5 +101,7 @@ browser.tabs.onActivated.addListener(activeInfo => {
     console.error(`Error fetching tab details: ${error}`)
   })
 })
+
+void init()
 
 console.debug('Background: Script: end')
