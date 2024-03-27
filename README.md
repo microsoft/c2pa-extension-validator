@@ -1,22 +1,28 @@
-# Project
+# C2PA Extension Validator
 
-This project contains a Edge/Chrome/Firefox browser extension that can validate [C2PA](https://c2pa.org) assets, and specifically, content signed by members of the [project Origin](https://www.originproject.info/).
+This project contains a Edge/Chrome/Firefox browser extension that can validate [C2PA](https://c2pa.org) assets. Our goal is to provide a developer tool to
+1. encourage experimentation with C2PA technologies, and
+2. enable rapid prototyping of new C2PA features.
+
+The extension must be built and side-loaded into a browser; see the [setup](#setup) section. The extension doesn't contain a built-it certificate trust list; these must be imported by the user; see the [trust setup](#trust-setup) section.  
 
 ## Setup
+
+As a prerequisite, install the [pnpm](https://pnpm.io/installation) package manager.
 
 1. Install dependencies
 
 ```bash
-npm install
+pnpm install
 ```
 
 2. Build the extension
 
 ```bash
-npm run build
+pnpm run build
 ```
 
-3. Install the extension in a browser:  
+3. Install the extension in a browser
 
 Follow the side-loading instruction for your browser to load the extension:
 
@@ -36,7 +42,13 @@ Firefox requires additional extension permissions to download manifests from ext
 
 ## Usage
 
-TODO
+### Trust Setup
+
+TODO +++
+
+### Asset Validation
+
+TODO: +++
 
 ## Contributing
 
