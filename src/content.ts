@@ -3,7 +3,7 @@
 *  Licensed under the MIT license.
 */
 import { MESSAGE_C2PA_INSPECT_URL } from './constants.js'
-import { icon } from './icon.js'
+import { icon, VALIDATION_STATUS } from './icon.js'
 import { C2PADialog } from './c2paStatus.js'
 import { deserialize } from './serialize.js'
 import { sendMessageWithTimeout } from './utils.js'
@@ -72,9 +72,16 @@ async function inspectMediaElements (mediaElements: MediaElements[]): Promise<vo
 
     const c2paDialog = await C2PADialog.create(c2paManifestData, _context.tabId)
 
-    const validationSuccess = c2paManifestData.manifestStore.validationStatus.length === 0
+    // set the validation status: valid, warning if signer is not trusted, error if validation fails
+    let validationStatus: VALIDATION_STATUS = 'success'
+    if (c2paManifestData.manifestStore.validationStatus.length > 0) {
+      validationStatus = 'error'
+    } else if (!c2paManifestData.trustList) {
+      validationStatus = 'warning'
+    }
+    console.log('Content: Validation status:', validationStatus, c2paManifestData)
 
-    icon(img, source, validationSuccess, () => {
+    icon(img, source, validationStatus, () => {
       c2paDialog.position(img)
       c2paDialog.show()
     })
