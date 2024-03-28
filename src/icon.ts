@@ -29,7 +29,6 @@ interface c2paImage {
 
 export function icon (parent: HTMLElement, url: string, status: VALIDATION_STATUS, listener: (this: HTMLImageElement, ev: MouseEvent) => unknown): c2paImage | null {
   const img = createImg(statusIcon(status))
-  console.log('icon', img, parent, url, status, listener)
   const c2paImage: c2paImage = { img, parent, url }
 
   img.addEventListener('click', listener)

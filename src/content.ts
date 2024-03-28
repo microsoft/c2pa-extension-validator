@@ -79,7 +79,6 @@ async function inspectMediaElements (mediaElements: MediaElements[]): Promise<vo
     } else if (!c2paManifestData.trustList) {
       validationStatus = 'warning'
     }
-    console.log('Content: Validation status:', validationStatus, c2paManifestData)
 
     icon(img, source, validationStatus, () => {
       c2paDialog.position(img)
