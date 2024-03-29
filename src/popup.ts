@@ -4,10 +4,17 @@
 */
 
 import { type TrustList, type TrustListInfo, getTrustListInfosRemote, addTrustListRemote, removeTrustListRemote } from './trustlist.js'
+import versionFile from '../version.json'
 
 console.debug('popup.js: load')
 
 document.addEventListener('DOMContentLoaded', function (): void {
+  // Update the version number
+  const versionElement = document.getElementById('version')
+  if (versionElement !== null) {
+    versionElement.textContent = versionFile.version;
+  }
+
   // Add event listeners to switch tabs
   const tabs = document.querySelectorAll('.tab')
   const tabContents = document.querySelectorAll('.tab-content')
