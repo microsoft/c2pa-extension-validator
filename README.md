@@ -10,19 +10,19 @@ The extension must be built and side-loaded into a browser; see the [setup](#set
 
 As a prerequisite, install the [pnpm](https://pnpm.io/installation) package manager.
 
-1. Install dependencies
+### Install dependencies
 
 ```bash
 pnpm install
 ```
 
-2. Build the extension
+### Build the extension
 
 ```bash
 pnpm run build
 ```
 
-3. Install the extension in a browser
+### Install the extension in a browser
 
 Follow the side-loading instruction for your browser to load the extension:
 
@@ -32,13 +32,16 @@ Follow the side-loading instruction for your browser to load the extension:
 
 The Edge/Chrome `manifest.json` file is located at `dist/chrome`. The Firefox `manifest.json` file is located at `dist/firefox`.
 
-Firefox requires additional extension permissions to download manifests from external sites
+Firefox requires additional extension permissions to download manifests from external sites:
+  1. In the Firefox address bar go to `about:addons` to see the installed extensions
+  2. Find **Cross-Platform Origin of Content Extension** and click the `...` button to the right
+  3. Select **Manage** from the pop-up menu
+  4. Click the **Permission** tab
+  5. Enable **Access your data for all websites**
 
-1. In the Firefox address bar go to `about:addons` to see the installed extensions
-2. Find **Cross-Platform Origin of Content Extension** and click the `...` button to the right
-3. Select **Manage** from the pop-up menu
-4. Click the **Permission** tab
-5. Enable **Access your data for all websites**
+### Test the extension
+
+Visit the [test page](./test/test.html) to test the extension.
 
 ## Usage
 

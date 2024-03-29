@@ -1,0 +1,38 @@
+{
+    "name": "AI trust list",
+    "download_url": "",
+    "description": "My AI trust list",
+    "website": "",
+    "last_updated": "2024-03-21T03:47:34Z",
+    "logo": "",
+    "entities": [
+        {
+            "name": "Bing Creator Microsoft",
+            "display_name": "Bing Creator Microsoft",
+            "contact": "https://www.bing.com/images/create/",
+            "isCA": false,
+            "jwks": {
+                "keys": [
+                    {
+                        "kty": "RSA",
+                        "x5t#S256": "7db2e5dbdb80849719cc95a34d35fb92ab0e3f1f5e001f475d91bf3028714117"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "OpenAI",
+            "display_name": "OpenAI",
+            "contact": "https://chat.openai.com/",
+            "isCA": false,
+            "jwks": {
+                "keys": [
+                    {
+                        "kty": "RSA",
+                        "x5t#S256": "5c27b9b61ba4555d239b777f9db298e80acf552e12a1f9b15cb311264d3c7176"
+                    }
+                ]
+            }
+        }
+    ]
+}
