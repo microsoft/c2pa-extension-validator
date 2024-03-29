@@ -3,10 +3,23 @@
  *  Licensed under the MIT license.
  */
 
-const CR_ICON: string = chrome.runtime.getURL('icons/cr.svg')
-const CRX_ICON: string = chrome.runtime.getURL('icons/crx.svg')
+const CR_VALID_ICON: string = chrome.runtime.getURL('icons/cr.svg')
+const CR_ERROR_ICON: string = chrome.runtime.getURL('icons/crx.svg')
+const CR_WARNING_ICON: string = chrome.runtime.getURL('icons/cr!.svg')
 
 const store = new Map<HTMLElement, c2paImage>()
+
+export type VALIDATION_STATUS = 'success' | 'warning' | 'error'
+const statusIcon = (status: VALIDATION_STATUS): string => {
+  switch (status) {
+    case 'success':
+      return CR_VALID_ICON
+    case 'warning':
+      return CR_WARNING_ICON
+    case 'error':
+      return CR_ERROR_ICON
+  }
+}
 
 interface c2paImage {
   img: HTMLImageElement
@@ -14,9 +27,8 @@ interface c2paImage {
   url: string
 }
 
-export function icon (parent: HTMLElement, url: string, status: boolean, listener: (this: HTMLImageElement, ev: MouseEvent) => unknown): c2paImage | null {
-  const failure = !status // (c2paResult.manifestStore?.validationStatus ?? []).length > 0
-  const img = createImg(failure ? CRX_ICON : CR_ICON)
+export function icon (parent: HTMLElement, url: string, status: VALIDATION_STATUS, listener: (this: HTMLImageElement, ev: MouseEvent) => unknown): c2paImage | null {
+  const img = createImg(statusIcon(status))
   const c2paImage: c2paImage = { img, parent, url }
 
   img.addEventListener('click', listener)

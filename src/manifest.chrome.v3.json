@@ -46,6 +46,7 @@
                 "c2pa.worker.js",
                 "icons/cr.svg",
                 "icons/crx.svg",
+                "icons/cr!.svg",
                 "toolkit_bg.wasm",
                 "iframe.html",
                 "iframe.js"
