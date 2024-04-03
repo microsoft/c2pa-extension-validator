@@ -1,10 +1,9 @@
 #!/bin/bash
 
-# generate the test certs
-./generate-cert-chain.sh
+# NOTE: first generate the test certs by calling generate-cert-chain.sh
 
 cert_types=("trusted" "untrusted")
-extensions=("jpg" "png" "mov" "mp4")
+extensions=("jpg" "png" "webp" "mov" "mp4")
 
 # sign the test files
 for cert_type in "${cert_types[@]}"; do

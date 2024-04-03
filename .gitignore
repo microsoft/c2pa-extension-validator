@@ -7,3 +7,6 @@ test/untrusted
 test/trusted/*.key
 test/trusted/*.csr
 test/trusted/*.srl
+# all untrusted media files except for the jpg one (for our test page)
+test/media/cards_untrusted.*
+!test/media/cards_untrusted.jpg
