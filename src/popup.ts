@@ -63,7 +63,7 @@ trustListInput.addEventListener('change', function (event) {
         void addTrustListRemote(json)
           .then((trustListInfo: TrustListInfo) => {
             console.debug(`trust list loaded: ${trustListInfo.name}`)
-            displayTrustListInfos()
+            void displayTrustListInfos()
           })
       } catch (e) {
         console.debug('Invalid origin data source: ' + String(e))
@@ -77,47 +77,46 @@ trustListInput.addEventListener('change', function (event) {
 /**
  * Displays the trust list info in the popup.
  */
-async function displayTrustListInfos(): Promise<void> {
+async function displayTrustListInfos (): Promise<void> {
   console.debug('displayTrustListInfos called')
   void getTrustListInfosRemote()
-  .then(
-    (tlis: TrustListInfo[] | undefined) => {
-      if (tlis) {
-        const trustListInfo = document.getElementById('trust-list-info') as HTMLDivElement;
-        trustListInfo.style.display = 'block';
-      
-        if (tlis.length === 0) {
-          trustListInfo.innerHTML = '<p>No trust list set</p>';
-        } else {
-          let listHtml = '<p>Trust Lists:</p><ul>';
-          tlis.forEach((tli, index) => {
-            const listItem = tli.website ?
-              `<li><a href="${tli.website}" target="_blank">${tli.name}</a>` :
-              `<li>${tli.name}`;
-      
-            // Add the delete link with a data-index attribute
-            listHtml += `${listItem} (<a href="#" class="delete-link" data-index="${index}">delete</a>)</li>`;
-          });
-          listHtml += '</ul>';
-          trustListInfo.innerHTML = listHtml;
-        }      
-      }
-    })
+    .then(
+      (tlis: TrustListInfo[] | undefined) => {
+        if (tlis != null) {
+          const trustListInfo = document.getElementById('trust-list-info') as HTMLDivElement
+          trustListInfo.style.display = 'block'
+
+          if (tlis.length === 0) {
+            trustListInfo.innerHTML = '<p>No trust list set</p>'
+          } else {
+            let listHtml = '<p>Trust Lists:</p><ul>'
+            tlis.forEach((tli, index) => {
+              const listItem = (tli.website.length > 0)
+                ? `<li><a href="${tli.website}" target="_blank">${tli.name}</a>`
+                : `<li>${tli.name}`
+
+              // Add the delete link with a data-index attribute
+              listHtml += `${listItem} (<a href="#" class="delete-link" data-index="${index}">delete</a>)</li>`
+            })
+            listHtml += '</ul>'
+            trustListInfo.innerHTML = listHtml
+          }
+        }
+      })
 }
 
 // event listener for trust lists delete link
 const trustListInfoElement = document.getElementById('trust-list-info')
 if (trustListInfoElement !== null) {
-  trustListInfoElement.addEventListener('click', function(event) {
+  trustListInfoElement.addEventListener('click', function (event) {
     const target = event.target as HTMLElement
     if (target.classList.contains('delete-link')) {
-      event.preventDefault(); // Prevent default link action
+      event.preventDefault() // Prevent default link action
       const index = target.getAttribute('data-index')
       if (index !== null) {
         void removeTrustListRemote(parseInt(index))
-        .then(() => displayTrustListInfos())
+          .then(async () => { await displayTrustListInfos() })
       }
     }
-  });
+  })
 }
-
