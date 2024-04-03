@@ -4,7 +4,13 @@ This project contains a Edge/Chrome/Firefox browser extension that can validate 
 1. encourage experimentation with C2PA technologies, and
 2. enable rapid prototyping of new C2PA features.
 
-The extension must be built and side-loaded into a browser; see the [setup](#setup) section. The extension doesn't contain a built-it certificate trust list; these must be imported by the user; see the [trust setup](#trust-setup) section.  
+The extension must be built and side-loaded into a browser; see the [setup](#setup) section. The extension doesn't contain a built-it certificate trust list, these must be imported by the user; see the [trust setup](#trust-setup) section.  
+
+The extension makes use of [c2pa](https://github.com/contentauth/c2pa-js) library from the [Content Authenticity Initiative](https://github.com/contentauth).
+
+The following asset types can be verified by the extension:
+* Images: JPEG, PNG
+* Videos: mp4 
 
 ## Setup
 
@@ -47,11 +53,21 @@ Visit the [test page](./test/test.html) to test the extension.
 
 ### Trust Setup
 
-TODO +++
+Users must import a list of trusted signers for C2PA assets to be validated properly; the trust lists must be formatted as [described here](https://github.com/christianpaquin/c2pa-explorations/blob/main/trust-lists/trust-lists.md). This can be done throught the `Options` tab of the browser extension's toolbar popup window.
 
 ### Asset Validation
 
-TODO: +++
+The extension automatically scans the current HTML page for C2PA assets and validates them. An icon representing the validation status is then overlayed on the asset:
+
+|                                                                  |                                                                                     |
+|------------------------------------------------------------------|-------------------------------------------------------------------------------------|
+| <img src="./public/icons/cr.svg" alt="valid icon" width="50">    |a valid asset, i.e. a well-formed C2PA manifest signed by a trusted issuer           |
+| <img src="./public/icons/cr!.svg" alt="warning icon" width="50"> | an untrusted asset, i.e., a well-formed C2PA manifest signed by an untrusted issuer |
+| <img src="./public/icons/crx.svg" alt="invalid icon" width="50"> | a invalid asset                                                                     |
+
+See the [C2PA specification](https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_statements_by_a_validator) for the definition of well-formed manifests and trusted signers.
+
+Note that untrusted _warning_ icon is not currently specified in the [C2PA UX recommendations](https://c2pa.org/specifications/specifications/1.4/ux/UX_Recommendations.html).
 
 ## Contributing
 
