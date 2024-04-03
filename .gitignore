@@ -1,4 +1,9 @@
+# build files
 *.code-workspace
 node_modules
 dist
-
+# intermediate test files
+test/untrusted
+test/trusted/*.key
+test/trusted/*.csr
+test/trusted/*.srl

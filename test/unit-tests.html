@@ -1,0 +1,47 @@
+<html>
+
+<head>
+    <title>C2PA test page</title>
+</head>
+
+<body>
+    <h1>Project test files</h1>
+
+    <p>The following files are created by the <a href="./sign-test-files.sh">sign-test-files.sh</a> script,
+        the test signer is listed in the corresponding <a href="./test-trust-list.json">test trust list</a>.</p>
+
+    <h2>Valid assets</h2>
+
+    <p>These files are valid (well-formed C2PA manifest from a trusted signer).</p>
+
+    <table>
+        <tr>
+            <td>JPG</td>
+            <td>PNG</td>
+        </tr>
+        <tr>
+            <td><img src="./media/cards_trusted.jpg" alt="trusted JPG" height="300"></td>
+            <td><img src="./media/cards_trusted.png" alt="trusted PNG" height="300"></td>
+        </tr>
+    </table>
+
+    <h2>Untrusted assets</h2>
+
+    <p>These files are valid (well-formed C2PA manifest) but the signer is untrusted (unknown).</p>
+
+    <table>
+        <tr>
+            <td>JPG</td>
+            <td>PNG</td>
+        </tr>
+        <tr>
+            <td><img src="./media/cards_untrusted.jpg" alt="untrusted JPG" height="300"></td>
+            <td><img src="./media/cards_untrusted.png" alt="untrusted PNG" height="300"></td>
+        </tr>
+    </table>
+
+    <h2>Invalid assets</h2>
+
+    TODO
+</body>
+<html>
