@@ -83,6 +83,9 @@ function getCertChain (jumbf: JumbfResult): Uint8Array[] | null {
   const cborContentBox = jumbfBox.boxes[0] as ContentBox
   const cbor = cborDecode(cborContentBox.data)
   const cose = (cbor as { tag: number | string, value: COSE }).value
-  const x5chain = cose[1].x5chain
+  let x5chain = cose[1].x5chain
+  // if only one cert is included, we get a Uint8Array instead of an array of Uint8Array
+  x5chain = x5chain instanceof Uint8Array ? [x5chain] : x5chain;
+ 
   return x5chain
 }
