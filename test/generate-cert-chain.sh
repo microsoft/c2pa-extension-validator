@@ -32,5 +32,7 @@ for cert_type in "${cert_types[@]}"; do
     cat "$certdir/signer.crt" "$certdir/CA.crt" "$certdir/root_CA.crt" > "$certdir/chain.pem"
 done
 
-# Create trust list for trusted certs
-# TODO (FIXME)
+# print information to add to trust list
+fingerprint=$(openssl x509 -in trusted/signer.crt -sha256 -noout -fingerprint | tr -d ':' | tr 'A-Z' 'a-z')
+echo "_____"
+echo "Add the trusted signer certificate thumbprint to the test trust list: $fingerprint"

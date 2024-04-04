@@ -32,6 +32,20 @@
                     }
                 ]
             }
+        },
+        {
+            "name": "Unit tests certificate",
+            "display_name": "Unit tests certificate",
+            "contact": "https://github.com/microsoft/c2pa-extension-validator/tree/main/test",
+            "isCA": false,
+            "jwks": {
+                "keys": [
+                    {
+                        "kty": "EC",
+                        "x5t#S256": "ddf7029d1e81dbd24cd9b71ad8a70388e73eda06c4ff9f1c422b7dba303d11a3"
+                    }
+                ]
+            }
         }
     ]
 }
