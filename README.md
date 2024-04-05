@@ -47,7 +47,10 @@ Firefox requires additional extension permissions to download manifests from ext
 
 ### Test the extension
 
-Visit the [test page](./test/test.html) to test the extension.
+Visit these pages to test the extension:
+* [Public test page](./test/public-tests.html), containing valid assets from various test issuers
+* [Unit test page](./test/unit-tests.html), containing valid, untrusted, and invalid assets of different media types
+
 
 ## Usage
 

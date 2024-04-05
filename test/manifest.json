@@ -1,0 +1,22 @@
+{
+    "alg": "es256",
+    "private_key": "signer.key",
+    "sign_cert": "signer.crt",
+    "claim_generator": "Test Signer",
+    "title": "Some cards",
+    "assertions": [
+        {
+            "label": "stds.schema-org.CreativeWork",
+            "data": {
+                "@context": "https://schema.org",
+                "@type": "CreativeWork",
+                "author": [
+                    {
+                        "@type": "Person",
+                        "name": "Signer"
+                    }
+                ]
+            }
+        }
+    ]
+}
