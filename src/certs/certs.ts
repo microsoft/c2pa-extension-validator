@@ -21,7 +21,7 @@ export interface CertificateWithThumbprint extends Certificate {
   sha256Thumbprint: string
 }
 
-async function calculateSha256CertThumbprint (der: Uint8Array): Promise<string> {
+export async function calculateSha256CertThumbprint (der: Uint8Array): Promise<string> {
   const digest = await crypto.subtle.digest({ name: 'SHA-256' }, der)
   const hex = bytesToHex(new Uint8Array(digest))
   return hex
@@ -29,8 +29,7 @@ async function calculateSha256CertThumbprint (der: Uint8Array): Promise<string> 
 
 export async function createCertificateFromDer (der: Uint8Array): Promise<CertificateWithThumbprint> {
   const sha256Thumbprint = await calculateSha256CertThumbprint(der)
-  const base64UrlString = Buffer.from(der).toString('base64')
-  const pem = toPEM(base64UrlString)
+  const pem = DERtoPEM(der)
   const cert = Certificate.fromPEM(Buffer.from(pem, 'utf-8'))
   const certWithTP = cert as unknown as CertificateWithThumbprint
   certWithTP.sha256Thumbprint = sha256Thumbprint
@@ -68,11 +67,23 @@ export async function extractCertChain (type: string, mediaBuffer: Uint8Array): 
   return certificates
 }
 
-function toPEM (base64String: string): string {
+/**
+ * Converts a DER encoded certificate to a PEM encoded certificate.
+ */
+export function DERtoPEM (der: Uint8Array): string {
   const PEM_HEADER = '-----BEGIN CERTIFICATE-----\n'
   const PEM_FOOTER = '\n-----END CERTIFICATE-----'
+  const base64String = Buffer.from(der).toString('base64')
   const formattedBase64 = base64String.match(/.{1,64}/g)?.join('\n')
   return PEM_HEADER + formattedBase64 + PEM_FOOTER
+}
+
+/**
+ * Converts a PEM encoded certificate to a DER encoded certificate.
+ */
+export function PEMtoDER (pem: string): Uint8Array {
+  const base64String = pem.replace(/-----BEGIN CERTIFICATE-----/, '').replace(/-----END CERTIFICATE-----/, '').replace(/\r?\n|\r/g, '')
+  return Buffer.from(base64String, 'base64')
 }
 
 function getCertChain (jumbf: JumbfResult): Uint8Array[] | null {
