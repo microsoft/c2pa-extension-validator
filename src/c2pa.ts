@@ -4,7 +4,7 @@
 */
 
 import browser from 'webextension-polyfill'
-import { createC2pa, type C2pa, type C2paReadResult } from 'c2pa'
+import { createC2pa, type C2pa, type C2paReadResult, createL2ManifestStore, type L2ManifestStore, selectEditsAndActivity, type TranslatedDictionaryCategory } from 'c2pa'
 import { extractCertChain } from './certs/certs.js'
 import { serialize } from './serialize.js'
 import { type Certificate } from '@fidm/x509'
@@ -13,9 +13,13 @@ import { type MESSAGE_PAYLOAD } from './types.js'
 
 console.debug('C2pa: Script: start')
 
+let c2pa: C2pa | null = null
+
 export interface C2paResult extends C2paReadResult {
   certChain: CertificateWithThumbprint[] | null
   trustList: TrustListMatch | null
+  l2: L2ManifestStore
+  editsAndActivity: TranslatedDictionaryCategory[] | null
 }
 
 export interface CertificateWithThumbprint extends Certificate {
@@ -25,8 +29,6 @@ export interface CertificateWithThumbprint extends Certificate {
 export interface C2paError extends Error {
   url: string
 }
-
-let c2pa: C2pa | null = null
 
 export async function init (): Promise<void> {
   const workerUrl = chrome.runtime.getURL('c2pa.worker.js')
@@ -62,20 +64,35 @@ async function _validateUrl (url: string): Promise<C2paResult | C2paError> {
 
   let certChain: CertificateWithThumbprint[] = []
 
-  if (c2paResult.manifestStore != null) {
-    const arrayBuffer = await c2paResult.source.arrayBuffer()
-    certChain = await extractCertChain(c2paResult.source.type, new Uint8Array(arrayBuffer)) ?? []
+  if (c2paResult.manifestStore?.activeManifest == null) {
+    const err = new Error('No active manifest found') as C2paError
+    err.url = url
+    return err
   }
 
-  const trusListMatch = await checkTrustListInclusionRemote(certChain)
+  const arrayBuffer = await c2paResult.source.arrayBuffer()
+  certChain = await extractCertChain(c2paResult.source.type, new Uint8Array(arrayBuffer)) ?? []
+
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const l2Full = await createL2ManifestStore(c2paResult.manifestStore)
+  const l2 = l2Full.manifestStore
+
+  const editsAndActivity = ((c2paResult.manifestStore?.activeManifest) != null) ? await selectEditsAndActivity(c2paResult.manifestStore?.activeManifest) : null
+  console.log(JSON.stringify(editsAndActivity, null, 2))
+
+  const trustListMatch = await checkTrustListInclusionRemote(certChain)
 
   const result: C2paResult = {
-    ...(await serialize(c2paResult)) as C2paReadResult,
-    trustList: trusListMatch,
-    certChain
+    ...c2paResult,
+    trustList: trustListMatch,
+    certChain,
+    l2,
+    editsAndActivity
   }
 
-  return result
+  const serializedResult = await serialize(result) as C2paResult
+
+  return serializedResult
 }
 
 export async function validateUrl (url: string): Promise<C2paResult | C2paError> {

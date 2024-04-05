@@ -7,7 +7,8 @@ import { MIME } from '../constants'
 import { exportApp11 } from './jpeg'
 import { decode as jxtDecode } from './jpegxt.js'
 import { parseMP4Header } from './mp4'
-import { decode } from './webp'
+import { decode as webpDecode } from './webp'
+import { decode as pngDecode } from './png'
 
 export function getManifestFromMetadata (type: string, buffer: Uint8Array): Uint8Array | null {
   switch (type) {
@@ -17,6 +18,8 @@ export function getManifestFromMetadata (type: string, buffer: Uint8Array): Uint
       return mp4(buffer)
     case MIME.WEBP:
       return webp(buffer)
+    case MIME.PNG:
+      return png(buffer)
     default:
       return null
   }
@@ -37,6 +40,15 @@ function mp4 (buffer: Uint8Array): Uint8Array | null {
 }
 
 function webp (buffer: Uint8Array): Uint8Array | null {
-  const riffContainers = decode(buffer)
+  const riffContainers = webpDecode(buffer)
   return riffContainers.C2PA
+}
+
+function png (buffer: Uint8Array): Uint8Array | null {
+  const chunks = pngDecode(buffer)
+  const caBx = chunks.find((chunk) => chunk.type === 'caBX')
+  if (caBx != null) {
+    return caBx.data
+  }
+  return null
 }

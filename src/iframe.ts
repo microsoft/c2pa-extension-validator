@@ -4,6 +4,7 @@ import { type CreativeWorkAssertion, type Assertion, type Ingredient } from 'c2p
 import { type CertificateWithThumbprint } from './certs/certs'
 import { type C2paResult } from './c2pa'
 import { type TrustListMatch } from './trustlist'
+import { type C2paOverlay } from './webComponents'
 
 /*
   SignatureInfo is from c2pa lib but not exported
@@ -14,36 +15,81 @@ export interface SignatureInfo {
   cert_serial_number?: string
 }
 
+export interface FrameMessage {
+  secret: string
+  action: string
+  data: unknown
+}
+
+export interface ContentMessage {
+  action: string
+  data: unknown
+}
+
 const urlParams = new URLSearchParams(window.location.search)
-const randomParam = urlParams.get('id')
 
 console.debug('IFrame page load start')
 
-if (randomParam === null) {
-  console.error('No id found')
-  throw new Error('No id found')
-}
-
 let _tabId: number
+let _frameId: string = '???'
+let _frameSecret: string
+let _initialized = false
 
-void (async () => {
-  const { [randomParam]: ids } = await browser.storage.local.get(randomParam)
-  const [id, tabId] = ids.split(':') as [string, string]
-  _tabId = parseInt(tabId)
-  console.debug('id currently is ' + id)
-  await browser.storage.local.remove(randomParam)
+const messageQueue: FrameMessage[] = []
 
-  window.addEventListener('message', function (event) {
-    if (event.data.id !== ids) {
+window.addEventListener('message', function (event) {
+  messageQueue.push(event.data as FrameMessage)
+  console.debug(`IFrame: ${_frameId}: Message received:`, event.data)
+  processMessageQueue()
+})
+
+function processMessageQueue (): void {
+  if (!_initialized) {
+    return
+  }
+
+  while (messageQueue.length > 0) {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const message = messageQueue.shift()!
+    if (message.secret !== _frameSecret) {
       return
     }
-    populate(event.data.data as C2paResult)
-    void sendMessageToContent('hello from iframe', parseInt(tabId))
-    console.debug(`IFrame ${id} message received:`, event.data as C2paResult)
-  })
+    if (message.action === 'c2paResult') {
+      const c2paResult: C2paResult = message.data as C2paResult
 
-  console.debug('IFrame message listener added')
-})()
+      // const manifestSummary: ManifestSummary = document.createElement('cai-manifest-summary')
+      // manifestSummary.manifestStore = c2paResult.l2
+      // document.getElementById('container')?.appendChild(manifestSummary)
+
+      // populate(message.data as C2paResult)
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const overlay: C2paOverlay = document.querySelector('c2pa-overlay')!
+      overlay.c2paResult = c2paResult
+      void sendMessageToContent({ action: 'updateFrame', data: document.documentElement.scrollHeight }, _tabId)
+      console.debug(`IFrame ${_frameId} message received:`, c2paResult)
+    }
+  }
+}
+
+async function init (): Promise<void> {
+  _frameId = urlParams.get('id') ?? ''
+  if (_frameId === null) {
+    console.error('No id found')
+    throw new Error('No id found')
+  }
+  const { [_frameId]: ids } = await browser.storage.local.get(_frameId)
+  const [id, tabId] = ids.split(':') as [string, string]
+  _frameSecret = ids
+  _tabId = parseInt(tabId)
+  console.debug('id currently is ' + id)
+  await browser.storage.local.remove(_frameId)
+
+  console.debug(`IFrame: ${id}: Message listener added`)
+  _initialized = true
+  processMessageQueue()
+}
+
+void init()
 
 function createAssertion (asserion: Assertion): HTMLDivElement {
   const container: HTMLDivElement = document.createElement('div')
@@ -91,10 +137,10 @@ function createSignature (signatureInfo: SignatureInfo, trustListMatch: TrustLis
   s.textContent = decimalStringToHex(signatureInfo.cert_serial_number ?? '???')
   container.appendChild(s)
 
-  if (trustListMatch) {
+  if (trustListMatch != null) {
     const t: HTMLParagraphElement = document.createElement('p')
     t.className = 'text-item'
-    t.textContent = 'From ' + trustListMatch.tlInfo.name + " trust list (name: " + trustListMatch.entity.display_name + ")"
+    t.textContent = 'From ' + trustListMatch.tlInfo.name + ' trust list (name: ' + trustListMatch.entity.display_name + ')'
     container.appendChild(t)
   }
 
@@ -111,10 +157,10 @@ function createIngredient (ingredient: Ingredient): HTMLDivElement {
   const container: HTMLDivElement = document.createElement('div')
   container.className = 'ingredient'
 
-  if (ingredient.thumbnail != null) {
+  if (ingredient.thumbnail?.blob != null) {
     const i: HTMLImageElement = document.createElement('img')
     i.className = 'thumbnail'
-    i.src = ingredient.thumbnail.blob as unknown as string
+    i.src = URL.createObjectURL(ingredient.thumbnail.blob)
     container.appendChild(i)
   }
   const s: HTMLParagraphElement = document.createElement('p')
@@ -151,6 +197,9 @@ function createCertificate (certificate: CertificateWithThumbprint): HTMLDivElem
 
   const e: HTMLParagraphElement = document.createElement('p')
   e.className = 'cert-item'
+
+  console.debug('IFrame: Certificate: validFrom', JSON.stringify(certificate.validFrom))
+
   e.textContent = localDateTime(certificate.validTo.toString())
   container.appendChild(e)
 
@@ -170,7 +219,10 @@ function populate (c2paData: C2paResult): void {
     return
   }
 
-  (document.getElementById('thumbnail') as HTMLImageElement).src = c2paData.source.thumbnail.blob as unknown as string ?? '';
+  const thumbnailUrl = c2paData.source?.thumbnail?.blob != null
+    ? URL.createObjectURL(c2paData.source.thumbnail.blob)
+    : '';
+  (document.getElementById('thumbnail') as HTMLImageElement).src = thumbnailUrl;
   (document.getElementById('title') as HTMLHeadingElement).textContent = activeManifest.title ?? 'Title';
   (document.getElementById('format') as HTMLHeadingElement).textContent = activeManifest.format ?? 'Format'
 
@@ -234,11 +286,8 @@ function populate (c2paData: C2paResult): void {
   createSignature(activeManifest?.signatureInfo as SignatureInfo, c2paData.trustList)
 }
 
-console.debug('IFrame page load end')
-
-async function sendMessageToContent (message: unknown, tabId: number): Promise<void> {
-  const height = document.documentElement.scrollHeight
-  await browser.tabs.sendMessage(tabId, { action: 'updateFrame', data: height, frame: randomParam })
+async function sendMessageToContent (message: ContentMessage, tabId: number): Promise<void> {
+  await browser.tabs.sendMessage(tabId, { ...message, frame: _frameId })
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -275,7 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Assuming _tabId is defined somewhere else in your TypeScript code.
       // Ensure the type and value of _tabId are correctly defined.
       // This function should also be defined elsewhere in your TypeScript code with proper typing.
-      void sendMessageToContent('hello from iframe', _tabId)
+      void sendMessageToContent({ action: 'updateFrame', data: document.documentElement.scrollHeight }, _tabId)
     })
   })
 })
@@ -288,13 +337,13 @@ const resizeObserver = new ResizeObserver(entries => {
     // If entry.contentRect.height is different from your last known height, you can call onHeightChange
     // You may want to store the last known height if you only want to call the function on actual changes
     // onHeightChange(entry.target as HTMLElement)
-    void sendMessageToContent('hello from iframe', _tabId)
+    void sendMessageToContent({ action: 'updateFrame', data: document.documentElement.scrollHeight }, _tabId)
   }
 })
 
 // Start observing an element
 // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-const elementToObserve = document.getElementById('container')!
+const elementToObserve = document.body // .getElementById('container')!
 resizeObserver.observe(elementToObserve)
 
 function parseAssertion (assertion: Assertion): string {
@@ -357,3 +406,5 @@ interface ActionV1 {
 export interface Parameters {
   name: string
 }
+
+console.debug('IFrame page load end')

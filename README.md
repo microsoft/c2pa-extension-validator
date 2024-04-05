@@ -1,6 +1,7 @@
 # C2PA Extension Validator
 
 This project contains a Edge/Chrome/Firefox browser extension that can validate [C2PA](https://c2pa.org) assets. Our goal is to provide a developer tool to
+
 1. encourage experimentation with C2PA technologies, and
 2. enable rapid prototyping of new C2PA features.
 
@@ -9,8 +10,9 @@ The extension must be built and side-loaded into a browser; see the [setup](#set
 The extension makes use of [c2pa](https://github.com/contentauth/c2pa-js) library from the [Content Authenticity Initiative](https://github.com/contentauth).
 
 The following asset types can be verified by the extension:
+
 * Images: JPEG, PNG
-* Videos: mp4 
+* Videos: mp4
 
 ## Setup
 
@@ -39,6 +41,7 @@ Follow the side-loading instruction for your browser to load the extension:
 The Edge/Chrome `manifest.json` file is located at `dist/chrome`. The Firefox `manifest.json` file is located at `dist/firefox`.
 
 Firefox requires additional extension permissions to download manifests from external sites:
+
   1. In the Firefox address bar go to `about:addons` to see the installed extensions
   2. Find **Cross-Platform Origin of Content Extension** and click the `...` button to the right
   3. Select **Manage** from the pop-up menu
@@ -48,15 +51,15 @@ Firefox requires additional extension permissions to download manifests from ext
 ### Test the extension
 
 Visit these pages to test the extension:
+
 * [Public test page](./test/public-tests.html), containing valid assets from various test issuers
 * [Unit test page](./test/unit-tests.html), containing valid, untrusted, and invalid assets of different media types
-
 
 ## Usage
 
 ### Trust Setup
 
-Users must import a list of trusted signers for C2PA assets to be validated properly; the trust lists must be formatted as [described here](https://github.com/christianpaquin/c2pa-explorations/blob/main/trust-lists/trust-lists.md). This can be done throught the `Options` tab of the browser extension's toolbar popup window.
+Users must import a list of trusted signers for C2PA assets to be validated properly; the trust lists must be formatted as [described here](https://github.com/christianpaquin/c2pa-explorations/blob/main/trust-lists/trust-lists.md). This can be done through the `Options` tab of the browser extension's toolbar popup window.
 
 ### Asset Validation
 
