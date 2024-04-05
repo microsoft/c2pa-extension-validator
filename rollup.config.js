@@ -54,7 +54,7 @@ const output = {
 
   // TODO: don't add copyright to webextension-polyfill.js
   // TODO: for now this separate bundle will be webextension-polyfill, in the future it may contain additional polyfills
-  chunkFileNames: 'polyfill.js',
+  chunkFileNames: 'chunk-[name]-[hash].js',
 
   // put a copyright banner at the top of the bundle
   banner: DEBUG ? undefined : COPYRIGHT
@@ -139,7 +139,7 @@ const onwarn = (warning, warn) => {
   background.js
 */
 const background = {
-  input: ['src/background.ts', 'src/popup.ts', 'src/options.ts', 'src/offscreen.ts', 'src/iframe.ts'],
+  input: ['src/background.ts', 'src/popup.ts', 'src/options.ts', 'src/offscreen.ts', 'src/iframe.ts', 'src/webComponents.ts'],
   treeshake: { moduleSideEffects: [] },
   output: {
     dir: 'dist/chrome',

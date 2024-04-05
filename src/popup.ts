@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function (): void {
   // Update the version number
   const versionElement = document.getElementById('version')
   if (versionElement !== null) {
-    versionElement.textContent = packageManifest.version;
+    versionElement.textContent = packageManifest.version
   }
 
   // Add event listeners to switch tabs

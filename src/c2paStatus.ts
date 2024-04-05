@@ -6,6 +6,7 @@ import browser from 'webextension-polyfill'
 import { type C2paReadResult } from 'c2pa'
 import { type MESSAGE_PAYLOAD } from './types'
 import { type C2paResult } from './c2pa'
+import { type FrameMessage } from './iframe'
 
 console.debug('c2paStatus.ts: load')
 
@@ -31,16 +32,19 @@ export class C2PADialog /* extends HTMLElement */ {
     iframe.style.overflow = 'hidden'
     iframe.style.border = 'none'
     iframe.style.background = 'none'
+    // iframe.style.boxShadow = '0px 0px 20px 0px rgba(0, 0, 0, 0.15)'
+    iframe.style.borderRadius = '5px'
+    iframe.style.padding = '10px'
+    iframe.style.marginTop = '-20px'
+    iframe.style.marginLeft = '-15px'
 
     iframeStore.set(random1, iframe)
 
     return await new Promise((resolve, reject) => {
       iframe.onload = () => {
         console.debug('iframe onload event fired: sending message to iframe.')
-        setTimeout(() => {
-          iframe.contentWindow?.postMessage({ id: random2, data: c2paResult }, iframe.src)
-          resolve(new C2PADialog(c2paResult, iframe))
-        }, 0)
+        iframe.contentWindow?.postMessage({ action: 'c2paResult', secret: random2, data: c2paResult } satisfies FrameMessage, iframe.src)
+        resolve(new C2PADialog(c2paResult, iframe))
       }
       document.body.appendChild(iframe)
     })

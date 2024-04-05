@@ -10,5 +10,6 @@ export const DEFAULT_MESSAGE_TIMEOUT = 50000 /* 5 sec */
 export const MIME = {
   JPEG: 'image/jpeg',
   MP4: 'video/mp4',
-  WEBP: 'image/webp'
+  WEBP: 'image/webp',
+  PNG: 'image/png'
 }

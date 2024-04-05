@@ -92,7 +92,7 @@ export function getTrustListInfos (): TrustListInfo[] | undefined {
  * Adds a trust list, returns the corresponding trust list info or throws an error
  */
 export async function addTrustList (tl: TrustList): Promise<TrustListInfo> {
-  console.log('addTrustList called')
+  console.debug('addTrustList called')
 
   if (typeof tl === 'undefined') {
     // TODO: more validation
@@ -116,7 +116,7 @@ export async function addTrustList (tl: TrustList): Promise<TrustListInfo> {
 
   // store the trust list
   chrome.storage.local.set({ trustList: globalTrustLists }, function () {
-    console.log(`Trust list stored: ${tl.name}`)
+    console.debug(`Trust list stored: ${tl.name}`)
   })
 
   return getInfoFromTrustList(tl)
@@ -127,7 +127,7 @@ export async function addTrustList (tl: TrustList): Promise<TrustListInfo> {
  * @param index index of the trust list to remove
  */
 export function removeTrustList (index: number): void {
-  console.log('removeTrustList called')
+  console.debug('removeTrustList called')
 
   const name = globalTrustLists[index].name
 
@@ -136,7 +136,7 @@ export function removeTrustList (index: number): void {
 
   // store the trust list
   chrome.storage.local.set({ trustList: globalTrustLists }, function () {
-    console.log(`Trust list removed, index: ${index}, name: ${name}`)
+    console.debug(`Trust list removed, index: ${index}, name: ${name}`)
   })
 }
 
@@ -174,7 +174,7 @@ export interface TrustListMatch {
  * @returns a trust list match object if found, otherwise null
  */
 export function checkTrustListInclusion (certChain: CertificateWithThumbprint[]): TrustListMatch | null {
-  console.log('checkTrustListInclusion called')
+  console.debug('checkTrustListInclusion called')
   if (globalTrustLists && globalTrustLists.length > 0) {
     // for each trust list
     for (const trustList of globalTrustLists) {
@@ -187,7 +187,7 @@ export function checkTrustListInclusion (certChain: CertificateWithThumbprint[])
             if (jwkCert['x5t#S256'] && jwkCert['x5t#S256'].toLowerCase() === cert.sha256Thumbprint && entity.isCA === cert.isCA) {
               // found a match
               const tlInfo = getInfoFromTrustList(trustList)
-              console.log('Trust list match:', entity, cert)
+              console.debug('Trust list match:', entity, cert)
               return {
                 tlInfo,
                 entity,

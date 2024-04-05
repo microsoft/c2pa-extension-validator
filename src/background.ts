@@ -6,7 +6,7 @@ import browser from 'webextension-polyfill'
 import { type MESSAGE_PAYLOAD } from './types'
 import { init as initTrustList } from './trustlist'
 import { MESSAGE_C2PA_INSPECT_URL } from './constants'
-import { validateUrl } from './c2pa'
+import { type C2paError, type C2paResult } from './c2pa'
 console.debug('Background: Script: start')
 
 browser.runtime.onInstalled.addListener((details) => {
@@ -41,6 +41,8 @@ browser.runtime.onMessage.addListener(
   }
 )
 
+void initTrustList()
+
 async function init (): Promise<void> {
   if (chrome.offscreen !== undefined) {
     if (await chrome.offscreen.hasDocument()) {
@@ -63,8 +65,6 @@ async function init (): Promise<void> {
     title: 'Content Credentials',
     message: 'Loaded'
   })
-
-  await initTrustList()
 }
 
 /*
@@ -103,5 +103,10 @@ browser.tabs.onActivated.addListener(activeInfo => {
 })
 
 void init()
+
+async function validateUrl (url: string): Promise<C2paResult | C2paError> {
+  const trustListMatch = await browser.runtime.sendMessage({ action: 'validateUrl', data: url })
+  return trustListMatch
+}
 
 console.debug('Background: Script: end')

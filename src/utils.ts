@@ -12,7 +12,7 @@ export function formatUUID (uuid: string): string {
   return `${uuid.substring(0, 8)}-${uuid.substring(8, 12)}-${uuid.substring(12, 16)}-${uuid.substring(16, 20)}-${uuid.substring(20)}`
 }
 
-export async function blobToBase64 (blob: Blob): Promise<string> {
+export async function blobToDataURL (blob: Blob): Promise<string> {
   return await new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onloadend = () => { resolve(reader.result as string) }
@@ -72,9 +72,9 @@ export function localDateTime (isoDateString: string): string {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
-    hour: 'numeric',
-    minute: 'numeric',
-    second: 'numeric',
+    // hour: 'numeric',
+    // minute: 'numeric',
+    // second: 'numeric',
     timeZoneName: 'short',
     hour12: true
   }
@@ -91,4 +91,32 @@ export async function sendMessageWithTimeout<T> (message: unknown, timeout: numb
     }, timeout)
   })
   return await Promise.race([messagePromise, timeoutPromise])
+}
+
+export function dataURLtoBlob (dataurl: string): Blob | null {
+  // Split the data URL at the comma to get the MIME type and the base64 data
+  const arr = dataurl.split(',')
+  if (arr.length < 2) {
+    return null // Not a valid data URL
+  }
+
+  // Get the MIME type from the data URL
+  const mimeMatch = arr[0].match(/:(.*?);/)
+  if (mimeMatch == null) {
+    return null // MIME type not found
+  }
+  const mimeType = mimeMatch[1]
+
+  // Decode the base64 string to binary data
+  const bstr = atob(arr[1])
+  let n = bstr.length
+  const u8arr = new Uint8Array(n)
+
+  // Convert the binary string to a typed array
+  while ((n--) !== 0) {
+    u8arr[n] = bstr.charCodeAt(n)
+  }
+
+  // Create and return a Blob from the typed array
+  return new Blob([u8arr], { type: mimeType })
 }
