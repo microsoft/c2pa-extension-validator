@@ -3,11 +3,13 @@
  *  Licensed under the MIT license.
  */
 
+import { type MediaElement } from './content'
+
 const CR_VALID_ICON: string = chrome.runtime.getURL('icons/cr.svg')
 const CR_ERROR_ICON: string = chrome.runtime.getURL('icons/crx.svg')
 const CR_WARNING_ICON: string = chrome.runtime.getURL('icons/cr!.svg')
 
-const store = new Map<HTMLElement, c2paImage>()
+const store = new Map<HTMLElement, C2paImage>()
 
 export type VALIDATION_STATUS = 'success' | 'warning' | 'error'
 const statusIcon = (status: VALIDATION_STATUS): string => {
@@ -21,15 +23,15 @@ const statusIcon = (status: VALIDATION_STATUS): string => {
   }
 }
 
-interface c2paImage {
+export interface C2paImage {
   img: HTMLImageElement
   parent: HTMLElement
   url: string
 }
 
-export function icon (parent: HTMLElement, url: string, status: VALIDATION_STATUS, listener: (this: HTMLImageElement, ev: MouseEvent) => unknown): c2paImage | null {
+export function icon (parent: MediaElement, url: string, status: VALIDATION_STATUS, listener: (this: HTMLImageElement, ev: MouseEvent) => unknown): C2paImage {
   const img = createImg(statusIcon(status))
-  const c2paImage: c2paImage = { img, parent, url }
+  const c2paImage: C2paImage = { img, parent, url }
 
   img.addEventListener('click', listener)
   store.set(parent, c2paImage)
@@ -48,7 +50,7 @@ function createImg (url: string): HTMLImageElement {
   return img
 }
 
-function updateIconPosition (icon: c2paImage, MINICONSIZE: number, MAXICONSIZE: number): void {
+function updateIconPosition (icon: C2paImage, MINICONSIZE: number, MAXICONSIZE: number): void {
   const img = icon.img
   const rect = icon.parent.getBoundingClientRect()
 
@@ -67,7 +69,7 @@ function updateIconPosition (icon: c2paImage, MINICONSIZE: number, MAXICONSIZE: 
   img.style.left = `${rect.right + window.scrollX - size - 5}px` // Adjusted to keep the icon in the right
 }
 
-function setIcon (icon: c2paImage): void {
+function setIcon (icon: C2paImage): void {
   const node = icon.parent
   const img = icon.img
   img.style.position = 'absolute'

@@ -1,10 +1,25 @@
+import browser from 'webextension-polyfill'
 import { LitElement, html, css, type TemplateResult } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
 import { type CertificateWithThumbprint, type C2paResult } from './c2pa'
 import { type ManifestStore } from 'c2pa'
 import { localDateTime } from './utils'
 
+/*
+  The C2pa library does not export all its types, se we extract them from
+  the types that are exported
+*/
 type ValidationStatus = ManifestStore['validationStatus'][number]
+type Signature = C2paResult['l2']['signature']
+type Ingredient = ManifestStore['activeManifest']['ingredients'][number]
+type Activity = Exclude<C2paResult['editsAndActivity'], null>[number]
+
+const useSeparators = false
+
+interface IconTextItem {
+  icon: string | null
+  text: string[]
+}
 
 const sharedStyles = css`
     :host {
@@ -15,8 +30,7 @@ const sharedStyles = css`
         --font-family: 'Roboto', Arial, Helvetica, sans-serif;
         --font-size: 14px;
         --font-bold: 700;
-    }
-`
+    }`
 
 @customElement('c2pa-overlay')
 export class C2paOverlay extends LitElement {
@@ -94,6 +108,7 @@ export class C2paOverlay extends LitElement {
       #inspectionLink {
         margin-top: 30px;
         margin-bottom: 30px;
+        padding: 0px 5px;
       }
 
       .bold {
@@ -110,7 +125,8 @@ export class C2paOverlay extends LitElement {
         display: grid;
         grid-template-columns: auto 1fr;
         align-items: center;
-        padding: 5px 10px 10px 5px;
+        padding: 12px 5px 12px 5px;
+        margin-top: 10px;
       }
 
       #untrustedIcon {
@@ -120,7 +136,7 @@ export class C2paOverlay extends LitElement {
 
       #untrustedText {
         text-align: center;
-        padding: 0px;
+        margin: 0px 0px 0px -15px;
       }
 
       #errors {
@@ -160,6 +176,54 @@ export class C2paOverlay extends LitElement {
       li {
         margin-bottom: 5px;
       }
+      .separator {
+        border-bottom: 1px solid var(--border-color);
+        margin: 5px 15px 5px 15px
+        border-color: #EEE
+      }
+
+      .button {
+        display: inline-block;
+        padding: 6px;
+        margin: 5px 15px;
+        font-size: 12px; /* Adjust font-size as needed */
+        font-family: Arial, sans-serif; /* Use whatever font-family you prefer */
+        color: #777777; /* Text color */
+        background-color: #fff; /* Button background color */
+        border: 2px solid #777777; /* Border color and width */
+        border-radius: 20px; /* Adjust border-radius to get the desired rounded corners */
+        text-align: center;
+        cursor: pointer;
+        text-decoration: none; /* Remove underline from links */
+      }
+    
+      /* Optionally add hover effect */
+      .button:hover {
+        background-color: #f2f2f2; /* Slightly darker background on hover */
+      }
+
+      .additional-info {
+      /*  overflow: hidden;
+        max-height: 0;
+        transition: max-height 0.5s ease-in-out;
+        */
+      }
+
+      .link-style {
+        color: inherit; /* Retain the text color */
+        text-decoration: underline; /* Underline the text */
+      }
+      
+      /* Ensure the color doesn't change on hover, focus, or after being visited */
+      .link-style:hover,
+      .link-style:focus,
+      .link-style:visited {
+        color: inherit;
+      }
+
+      #mciLink {
+        cursor: pointer;
+      }
 
   `]
 
@@ -173,6 +237,13 @@ export class C2paOverlay extends LitElement {
   private trustList?: string
 
   private status?: { errors: boolean, trusted: boolean }
+
+  @property({ type: Boolean })
+    additionalInfoCollapsed = true
+
+  toggleAdditionalInfo = (): void => {
+    this.additionalInfoCollapsed = !this.additionalInfoCollapsed
+  }
 
   @property({ type: Object })
   get c2paResult (): C2paResult | undefined {
@@ -247,39 +318,57 @@ export class C2paOverlay extends LitElement {
     return result
   }
 
+  private readonly handleClick = (): void => {
+    void browser.runtime.sendMessage({
+      action: 'inspectUrl',
+      data: this.c2paResult?.url
+    })
+  }
+
   render (): TemplateResult {
     const trusted = this.status?.trusted === true
+    // const thumbUrl = this.thumbprintUrl ?? chrome.runtime.getURL('icons/movie.svg')
     return html`
     <div id='container'>
       <div class='title'>
           <div class="thumbnailFrame clickable">
-              <img class="thumbnail" id="thumbnail" src="${this.thumbprintUrl}">
+              <img class="thumbnail" id="thumbnail" src="${this.thumbprintUrl ?? chrome.runtime.getURL('icons/movie.svg')}">
           </div>
           <div>
               <div id="divSigned">Image signed by ${trusted ? '' : html`<span class="bold">untrusted</span> entity `}<span class="bold">${this.signer}</span> <img class="certIcon clickable" src="icons/cert.svg"></div>
               ${trusted ? html`<div id="divTrust">Part of trust list: <span class="bold">${this.trustList}</span></div>` : ''}
           </div>
       </div>
-      <div id="inspectionLink">
-          For more details, inspect the image in the <u>Microsoft Content Integrity</u> page.
-      </div>
       ${this.validationSection(this._c2paResult?.manifestStore?.validationStatus)}
-      <c2pa-collapsible>
-        <span slot="header">Edits and Activity</span>
-        <div slot="content"><c2pa-actions .actions="${this.c2paResult?.editsAndActivity}"></c2pa-actions></div>
-      </c2pa-collapsible>
-      <c2pa-collapsible>
-        <span slot="header">Ingredients</span>
-        <div slot="content"><c2pa-ingredients .ingredients="${this.c2paResult?.manifestStore?.activeManifest.ingredients}"></c2pa-ingredients></div>
-      </c2pa-collapsible>
-      <c2pa-collapsible>
-        <span slot="header">Signature</span>
-        <div slot="content"><c2pa-signature .signature="${this.c2paResult?.l2.signature}"></c2pa-signature></div>
-      </c2pa-collapsible>
-      <c2pa-collapsible>
-        <span slot="header">Certificates</span>
-        <div slot="content"><c2pa-certificates .certificates="${this.c2paResult?.certChain}"></c2pa-certificates></div>
-      </c2pa-collapsible>
+      <div id="inspectionLink">
+          For more details, inspect the image in the <span id="mciLink" @click="${this.handleClick}"><u>Microsoft Content Integrity</u></span> page.
+      </div>
+      <div class="additional-info" style="display: ${this.additionalInfoCollapsed ? 'none' : 'block'};">
+        ${useSeparators ? html`<div class="separator"></div>` : ''}
+        <c2pa-collapsible>
+          <span slot="header">Edits and Activity</span>
+          <div slot="content"><c2pa-grid-display .items="${activityItems(this.c2paResult?.editsAndActivity ?? undefined)}"></c2pa-grid-display></div>        
+        </c2pa-collapsible>
+        ${useSeparators ? html`<div class="separator"></div>` : ''}
+        <c2pa-collapsible>
+          <span slot="header">Ingredients</span>
+          <div slot="content"><c2pa-grid-display .items="${ingredientItems(this.c2paResult?.manifestStore?.activeManifest.ingredients)}"></c2pa-grid-display></div>
+        </c2pa-collapsible>
+        ${useSeparators ? html`<div class="separator"></div>` : ''}
+        <c2pa-collapsible>
+          <span slot="header">Signature</span>
+          <div slot="content"><c2pa-grid-display .items="${signatureItems(this.c2paResult?.l2.signature ?? null)}"></c2pa-grid-display></div>
+        </c2pa-collapsible>
+        ${useSeparators ? html`<div class="separator"></div>` : ''}
+        <c2pa-collapsible>
+          <span slot="header">Certificates</span>
+          <div slot="content"><c2pa-grid-display .items="${certificateItems(this.c2paResult?.certChain ?? [])}"></c2pa-grid-display></div>
+        </c2pa-collapsible>
+      </div>
+      <button class="button" @click="${this.toggleAdditionalInfo}">
+        ${this.additionalInfoCollapsed ? 'View more' : 'View less'}
+      </button>
+    
     </div>
     `
   }
@@ -295,10 +384,8 @@ export class C2paCollapsible extends LitElement {
     sharedStyles,
     css`
     .collapsible-container {
-      /*border: 1px solid #ddd;*/
       border-radius: 5px;
       margin-bottom: 5px;
-    /*  background-color: #f9f9f9;*/
     }
     .collapsible-header {
       cursor: pointer;
@@ -313,11 +400,10 @@ export class C2paCollapsible extends LitElement {
       overflow: hidden;
       max-height: 0;
       transition: max-height 0.3s ease;
-      padding: 0 10px;
+      padding: 0 0 0 20px;
     }
     .collapsible-content.open  {
       max-height: 400px; /* Adjust as necessary */
-      padding: 10px;
     }
     .icon {
       transition: transform 0.3s ease;
@@ -334,10 +420,10 @@ export class C2paCollapsible extends LitElement {
   `]
 
   toggle = (): void => {
-    this.open = !this.open
     if (C2paCollapsible.openCollapsible != null && C2paCollapsible.openCollapsible !== this) {
       C2paCollapsible.openCollapsible.toggle()
     }
+    this.open = !this.open
     C2paCollapsible.openCollapsible = this.open ? this : null
   }
 
@@ -368,259 +454,125 @@ export class C2paCollapsible extends LitElement {
   }
 }
 
-@customElement('c2pa-certificates')
-export class C2paCertificates extends LitElement {
-  @property({ type: Object }) certificates: CertificateWithThumbprint[] | undefined
-
-  // private _certificates: CertificateWithThumbprint[] | undefined
+@customElement('c2pa-grid-display')
+export class C2paGridDisplay extends LitElement {
+  @property({ type: Array }) items: IconTextItem[] = []
 
   static styles = [
     sharedStyles,
     css`
-    .c2pa-certificates-container    {
-      margin-left: 15px;
-    }
-
-    .cert-container {
-      display: flex;
-      align-items: center; /* Vertically center the items */
-    }
-    
-    .icon-container {
-        flex: 0 0 auto; /* Do not grow or shrink */
+      .grid-container {
+        display: grid;
+        grid-template-columns: auto 1fr; /* Icon column and text column */
+        gap: 8px 20px;
+        align-items: center; /* Center items vertically */
+      }
+      .icon {
+        width: 20px; /* Adjust based on your needs */
+        height: 20px; /* Adjust based on your needs */
+        grid-row: span 1; /* Each icon takes up one row */
+        color: green;
+      }
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover; /* Adjust as needed */
+      }
+      .text-block {
         display: flex;
-        align-items: center; 
-        width: 20px;
-        height: 20px;
-    }
-    
-    .text-container {
-        flex: 1; /* Take up remaining space */
-        display: flex;
-        flex-direction: column;
-        justify-content: center; 
-        padding-left: 10px; 
+        flex-direction: column; /* Stack text lines vertically */
+        justify-content: center; /* Center text lines vertically if there's extra space */
+      }
+      .text-line {
         font-size: 12px;
-        margin-bottom: 10px;
-    }
+        margin-bottom: 0px;
+      }
+      .text-line:last-child {
+        margin-bottom: 0; /* No extra space at the bottom of the last line */
+      }
     `]
 
   render (): TemplateResult {
-    if (this.certificates == null) {
-      return html`<div>No certificates</div>`
-    }
-    const certHtml = this.certificates.map((cert) => {
-      return html`
-      <div class="cert-container">
-          <div class="icon-container">
-              <svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M9 12L11 14L15 10M12 3L13.9101 4.87147L16.5 4.20577L17.2184 6.78155L19.7942 7.5L19.1285 10.0899L21 12L19.1285 13.9101L19.7942 16.5L17.2184 17.2184L16.5 19.7942L13.9101 19.1285L12 21L10.0899 19.1285L7.5 19.7942L6.78155 17.2184L4.20577 16.5L4.87147 13.9101L3 12L4.87147 10.0899L4.20577 7.5L6.78155 6.78155L7.5 4.20577L10.0899 4.87147L12 3Z" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-          </div>
-          <div class="text-container">
-              <div class="cert-issuer-o">${cert.issuer.attributes[2].value}</div>
-              <div class="cert-issuer-cn">${cert.issuer.attributes[0].value}</div>
-              <div class="cert-issuer">${localDateTime(cert.validTo.toString())}</div>
-          </div>
-      </div>`
-    })
-
     return html`
-      <div class="c2pa-certificates-container">
-        ${certHtml}
+      <div class="grid-container">
+        ${this.items.map((item, index) => html`
+          <!-- Icon -->
+          <div class="icon" style="grid-row: ${index + 1};">
+            ${item.icon != null ? html`<img src="${item.icon}" alt="Icon">` : ''}
+          </div>
+          <!-- Text Block -->
+          <div class="text-block" style="grid-row: ${index + 1};">
+            ${item.text.map(line => html`<div class="text-line">${line}</div>`)}
+          </div>
+        `)}
       </div>
     `
   }
 }
 
-@customElement('c2pa-actions')
-export class C2paActions extends LitElement {
-  @property({ type: Object }) actions: Array<{
-    id: string
-    icon: string | null
-    label: string
-    description: string
-  }> | undefined
+const unknownSvg = 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20height%3D%2218%22%20viewBox%3D%220%200%2018%2018%22%20width%3D%2218%22%3E%20%20%3Cdefs%3E%20%20%20%20%3Cstyle%3E%20%20%20%20%20%20.fill%20%7B%20%20%20%20%20%20%20%20fill%3A%20%236E6E6E%3B%20%20%20%20%20%20%7D%20%20%20%20%3C%2Fstyle%3E%20%20%3C%2Fdefs%3E%20%20%3Ctitle%3ES%20AlertCircle%2018%20N%3C%2Ftitle%3E%20%20%3Crect%20id%3D%22Canvas%22%20fill%3D%22%23ff13dc%22%20opacity%3D%220%22%20width%3D%2218%22%20height%3D%2218%22%20%2F%3E%3Cpath%20class%3D%22fill%22%20d%3D%22M7.84555%2C12.88618a1.13418%2C1.13418%2C0%2C0%2C1%2C1.1161-1.15195q.042-.00064.08391.00178a1.116%2C1.116%2C0%2C0%2C1%2C1.2%2C1.15017%2C1.09065%2C1.09065%2C0%2C0%2C1-1.2%2C1.11661%2C1.0908%2C1.0908%2C0%2C0%2C1-1.2-1.11661ZM10.0625%2C4.39771a.20792.20792%2C0%2C0%2C1%2C.09966.183V5.62212c0%2C1.40034-.28322%2C3.98034-.33305%2C4.48067%2C0%2C.04984-.01678.09967-.11695.09967H8.379a.11069.11069%2C0%2C0%2C1-.11695-.09967c-.03305-.46678-.3-3.0305-.3-4.43084V4.6306a.1773.1773%2C0%2C0%2C1%2C.08339-.18306%2C2.88262%2C2.88262%2C0%2C0%2C1%2C1.00017-.20033A3.27435%2C3.27435%2C0%2C0%2C1%2C10.0625%2C4.39771ZM17.50005%2C9A8.50005%2C8.50005%2C0%2C1%2C1%2C9%2C.5H9A8.50008%2C8.50008%2C0%2C0%2C1%2C17.50005%2C9ZM15.67484%2C9A6.67485%2C6.67485%2C0%2C1%2C0%2C9%2C15.6748H9A6.67479%2C6.67479%2C0%2C0%2C0%2C15.67484%2C9Z%22%20%2F%3E%3C%2Fsvg%3E'
 
-  static styles = [
-    sharedStyles,
-    css`
-    .c2pa-actions-container    {
-      margin-left: 15px;
-    }
+const signSvg = 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20height%3D%2218%22%20viewBox%3D%220%200%2018%2018%22%20width%3D%2218%22%3E%20%20%3Cdefs%3E%20%20%20%20%3Cstyle%3E%20%20%20%20%20%20.fill%20%7B%20%20%20%20%20%20%20%20fill%3A%20%236E6E6E%3B%20%20%20%20%20%20%7D%20%20%20%20%3C%2Fstyle%3E%20%20%3C%2Fdefs%3E%20%20%3Ctitle%3ES%20Draw%2018%20N%3C%2Ftitle%3E%20%20%3Crect%20id%3D%22Canvas%22%20fill%3D%22%23ff13dc%22%20opacity%3D%220%22%20width%3D%2218%22%20height%3D%2218%22%20%2F%3E%3Cpath%20class%3D%22fill%22%20d%3D%22M10.227%2C4%2C2.542%2C11.686a.496.496%2C0%2C0%2C0-.1255.2105L1.0275%2C16.55c-.057.188.2295.425.3915.425a.15587.15587%2C0%2C0%2C0%2C.031-.003c.138-.032%2C3.9335-1.172%2C4.6555-1.389a.492.492%2C0%2C0%2C0%2C.2075-.125L14%2C7.772ZM5.7%2C14.658c-1.0805.3245-2.431.7325-3.3645%2C1.011L3.34%2C12.304Z%22%20%2F%3E%20%20%3Cpath%20class%3D%22fill%22%20d%3D%22M16.7835%2C4.1%2C13.9%2C1.216a.60751.60751%2C0%2C0%2C0-.433-.1765H13.45a.686.686%2C0%2C0%2C0-.4635.2035l-2.05%2C2.05L14.708%2C7.0645l2.05-2.05a.686.686%2C0%2C0%2C0%2C.2-.4415A.612.612%2C0%2C0%2C0%2C16.7835%2C4.1Z%22%20%2F%3E%3C%2Fsvg%3E'
 
-    .action-container {
-      display: flex;
-      align-items: center; /* Vertically center the items */
+function certificateItems (certificates: CertificateWithThumbprint[]): IconTextItem[] {
+  return certificates.map((cert) => {
+    return {
+      icon: 'icons/seal.svg',
+      text: [
+        cert.issuer.attributes.find((attr) => attr.shortName === 'O')?.value ?? 'unknown',
+        cert.issuer.attributes.find((attr) => attr.shortName === 'CN')?.value ?? 'unknown',
+        localDateTime(cert.validTo.toString())
+      ]
     }
-    
-    .icon-container {
-        flex: 0 0 auto; /* Do not grow or shrink */
-        display: flex;
-        align-items: center; 
-        width: 20px;
-        height: 20px;
-    }
-    
-    .text-container {
-        flex: 1; /* Take up remaining space */
-        display: flex;
-        flex-direction: column;
-        justify-content: center; 
-        padding-left: 10px; 
-        font-size: 12px;
-        margin-bottom: 10px;
-    }
-    `]
-
-  render (): TemplateResult {
-    if (this.actions == null) {
-      return html`<div>No actions</div>`
-    }
-    const certHtml = this.actions.map((action) => {
-      return html`
-      <div class="action-container">
-          <div class="icon-container">
-              <img src="${action.icon}"/>
-          </div>
-          <div class="text-container">
-              ${action.description}
-          </div>
-      </div>`
-    })
-
-    return html`
-      <div class="c2pa-actions-container">
-        ${certHtml}
-      </div>
-    `
-  }
+  })
 }
 
-@customElement('c2pa-signature')
-export class C2paSignature extends LitElement {
-  @property({ type: Object }) signature: { issuer: string | null, isoDateString: string | null } | undefined
-
-  static styles = [
-    sharedStyles,
-    css`
-    .c2pa-signature-container    {
-      margin-left: 15px;
-    }
-
-    .signature-container {
-      display: flex;
-      align-items: center; /* Vertically center the items */
-    }
-    
-    .icon-container {
-        flex: 0 0 auto; /* Do not grow or shrink */
-        display: flex;
-        align-items: center; 
-        width: 20px;
-        height: 20px;
-    }
-    
-    .text-container {
-        flex: 1; /* Take up remaining space */
-        display: flex;
-        flex-direction: column;
-        justify-content: center; 
-        padding-left: 10px; 
-        font-size: 12px;
-        margin-bottom: 10px;
-    }
-    `]
-
-  render (): TemplateResult {
-    if (this.signature == null) {
-      return html`<div>No signature</div>`
-    }
-    const dateStr = this.signature?.isoDateString
-    return html`
-      <div class="c2pa-signature-container">
-        <div class="signature-container">
-          <div class="icon-container">
-            <svg width="800px" height="800px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect width="24" height="24" fill="white"/>
-              <path d="M15.6287 5.12132L4.31497 16.435M15.6287 5.12132L19.1642 8.65685M15.6287 5.12132L17.0429 3.70711C17.4334 3.31658 18.0666 3.31658 18.4571 3.70711L20.5784 5.82843C20.969 6.21895 20.969 6.85212 20.5784 7.24264L19.1642 8.65685M7.85051 19.9706L4.31497 16.435M7.85051 19.9706L19.1642 8.65685M7.85051 19.9706L3.25431 21.0312L4.31497 16.435" stroke="#000000" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div class="text-container">
-            <div>${this.signature?.issuer}</div>
-            <div>${dateStr != null ? localDateTime(dateStr) : 'unknown'}</div>
-          </div>
-        </div>
-      </div>`
+function signatureItems (signature: Signature): IconTextItem[] {
+  if (signature == null) {
+    return [{
+      icon: unknownSvg,
+      text: ['None']
+    }]
   }
+  const dateStr = signature.isoDateString
+  return [{
+    icon: signSvg,
+    text: [
+      signature.issuer ?? 'unknown',
+      dateStr != null ? localDateTime(dateStr) : 'unknown'
+    ]
+  }]
 }
 
-@customElement('c2pa-ingredients')
-export class C2paIngredients extends LitElement {
-  @property({ type: Object }) ingredients: Array<{
-    title: string
-    format: string
-    thumbnail: { blob: Blob }
-  }> | undefined
-
-  static styles = [
-    sharedStyles,
-    css`
-    .c2pa-ingredients-container    {
-        margin-left: 15px;
-    }
-
-    .ingredient-container {
-        display: flex;
-        align-items: center; /* Vertically center the items */
-    }
-    
-    .icon-container {
-        flex: 0 0 auto; /* Do not grow or shrink */
-        display: flex;
-        align-items: center; 
-        width: 40px;
-        height: 40px;
-    }
-    
-    .text-container {
-        flex: 1; /* Take up remaining space */
-        display: flex;
-        flex-direction: column;
-        justify-content: center; 
-        padding-left: 10px; 
-        font-size: 12px;
-        margin-bottom: 10px;
-    }
-
-    img {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-    }
-    `]
-
-  render (): TemplateResult {
-    if (this.ingredients == null || this.ingredients.length === 0) {
-      return html`<div>No ingredients</div>`
-    }
-    const certHtml = this.ingredients.map((ingredient) => {
-      return html`
-      <div class="ingredient-container">
-          <div class="icon-container">
-              <img src="${URL.createObjectURL(ingredient.thumbnail.blob)}"/>
-          </div>
-          <div class="text-container">
-            <div>${ingredient.title}</div>
-            <div>${ingredient.format}</div>
-          </div>
-      </div>`
-    })
-
-    return html`
-      <div class="c2pa-ingredients-container">
-        ${certHtml}
-      </div>
-    `
+function ingredientItems (ingredients: Ingredient[] | undefined): IconTextItem[] {
+  if (ingredients == null || ingredients.length === 0) {
+    return [{
+      icon: unknownSvg,
+      text: ['None']
+    }]
   }
+  return ingredients.map((ingredient) => {
+    return {
+      icon: ingredient.thumbnail?.blob != null ? URL.createObjectURL(ingredient.thumbnail.blob) : null,
+      text: [
+        ingredient.title,
+        ingredient.format
+      ]
+    }
+  })
+}
+
+function activityItems (activities: Activity[] | undefined): IconTextItem[] {
+  if (activities == null || activities.length === 0) {
+    return [{
+      icon: unknownSvg,
+      text: ['None']
+    }]
+  }
+  return activities.map((activity) => {
+    return {
+      icon: activity.icon,
+      text: [activity.description]
+    }
+  })
 }

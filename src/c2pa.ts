@@ -16,6 +16,7 @@ console.debug('C2pa: Script: start')
 let c2pa: C2pa | null = null
 
 export interface C2paResult extends C2paReadResult {
+  url: string
   certChain: CertificateWithThumbprint[] | null
   trustList: TrustListMatch | null
   l2: L2ManifestStore
@@ -82,8 +83,12 @@ async function _validateUrl (url: string): Promise<C2paResult | C2paError> {
 
   const trustListMatch = await checkTrustListInclusionRemote(certChain)
 
+  const serializedIssuer = await serialize(certChain[0].issuer) as Certificate
+  console.debug('Issuer: ', serializedIssuer)
+
   const result: C2paResult = {
     ...c2paResult,
+    url,
     trustList: trustListMatch,
     certChain,
     l2,

@@ -13,3 +13,4 @@ export const MIME = {
   WEBP: 'image/webp',
   PNG: 'image/png'
 }
+export const REMOTE_VALIDATION_LINK = 'https://contentintegrity.microsoft.com/check'
