@@ -4,7 +4,7 @@
 */
 
 import browser from 'webextension-polyfill'
-import { PEMtoDER, type CertificateWithThumbprint, calculateSha256CertThumbprint } from './certs/certs'
+import { PEMtoDER, type CertificateWithThumbprint, calculateSha256CertThumbprintFromDer, calculateSha256CertThumbprintFromX5c } from './certs/certs'
 import { type MESSAGE_PAYLOAD } from './types'
 
 // valid JWK key types (to adhere to C2PA cert profile: https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_certificate_profile)
@@ -104,10 +104,12 @@ export async function addTrustList (tl: TrustList): Promise<TrustListInfo> {
     for (const jwk of entity.jwks.keys) {
       if (!jwk['x5t#S256'] && jwk.x5c && jwk.x5c.length > 0) {
         // calculate the thumbprint of the first cert in the chain
-        const cert = jwk.x5c[0]
-        const pemCert = PEMtoDER(cert)
-        const sha256Thumbprint = await calculateSha256CertThumbprint(pemCert)
-        jwk['x5t#S256'] = sha256Thumbprint
+        try {
+          jwk['x5t#S256'] = await calculateSha256CertThumbprintFromX5c(jwk.x5c[0])
+        } catch (error) {
+          // log the error, ignore the cert
+          console.error('addTrustList - error:', error)
+        }
       }
     }
   }

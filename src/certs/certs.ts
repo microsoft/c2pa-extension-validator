@@ -21,14 +21,18 @@ export interface CertificateWithThumbprint extends Certificate {
   sha256Thumbprint: string
 }
 
-export async function calculateSha256CertThumbprint (der: Uint8Array): Promise<string> {
+export async function calculateSha256CertThumbprintFromDer (der: Uint8Array): Promise<string> {
   const digest = await crypto.subtle.digest({ name: 'SHA-256' }, der)
   const hex = bytesToHex(new Uint8Array(digest))
   return hex
 }
 
+export async function calculateSha256CertThumbprintFromX5c (x5c: string): Promise<string> {
+  return await calculateSha256CertThumbprintFromDer(Buffer.from(x5c, 'base64'))
+}
+
 export async function createCertificateFromDer (der: Uint8Array): Promise<CertificateWithThumbprint> {
-  const sha256Thumbprint = await calculateSha256CertThumbprint(der)
+  const sha256Thumbprint = await calculateSha256CertThumbprintFromDer(der)
   const pem = DERtoPEM(der)
   const cert = Certificate.fromPEM(Buffer.from(pem, 'utf-8'))
   const certWithTP = cert as CertificateWithThumbprint
