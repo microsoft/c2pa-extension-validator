@@ -2,11 +2,12 @@
 *  Copyright (c) Microsoft Corporation.
 *  Licensed under the MIT license.
 */
-import { MESSAGE_C2PA_INSPECT_URL } from './constants.js'
-import { icon, type VALIDATION_STATUS } from './icon.js'
+import browser from 'webextension-polyfill'
+import { MESSAGE_C2PA_INSPECT_URL, REMOTE_VALIDATION_LINK } from './constants.js'
+import { type C2paImage, icon, type VALIDATION_STATUS } from './icon.js'
 import { C2PADialog } from './c2paStatus.js'
 import { deserialize } from './serialize.js'
-import { sendMessageWithTimeout } from './utils.js'
+import { blobToDataURL, sendMessageWithTimeout } from './utils.js'
 
 /*
   This forces rollup --watch to recompile the content script when the manifest changes
@@ -16,17 +17,20 @@ import { sendMessageWithTimeout } from './utils.js'
 import './manifest.chrome.v3.json'
 import './manifest.firefox.v3.json'
 import { type C2paError, type C2paResult } from './c2pa.js'
+import { type MESSAGE_PAYLOAD } from './types.js'
 
 console.debug('Content: Script: start')
 
-type MediaElements = HTMLImageElement | HTMLVideoElement
+const c2paSymbol = Symbol('__c2pa')
 
-type MediaAddedHandler = (element: MediaElements[]) => Promise<void>
+export type MediaElement = (HTMLImageElement | HTMLVideoElement) & { [c2paSymbol]?: string }
 
-type MediaRemovedHandler = (element: MediaElements[]) => void
+type MediaAddedHandler = (element: MediaElement[]) => Promise<void>
+
+type MediaRemovedHandler = (element: MediaElement[]) => void
 
 interface MediaRecord {
-  media: MediaElements
+  media: MediaElement
   url: string
   iFrame: FrameRecord
 }
@@ -51,12 +55,15 @@ const _context: ContentContext = {
 
 const additionalObservers: MutationObserver[] = []
 
-async function inspectMediaElements (mediaElements: MediaElements[]): Promise<void> {
+const c2paStore: Array<{ icon: C2paImage, media: HTMLImageElement | HTMLVideoElement, overlay: C2PADialog }> = []
+
+async function inspectMediaElements (mediaElements: MediaElement[]): Promise<void> {
   for (const img of Array.from(mediaElements)) {
     const source = img.src !== '' ? img.src : img.currentSrc
 
     if (img.nodeName === 'IFRAME') {
       console.debug('IFRAME:', (img as unknown as HTMLIFrameElement).src)
+      continue
     }
 
     if (_context.mediaElements.find((element) => element.media === img) !== undefined) {
@@ -86,10 +93,13 @@ async function inspectMediaElements (mediaElements: MediaElements[]): Promise<vo
       validationStatus = 'warning'
     }
 
-    icon(img, source, validationStatus, () => {
+    const overlayIcon = icon(img, source, validationStatus, () => {
+      img[c2paSymbol] = c2paDialog.id
       c2paDialog.position(img)
       c2paDialog.show()
     })
+
+    c2paStore.push({ icon: overlayIcon, media: img, overlay: c2paDialog })
   }
 }
 
@@ -126,7 +136,7 @@ function createObserver (add: MediaAddedHandler, remove: MediaRemovedHandler): M
                  (node.nodeName === 'DIV' && (node as HTMLDivElement).shadowRoot !== null)
         })
         if (addedMedia.length > 0) {
-          void add(addedMedia as MediaElements[])
+          void add(addedMedia as MediaElement[])
         }
       }
 
@@ -138,7 +148,7 @@ function createObserver (add: MediaAddedHandler, remove: MediaRemovedHandler): M
                  (node.nodeName === 'IFRAME' && /\.mp4(\?.*)?$/i.test((node as HTMLIFrameElement).src))
         })
         if (removedMedia.length > 0) {
-          remove(removedMedia as MediaElements[])
+          remove(removedMedia as MediaElement[])
         }
       }
     })
@@ -156,7 +166,7 @@ function createObserver2 (add: MediaAddedHandler, remove: MediaRemovedHandler): 
           return true
         })
         if (addedMedia.length > 0) {
-          void add(addedMedia as MediaElements[])
+          void add(addedMedia as MediaElement[])
         }
       }
 
@@ -168,7 +178,7 @@ function createObserver2 (add: MediaAddedHandler, remove: MediaRemovedHandler): 
                  (node.nodeName === 'IFRAME' && /\.mp4(\?.*)?$/i.test((node as HTMLIFrameElement).src))
         })
         if (removedMedia.length > 0) {
-          remove(removedMedia as MediaElements[])
+          remove(removedMedia as MediaElement[])
         }
       }
     })
@@ -176,12 +186,12 @@ function createObserver2 (add: MediaAddedHandler, remove: MediaRemovedHandler): 
   return observer
 }
 
-async function shadowRootObserverResult (element: MediaElements[]): Promise<void> {
+async function shadowRootObserverResult (element: MediaElement[]): Promise<void> {
   console.debug('SHADOWROOT: OBSERVER RESULT:', element)
   // await onMediaElementAdded(element)
 }
 
-async function onMediaElementAdded (element: MediaElements[]): Promise<void> {
+async function onMediaElementAdded (element: MediaElement[]): Promise<void> {
   for (const media of element) {
     if (media.tagName === 'DIV') {
       console.debug('SHADOWROOT:', media.shadowRoot)
@@ -199,11 +209,11 @@ async function onMediaElementAdded (element: MediaElements[]): Promise<void> {
   }
 }
 
-function onMediaElementRemoved (element: MediaElements[]): void {
+function onMediaElementRemoved (element: MediaElement[]): void {
   console.debug('New media element removed:', element)
 }
 
-function getStaticMediaElements (dom: Document | ShadowRoot): MediaElements[] {
+function getStaticMediaElements (dom: Document | ShadowRoot): MediaElement[] {
   // Fetch all img, video, and iframe elements
   const mediaElements = Array.from(dom.querySelectorAll('img, video, iframe'))
 
@@ -223,12 +233,12 @@ function getStaticMediaElements (dom: Document | ShadowRoot): MediaElements[] {
     return /\.mp4(\?.*)?$/i.test((el as HTMLIFrameElement).src)
   })
 
-  return filteredMediaElements as MediaElements[]
+  return filteredMediaElements as MediaElement[]
 }
 
-function getStaticMediaElements2 (dom: Document | ShadowRoot): MediaElements[] {
+function getStaticMediaElements2 (dom: Document | ShadowRoot): MediaElement[] {
   const mediaElements = Array.from(dom.querySelectorAll('div, img, video, iframe'))
-  return mediaElements as MediaElements[]
+  return mediaElements as MediaElement[]
 }
 
 /*
@@ -239,6 +249,15 @@ function getStaticMediaElements2 (dom: Document | ShadowRoot): MediaElements[] {
 
 async function init (): Promise<void> {
   console.debug('Content: Initialization: started')
+
+  /*
+    If this is test page, do not run do C2PA validation
+    Instead listen for messages from the background script
+  */
+  if (window.location.href.startsWith(REMOTE_VALIDATION_LINK)) {
+    return
+  }
+
   console.debug(`Content: Initialization: document.readyState ${document.readyState}`)
   const tabId = await getTabId()
   _context.tabId = tabId
@@ -283,4 +302,59 @@ function findAllDivsWithShadowRoot (): Element[] {
   const divsWithShadowRoot = Array.from(allDivs).filter((div: Element) => div.shadowRoot !== null)
 
   return divsWithShadowRoot
+}
+
+browser.runtime.onMessage.addListener(
+  // eslint-disable-next-line @typescript-eslint/promise-function-async
+  (request: MESSAGE_PAYLOAD, _sender) => {
+    if (request.action === 'requestC2paEntries') {
+      console.debug('Content: requestC2paEntries')
+
+      const items = c2paStore.map(async (entry) => {
+        const blob = entry.overlay.c2paResult.source.thumbnail.blob
+        return {
+          id: entry.overlay.id,
+          name: entry.overlay.c2paResult.source.metadata.filename,
+          status: entry.overlay.status,
+          thumbnail: blob != null ? await blobToDataURL(blob) : null
+        }
+      })
+      return Promise.all(items)
+    }
+    if (request.action === 'highlightMedia') {
+      throw new Error('Not implemented')
+    }
+    if (request.action === 'remoteInspectUrl') {
+      console.debug('Content: remoteInspectUrl')
+      const url = request.data as string
+      pasteUrlIntoInput(url)
+      return Promise.resolve()
+    }
+    return true // do not handle this request
+  }
+
+)
+
+/*
+  The https://contentintegrity.microsoft.com/check page does not support validating a url from a query parameter.
+  So we have the extension detect when the https://contentintegrity.microsoft.com/check is active and paste the url into the input field.
+  This assumes that the page structure does not change.
+*/
+function pasteUrlIntoInput (url: string): void {
+  // are we already on the validation where we have to click the 'Check another file' button?
+  const checkAnotherFileButton = Array.from(document.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Check another file')
+  if (checkAnotherFileButton != null) {
+    checkAnotherFileButton.click()
+  }
+
+  // If the above button was clicked, we need to queue the URL to be pasted after the page has transitioned
+  setTimeout(() => {
+    const textInput: HTMLInputElement | null = document.querySelector('input[type="text"]')
+    if (textInput == null) {
+      return
+    }
+    textInput.value = decodeURIComponent(url)
+    // send input event or page will believe the input is still empty
+    textInput.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }))
+  }, 0)
 }

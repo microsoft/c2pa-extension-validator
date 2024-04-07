@@ -5,7 +5,7 @@
 import browser from 'webextension-polyfill'
 import { type MESSAGE_PAYLOAD } from './types'
 import { init as initTrustList } from './trustlist'
-import { MESSAGE_C2PA_INSPECT_URL } from './constants'
+import { MESSAGE_C2PA_INSPECT_URL, REMOTE_VALIDATION_LINK } from './constants'
 import { type C2paError, type C2paResult } from './c2pa'
 console.debug('Background: Script: start')
 
@@ -36,6 +36,21 @@ browser.runtime.onMessage.addListener(
     if (request.action === MESSAGE_C2PA_INSPECT_URL && request.data != null) {
       const url = request.data as string
       return validateUrl(url)
+    }
+    if (request.action === 'inspectUrl') {
+      void openOrSwitchToTab(request.data as string)
+        .then(async tab => {
+          if (tab.id == null) {
+            return
+          }
+          const id = tab.id
+          // TODO: when the tab is newly created, the content script may not be ready to receive the message.
+          // This is a temporary workaround to wait for the content script to be ready.
+          // We should have the content script send a message to the background script when it is ready. Then we can remove this timeout.
+          setTimeout(() => {
+            void browser.tabs.sendMessage(id, { action: 'remoteInspectUrl', data: request.data })
+          }, 500)
+        })
     }
     return true // do not handle this request; allow the next listener to handle it
   }
@@ -107,6 +122,24 @@ void init()
 async function validateUrl (url: string): Promise<C2paResult | C2paError> {
   const trustListMatch = await browser.runtime.sendMessage({ action: 'validateUrl', data: url })
   return trustListMatch
+}
+
+async function openOrSwitchToTab (url: string): Promise<browser.Tabs.Tab> {
+  const openTabs = await browser.tabs.query({ url: REMOTE_VALIDATION_LINK })
+
+  let tab: browser.Tabs.Tab
+
+  if (openTabs.length > 0) {
+    tab = openTabs[0]
+    await browser.tabs.update(tab.id, { active: true })
+    if (tab.windowId != null) {
+      await browser.windows.update(tab.windowId, { focused: true })
+    }
+  } else {
+    tab = await browser.tabs.create({ url: REMOTE_VALIDATION_LINK })
+  }
+
+  return tab
 }
 
 console.debug('Background: Script: end')

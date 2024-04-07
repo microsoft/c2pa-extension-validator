@@ -3,6 +3,7 @@
 *  Licensed under the MIT license.
 */
 
+import browser from 'webextension-polyfill'
 import { type TrustList, type TrustListInfo, getTrustListInfosRemote, addTrustListRemote, removeTrustListRemote } from './trustlist.js'
 import packageManifest from '../package.json'
 
@@ -34,10 +35,8 @@ document.addEventListener('DOMContentLoaded', function (): void {
         void displayTrustListInfos()
       }
     })
-    void showResults().then(() => {
-      console.debug('results shown')
-    })
   })
+  void showResults()
 })
 
 /**
@@ -45,7 +44,45 @@ document.addEventListener('DOMContentLoaded', function (): void {
  * @returns {Promise<void>} A promise that resolves when the results are displayed.
  */
 async function showResults (): Promise<void> {
-  // TODO
+  const activeBrowserTab = await browser.tabs.query({ active: true, currentWindow: true })
+  const id = activeBrowserTab[0].id
+  if (id == null) {
+    console.debug('No active tab found')
+    return
+  }
+  const entries: Array<{ id: string, name: string, status: { trusted: boolean, valid: boolean }, thumbnail: string }> = await browser.tabs.sendMessage(id, { action: 'requestC2paEntries' })
+
+  if (entries.length === 0) {
+    const c2paEntries = document.getElementById('c2pa-info')
+    if (c2paEntries !== null) {
+      c2paEntries.innerHTML = '<p>No C2PA entries found</p>'
+    }
+    return
+  }
+
+  const iconUrl = {
+    valid: chrome.runtime.getURL('icons/cr.svg'),
+    invalid: chrome.runtime.getURL('icons/crx.svg'),
+    untrusted: chrome.runtime.getURL('icons/cr!.svg')
+  }
+
+  const html = `
+    <div style="display: grid; grid-template-columns: auto auto 1fr; gap: 10px; align-items: center;">
+      ${
+        entries.map((entry) => {
+          const icon = !entry.status.valid ? iconUrl.invalid : !entry.status.trusted ? iconUrl.untrusted : iconUrl.valid
+          return `
+          <img src="${icon}" style="width: 20px; height: 20px;">
+          <img src="${entry.thumbnail}" style="width: 40px; height: 40px">
+          <div>${decodeURIComponent(entry.name)}</div>
+          `
+        }).join('')
+      }
+    </div>`
+
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  const c2paEntries = document.getElementById('c2pa-info')!
+  c2paEntries.innerHTML = html
 }
 
 const trustListInput = document.getElementById(

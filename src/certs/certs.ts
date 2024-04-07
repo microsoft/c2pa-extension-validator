@@ -31,7 +31,7 @@ export async function createCertificateFromDer (der: Uint8Array): Promise<Certif
   const sha256Thumbprint = await calculateSha256CertThumbprint(der)
   const pem = DERtoPEM(der)
   const cert = Certificate.fromPEM(Buffer.from(pem, 'utf-8'))
-  const certWithTP = cert as unknown as CertificateWithThumbprint
+  const certWithTP = cert as CertificateWithThumbprint
   certWithTP.sha256Thumbprint = sha256Thumbprint
   console.debug('sha256Thumbprint: ', sha256Thumbprint)
   return certWithTP
@@ -96,7 +96,7 @@ function getCertChain (jumbf: JumbfResult): Uint8Array[] | null {
   const cose = (cbor as { tag: number | string, value: COSE }).value
   let x5chain = cose[1].x5chain
   // if only one cert is included, we get a Uint8Array instead of an array of Uint8Array
-  x5chain = x5chain instanceof Uint8Array ? [x5chain] : x5chain;
- 
+  x5chain = x5chain instanceof Uint8Array ? [x5chain] : x5chain
+
   return x5chain
 }

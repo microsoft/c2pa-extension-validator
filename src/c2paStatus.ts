@@ -3,7 +3,6 @@
 // Licensed under the MIT license.
 
 import browser from 'webextension-polyfill'
-import { type C2paReadResult } from 'c2pa'
 import { type MESSAGE_PAYLOAD } from './types'
 import { type C2paResult } from './c2pa'
 import { type FrameMessage } from './iframe'
@@ -13,38 +12,40 @@ console.debug('c2paStatus.ts: load')
 const iframeStore = new Map<string, HTMLIFrameElement>()
 
 export class C2PADialog /* extends HTMLElement */ {
-  private constructor (private readonly c2paImage: C2paReadResult, private readonly iframe: HTMLIFrameElement) {
+  private constructor (public readonly c2paResult: C2paResult, private readonly iframe: HTMLIFrameElement, private readonly _id: string) {
     this.hide()
   }
 
   static async create (c2paResult: C2paResult, tabId: number): Promise<C2PADialog> {
-    const random1 = randomString(16)
-    const random2 = randomString(16) + ':' + tabId
-    await browser.storage.local.set({ [random1]: random2 })
+    const frameId = randomString(16)
+    const frameSecret = randomString(16) + ':' + tabId
+    await browser.storage.local.set({ [frameId]: frameSecret })
+
     const iframe: HTMLIFrameElement = document.createElement('iframe')
     iframe.className = 'c2paDialog'
-    iframe.id = random1
-    iframe.src = `${chrome.runtime.getURL('iframe.html')}?id=${random1}`
-    iframe.style.position = 'absolute'
-    iframe.style.zIndex = '1000'
-    iframe.style.visibility = 'hidden'
-    iframe.style.resize = 'none'
-    iframe.style.overflow = 'hidden'
-    iframe.style.border = 'none'
-    iframe.style.background = 'none'
-    // iframe.style.boxShadow = '0px 0px 20px 0px rgba(0, 0, 0, 0.15)'
-    iframe.style.borderRadius = '5px'
-    iframe.style.padding = '10px'
-    iframe.style.marginTop = '-20px'
-    iframe.style.marginLeft = '-15px'
+    iframe.id = frameId
+    iframe.src = `${chrome.runtime.getURL('iframe.html')}?id=${frameId}`
+    iframe.style.cssText = `
+    position: absolute;
+    z-index: 1000;
+    visibility: hidden;
+    resize: none;
+    overflow: hidden;
+    border: none;
+    background: none;
+    border-radius: 5px;
+    padding: 10px;
+    margin-top: -20px;
+    margin-left: -15px;
+  `.replace(';', '!important;')
 
-    iframeStore.set(random1, iframe)
+    iframeStore.set(frameId, iframe)
 
     return await new Promise((resolve, reject) => {
       iframe.onload = () => {
         console.debug('iframe onload event fired: sending message to iframe.')
-        iframe.contentWindow?.postMessage({ action: 'c2paResult', secret: random2, data: c2paResult } satisfies FrameMessage, iframe.src)
-        resolve(new C2PADialog(c2paResult, iframe))
+        iframe.contentWindow?.postMessage({ action: 'c2paResult', secret: frameSecret, data: c2paResult } satisfies FrameMessage, iframe.src)
+        resolve(new C2PADialog(c2paResult, iframe, frameId))
       }
       document.body.appendChild(iframe)
     })
@@ -125,6 +126,14 @@ export class C2PADialog /* extends HTMLElement */ {
 
     return collapsible
   }
+
+  get id (): string {
+    return this._id
+  }
+
+  get status (): { trusted: boolean, valid: boolean } {
+    return { trusted: this.c2paResult.trustList != null, valid: (this.c2paResult.manifestStore?.validationStatus ?? []).length === 0 }
+  }
 }
 
 function randomString (length: number): string {
@@ -143,7 +152,7 @@ function randomString (length: number): string {
 
 */
 browser.runtime.onMessage.addListener(
-  async (request: MESSAGE_PAYLOAD, _sender) => {
+  (request: MESSAGE_PAYLOAD, _sender) => {
     if (request.action === 'updateFrame' && request.data != null && request.frame != null) {
       const iframe = iframeStore.get(request.frame)
       if (iframe != null) {
