@@ -1,12 +1,17 @@
+/*
+ *  Copyright (c) Microsoft Corporation.
+ *  Licensed under the MIT license.
+ */
+
 import { bytesToHex } from '../utils.js'
 import { ByteReader } from './byteReader.js'
 
 export function decode (buffer: ArrayBuffer): Array<{ type: string, data: Uint8Array, crc: number }> {
   const reader = new ByteReader(new Uint8Array(buffer))
   const chunks: Array<{ type: string, data: Uint8Array, crc: number }> = []
-  const signature = bytesToHex(reader.Uint8Array(8)).toUpperCase() // reader.string(8)
+  const signature = bytesToHex(reader.Uint8Array(8))
 
-  if (signature !== '89504E470D0A1A0A') {
+  if (signature.toUpperCase() !== '89504E470D0A1A0A') {
     throw new Error('Invalid PNG signature')
   }
 
