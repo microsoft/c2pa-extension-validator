@@ -1,5 +1,7 @@
 # C2PA Extension Validator
 
+*NOTE*: this project is a developer preview prototype; it is not meant to be used in production.
+
 This project contains a Edge/Chrome/Firefox browser extension that can validate [C2PA](https://c2pa.org) assets. Our goal is to provide a developer tool to
 
 1. encourage experimentation with C2PA technologies, and
@@ -11,7 +13,7 @@ The extension makes use of [c2pa](https://github.com/contentauth/c2pa-js) librar
 
 The following asset types can be verified by the extension:
 
-* Images: JPEG, PNG
+* Images: JPEG, PNG, WEBP
 * Videos: mp4
 
 ## Setup
@@ -62,6 +64,8 @@ Visit these pages to test the extension:
 Users must import a list of trusted signers for C2PA assets to be validated properly; the trust lists must be formatted as [described here](https://github.com/christianpaquin/c2pa-explorations/blob/main/trust-lists/trust-lists.md). This can be done through the `Options` tab of the browser extension's toolbar popup window.
 
 ### Asset Validation
+
+*Note*: the underlying C2PA library that does the certificate validation does not currently accept trust anchors to create complete X.509 chains; the full certificate chain must therefore be present in a C2PA manifest to be considered valid.
 
 The extension automatically scans the current HTML page for C2PA assets and validates them. An icon representing the validation status is then overlayed on the asset:
 
