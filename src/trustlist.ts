@@ -4,7 +4,7 @@
 */
 
 import browser from 'webextension-polyfill'
-import { type CertificateWithThumbprint } from './certs/certs'
+import { PEMtoDER, type CertificateWithThumbprint, calculateSha256CertThumbprintFromDer, calculateSha256CertThumbprintFromX5c } from './certs/certs'
 import { type MESSAGE_PAYLOAD } from './types'
 
 // valid JWK key types (to adhere to C2PA cert profile: https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_certificate_profile)
@@ -91,7 +91,7 @@ export function getTrustListInfos (): TrustListInfo[] | undefined {
 /**
  * Adds a trust list, returns the corresponding trust list info or throws an error
  */
-export function addTrustList (tl: TrustList): TrustListInfo {
+export async function addTrustList (tl: TrustList): Promise<TrustListInfo> {
   console.debug('addTrustList called')
 
   if (typeof tl === 'undefined') {
@@ -99,6 +99,20 @@ export function addTrustList (tl: TrustList): TrustListInfo {
     throw new Error('Invalid trust list')
   }
 
+  // make sure each certificate has a thumbprint, if not, calculate it
+  for (const entity of tl.entities) {
+    for (const jwk of entity.jwks.keys) {
+      if (!jwk['x5t#S256'] && jwk.x5c && jwk.x5c.length > 0) {
+        // calculate the thumbprint of the first cert in the chain
+        try {
+          jwk['x5t#S256'] = await calculateSha256CertThumbprintFromX5c(jwk.x5c[0])
+        } catch (error) {
+          // log the error, ignore the cert
+          console.error('addTrustList - error:', error)
+        }
+      }
+    }
+  }
   // set the global trust list
   globalTrustLists.push(tl)
 
@@ -171,11 +185,8 @@ export function checkTrustListInclusion (certChain: CertificateWithThumbprint[])
         const jwks = entity.jwks
         for (const jwkCert of jwks.keys) {
           // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-          if (!jwkCert['x5t#S256']) {
-            continue // TODO: implement full cert (x5c) comparison
-          }
           for (const cert of certChain) {
-            if (jwkCert['x5t#S256'].toLowerCase() === cert.sha256Thumbprint && entity.isCA === cert.isCA) {
+            if (jwkCert['x5t#S256'] && jwkCert['x5t#S256'].toLowerCase() === cert.sha256Thumbprint && entity.isCA === cert.isCA) {
               // found a match
               const tlInfo = getInfoFromTrustList(trustList)
               console.debug('Trust list match:', entity, cert)

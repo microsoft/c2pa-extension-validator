@@ -126,25 +126,23 @@ async function displayTrustListInfos (): Promise<void> {
   void getTrustListInfosRemote()
     .then(
       (tlis: TrustListInfo[] | undefined) => {
-        if (tlis != null) {
-          const trustListInfo = document.getElementById('trust-list-info') as HTMLDivElement
-          trustListInfo.style.display = 'block'
+        const trustListInfo = document.getElementById('trust-list-info') as HTMLDivElement
+        trustListInfo.style.display = 'block'
 
-          if (tlis.length === 0) {
-            trustListInfo.innerHTML = '<p>No trust list set</p>'
-          } else {
-            let listHtml = '<p>Trust Lists:</p><ul>'
-            tlis.forEach((tli, index) => {
-              const listItem = (tli.website.length > 0)
-                ? `<li><a href="${tli.website}" target="_blank">${tli.name}</a>`
-                : `<li>${tli.name}`
+        if (!tlis || tlis.length === 0) {
+          trustListInfo.innerHTML = '<p>No trust list set</p>'
+        } else {
+          let listHtml = '<p>Trust Lists:</p><ul>'
+          tlis.forEach((tli, index) => {
+            const listItem = (tli.website.length > 0)
+              ? `<li><a href="${tli.website}" target="_blank">${tli.name}</a>`
+              : `<li>${tli.name}`
 
-              // Add the delete link with a data-index attribute
-              listHtml += `${listItem} (<a href="#" class="delete-link" data-index="${index}">delete</a>)</li>`
-            })
-            listHtml += '</ul>'
-            trustListInfo.innerHTML = listHtml
-          }
+            // Add the delete link with a data-index attribute
+            listHtml += `${listItem} (<a href="#" class="delete-link" data-index="${index}">delete</a>)</li>`
+          })
+          listHtml += '</ul>'
+          trustListInfo.innerHTML = listHtml
         }
       })
 }
