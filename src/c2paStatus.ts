@@ -12,11 +12,11 @@ console.debug('c2paStatus.ts: load')
 const iframeStore = new Map<string, HTMLIFrameElement>()
 
 export class C2PADialog /* extends HTMLElement */ {
-  private constructor (public readonly c2paResult: C2paResult, private readonly iframe: HTMLIFrameElement, private readonly _id: string) {
+  private constructor (public readonly c2paResult: C2paResult, private readonly c2paElement: HTMLMediaElement, private readonly iframe: HTMLIFrameElement, private readonly _id: string, private readonly frameSecret: string) {
     this.hide()
   }
 
-  static async create (c2paResult: C2paResult, tabId: number): Promise<C2PADialog> {
+  static async create (c2paResult: C2paResult, element: HTMLMediaElement, tabId: number): Promise<C2PADialog> {
     const frameId = randomString(16)
     const frameSecret = randomString(16) + ':' + tabId
     await browser.storage.local.set({ [frameId]: frameSecret })
@@ -31,12 +31,14 @@ export class C2PADialog /* extends HTMLElement */ {
     visibility: hidden;
     resize: none;
     overflow: hidden;
-    border: none;
+    /* border: none; */
     background: none;
     border-radius: 5px;
-    padding: 10px;
-    margin-top: -20px;
-    margin-left: -15px;
+    /* padding: 10px; */
+    border: 1px solid #DDDDDD;
+    box-shadow: 0px 0px 12px 0px rgba(0, 0, 0, 0.2);
+    /* margin-top: -20px; */
+    /* margin-left: -15px; */
   `.replace(';', '!important;')
 
     iframeStore.set(frameId, iframe)
@@ -45,7 +47,7 @@ export class C2PADialog /* extends HTMLElement */ {
       iframe.onload = () => {
         console.debug('iframe onload event fired: sending message to iframe.')
         iframe.contentWindow?.postMessage({ action: 'c2paResult', secret: frameSecret, data: c2paResult } satisfies FrameMessage, iframe.src)
-        resolve(new C2PADialog(c2paResult, iframe, frameId))
+        resolve(new C2PADialog(c2paResult, element, iframe, frameId, frameSecret))
       }
       document.body.appendChild(iframe)
     })
@@ -69,22 +71,30 @@ export class C2PADialog /* extends HTMLElement */ {
   hide (): void {
     // this.iframe.style.display = 'none'
     this.iframe.style.visibility = 'hidden'
+    this.iframe.contentWindow?.postMessage({ action: 'close', secret: this.frameSecret, data: null } satisfies FrameMessage, this.iframe.src)
   }
 
   position (element: HTMLElement): void {
     const boundRect = element.getBoundingClientRect()
+    const gap = 5 // Gap between the image and the overlay
 
-    // check if the fixed element will go off the right edge of the screen
-    this.iframe.style.left =
-            boundRect.right + this.iframe.offsetWidth > window.innerWidth
-              ? `${window.innerWidth - this.iframe.offsetWidth - 10}px`
-              : `${boundRect.right}px`
+    // Calculate left position considering page scroll, viewport width, and the gap
+    const leftPosition = window.scrollX + boundRect.right + gap // Add gap to the left position
+    const adjustedLeftPosition =
+        boundRect.right + this.iframe.offsetWidth + gap > window.innerWidth
+          ? window.innerWidth - this.iframe.offsetWidth + window.scrollX - gap // Adjust for gap when aligning to the left
+          : leftPosition
 
-    // check if the fixed element will go off the bottom edge of the screen
-    this.iframe.style.top = `${boundRect.top}px`
-    // boundRect.bottom + this.iframe.offsetHeight > window.innerHeight
-    //   ? `${window.innerHeight - this.iframe.offsetHeight - 10}px`
-    //   : (this.iframe.style.top = `${boundRect.bottom}px`)
+    // Calculate top position considering page scroll, viewport height, and potential adjustment
+    const topPosition = window.scrollY + boundRect.top
+    const adjustedTopPosition =
+        boundRect.top + this.iframe.offsetHeight + gap > window.innerHeight
+          ? window.innerHeight - this.iframe.offsetHeight + window.scrollY - gap // Adjust to fit within viewport height
+          : topPosition
+
+    // Set the style for iframe with the adjusted positions
+    this.iframe.style.left = `${adjustedLeftPosition}px`
+    this.iframe.style.top = `${adjustedTopPosition}px`
   }
 
   add (title: string, content: string): HTMLDivElement {
@@ -156,6 +166,7 @@ browser.runtime.onMessage.addListener(
     if (request.action === 'updateFrame' && request.data != null && request.frame != null) {
       const iframe = iframeStore.get(request.frame)
       if (iframe != null) {
+        console.debug('c2paStatus: updateFrame: ', request.data as number)
         iframe.style.height = `${request.data as number}px`
       }
     }

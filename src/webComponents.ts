@@ -46,18 +46,14 @@ export class C2paOverlay extends LitElement {
           background-color: var(--background);
           display: flex;
           flex-direction: column;
-          gap: 4px;
-          padding: 10px;
-          border: 1px solid var(--border-color);
-          border-radius: var(--border-radius);
-          box-shadow: 0px 0px 12px 0px rgba(0, 0, 0, 0.2);
-          margin: 10px;
+          gap: 25px;
+          padding: 15px; 
+          box-sizing: border-box;
       }
 
       .title {
           display: grid;
           grid-template-columns: auto 1fr;
-          /* align-items: center; */
           gap: 10px;
       }
 
@@ -97,8 +93,8 @@ export class C2paOverlay extends LitElement {
       }
 
       #divSigned {
-        line-height: 1.2;
-        margin-bottom: 5px;
+        line-height: 1.5;
+        /* margin-bottom: 5px; */
       }
 
       #divTrust {
@@ -106,9 +102,7 @@ export class C2paOverlay extends LitElement {
       }
 
       #inspectionLink {
-        margin-top: 30px;
-        margin-bottom: 30px;
-        padding: 0px 5px;
+        /* padding: 0px 5px; */
       }
 
       .bold {
@@ -126,7 +120,6 @@ export class C2paOverlay extends LitElement {
         grid-template-columns: auto 1fr;
         align-items: center;
         padding: 12px 5px 12px 5px;
-        margin-top: 10px;
       }
 
       #untrustedIcon {
@@ -136,25 +129,25 @@ export class C2paOverlay extends LitElement {
 
       #untrustedText {
         text-align: center;
-        margin: 0px 0px 0px -15px;
+        padding-right: 15px;
       }
 
       #errors {
         border-radius: var(--border-radius);
         background-color: var(--background-highlight);
-        margin-bottom: 10px;
+        padding: 12px 5px 12px 5px;
       }
 
       #errorHeader {
         display: grid;
         grid-template-columns: auto 1fr;
         align-items: center;
-        padding: 5px 10px 0px 5px;
+        padding-right: 15px;
       }
 
       #errorIcon {
-        width: 25px;
-        height: 25px;
+        width: 20px;
+        height: 20px;
         padding: 5px;
       }
 
@@ -171,11 +164,13 @@ export class C2paOverlay extends LitElement {
       }
 
       ul {
+        padding-left: 25px;
       }
 
       li {
         margin-bottom: 5px;
       }
+
       .separator {
         border-bottom: 1px solid var(--border-color);
         margin: 5px 15px 5px 15px
@@ -185,7 +180,7 @@ export class C2paOverlay extends LitElement {
       .button {
         display: inline-block;
         padding: 6px;
-        margin: 5px 15px;
+        margin: 0px 15px;
         font-size: 12px; /* Adjust font-size as needed */
         font-family: Arial, sans-serif; /* Use whatever font-family you prefer */
         color: #777777; /* Text color */
@@ -203,10 +198,13 @@ export class C2paOverlay extends LitElement {
       }
 
       .additional-info {
-      /*  overflow: hidden;
-        max-height: 0;
-        transition: max-height 0.5s ease-in-out;
-        */
+        overflow: hidden;
+        max-height: 0; 
+        transition: max-height 0.3s ease-in-out;
+        display: flex;        
+        flex-direction: column;
+        gap: 15px;
+        justify-content: space-between; /* Distribute space between items */
       }
 
       .link-style {
@@ -223,6 +221,28 @@ export class C2paOverlay extends LitElement {
 
       #mciLink {
         cursor: pointer;
+      }
+
+      .image-container {
+        position: relative;
+        display: inline-block; /* Makes the container fit the content */
+      }
+      
+      .popover-content {
+          display: none; /* Initially hidden */
+          position: absolute;
+          z-index: 100; /* Ensure it sits on top of other content */
+          left: 100%; /* Adjust as needed */
+          white-space: nowrap; /* Prevent text from wrapping, optional */
+          padding: 10px;
+          background-color: white; /* Or any other color */
+          border: 1px solid #ccc; /* Optional */
+          border-radius: 5px; /* Optional */
+          box-shadow: 0px 2px 5px rgba(0,0,0,0.2); /* Optional */
+      }
+
+      .image-container:hover .popover-content {
+          display: block; /* Show on hover */
       }
 
   `]
@@ -243,6 +263,28 @@ export class C2paOverlay extends LitElement {
 
   toggleAdditionalInfo = (): void => {
     this.additionalInfoCollapsed = !this.additionalInfoCollapsed
+
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const additionalInfoEl = this.shadowRoot!.querySelector('.additional-info')!
+    const div: HTMLDivElement = additionalInfoEl as HTMLDivElement
+    if (this.additionalInfoCollapsed) {
+      C2paCollapsible.close()
+      div.style.maxHeight = div.scrollHeight + 'px'
+      void div.offsetHeight
+      div.style.maxHeight = '0'
+    } else {
+      div.style.maxHeight = 'none'
+      const height = div.scrollHeight + 'px'
+      div.style.maxHeight = '0'
+      void div.offsetHeight
+      div.style.maxHeight = height
+      const onTransitionEnd = (): void => {
+        div.style.maxHeight = 'none' // Allow div to grow further as needed
+        div.removeEventListener('transitionend', onTransitionEnd) // Clean up the event listener
+      }
+
+      div.addEventListener('transitionend', onTransitionEnd)
+    }
   }
 
   @property({ type: Object })
@@ -319,6 +361,10 @@ export class C2paOverlay extends LitElement {
   }
 
   private readonly handleClick = (): void => {
+    console.debug('sendMessage:', {
+      action: 'inspectUrl',
+      data: this.c2paResult?.url
+    })
     void browser.runtime.sendMessage({
       action: 'inspectUrl',
       data: this.c2paResult?.url
@@ -335,7 +381,16 @@ export class C2paOverlay extends LitElement {
               <img class="thumbnail" id="thumbnail" src="${this.thumbprintUrl ?? chrome.runtime.getURL('icons/movie.svg')}">
           </div>
           <div>
-              <div id="divSigned">Image signed by ${trusted ? '' : html`<span class="bold">untrusted</span> entity `}<span class="bold">${this.signer}</span> <img class="certIcon clickable" src="icons/cert.svg"></div>
+              <div id="divSigned">Image signed by ${trusted ? '' : html`<span class="bold">untrusted</span> entity `}<span class="bold">${this.signer}</span> 
+                  <div class="image-container">
+                      <img class="certIcon clickable" src="icons/cert.svg" alt="Cert Icon">
+                      <div class="popover-content">
+                        <p>Line 1 of text</p>
+                        <p>Line 2 of text</p>
+                        <!-- Add more lines as needed -->
+                      </div>
+                  </div>
+              </div>
               ${trusted ? html`<div id="divTrust">Part of trust list: <span class="bold">${this.trustList}</span></div>` : ''}
           </div>
       </div>
@@ -343,7 +398,8 @@ export class C2paOverlay extends LitElement {
       <div id="inspectionLink">
           For more details, inspect the image in the <span id="mciLink" @click="${this.handleClick}"><u>Microsoft Content Integrity</u></span> page.
       </div>
-      <div class="additional-info" style="display: ${this.additionalInfoCollapsed ? 'none' : 'block'};">
+      <!-- <div class="additional-info" style="display: ${this.additionalInfoCollapsed ? 'none' : 'flex'};"> -->
+      <div class="additional-info">
         ${useSeparators ? html`<div class="separator"></div>` : ''}
         <c2pa-collapsible>
           <span slot="header">Edits and Activity</span>
@@ -372,6 +428,12 @@ export class C2paOverlay extends LitElement {
     </div>
     `
   }
+
+  public close (): void {
+    if (!this.additionalInfoCollapsed) {
+      this.toggleAdditionalInfo()
+    }
+  }
 }
 
 @customElement('c2pa-collapsible')
@@ -384,12 +446,12 @@ export class C2paCollapsible extends LitElement {
     sharedStyles,
     css`
     .collapsible-container {
-      border-radius: 5px;
-      margin-bottom: 5px;
+      /* border-radius: 5px; */
+      /* margin-bottom: 5px; */
     }
     .collapsible-header {
       cursor: pointer;
-      padding: 10px;
+      /* padding: 10px; */
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -418,6 +480,12 @@ export class C2paCollapsible extends LitElement {
     }
     
   `]
+
+  static close (): void {
+    if (C2paCollapsible.openCollapsible != null) {
+      C2paCollapsible.openCollapsible.toggle()
+    }
+  }
 
   toggle = (): void => {
     if (C2paCollapsible.openCollapsible != null && C2paCollapsible.openCollapsible !== this) {
@@ -466,6 +534,7 @@ export class C2paGridDisplay extends LitElement {
         grid-template-columns: auto 1fr; /* Icon column and text column */
         gap: 8px 20px;
         align-items: center; /* Center items vertically */
+        margin: 10px 0
       }
       .icon {
         width: 20px; /* Adjust based on your needs */

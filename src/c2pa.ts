@@ -52,7 +52,7 @@ export async function init (): Promise<void> {
       if (request.action === 'validateUrl') {
         return Promise.resolve(_validateUrl(request.data as string))
       }
-      return true // do not handle this request; allow another listener to handle it
+      // return true // do not handle this request; allow another listener to handle it
     }
   )
 }

@@ -224,9 +224,10 @@ export async function init (): Promise<void> {
         return Promise.resolve(addTrustList(request.data as TrustList))
       }
       if (request.action === 'removeTrustList') {
-        return Promise.resolve(removeTrustList(request.data as number))
+        return Promise.resolve(void removeTrustList(request.data as number))
       }
-      return true // do not handle this request; allow the next listener to handle it
+
+      // return true // do not handle this request; allow the next listener to handle it
     }
   )
 }

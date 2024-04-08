@@ -64,6 +64,11 @@ function processMessageQueue (): void {
       void sendMessageToContent({ action: 'updateFrame', data: document.documentElement.scrollHeight }, _tabId)
       console.debug(`IFrame ${_frameId} message received:`, c2paResult)
     }
+    if (message.action === 'close') {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      const overlay: C2paOverlay = document.querySelector('c2pa-overlay')!
+      overlay.close()
+    }
   }
 }
 

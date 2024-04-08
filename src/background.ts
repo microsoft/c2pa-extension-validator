@@ -48,11 +48,12 @@ browser.runtime.onMessage.addListener(
           // This is a temporary workaround to wait for the content script to be ready.
           // We should have the content script send a message to the background script when it is ready. Then we can remove this timeout.
           setTimeout(() => {
+            console.debug('sendMessage:', { action: 'remoteInspectUrl', data: request.data })
             void browser.tabs.sendMessage(id, { action: 'remoteInspectUrl', data: request.data })
-          }, 500)
+          }, 1000)
         })
     }
-    return true // do not handle this request; allow the next listener to handle it
+    // return true // do not handle this request; allow the next listener to handle it
   }
 )
 
@@ -120,6 +121,7 @@ browser.tabs.onActivated.addListener(activeInfo => {
 void init()
 
 async function validateUrl (url: string): Promise<C2paResult | C2paError> {
+  console.debug('sendMessage:', { action: 'validateUrl', data: url })
   const trustListMatch = await browser.runtime.sendMessage({ action: 'validateUrl', data: url })
   return trustListMatch
 }

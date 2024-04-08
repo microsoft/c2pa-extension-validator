@@ -83,7 +83,9 @@ async function inspectMediaElements (mediaElements: MediaElement[]): Promise<voi
       continue
     }
 
-    const c2paDialog = await C2PADialog.create(c2paManifestData, _context.tabId)
+    const mediaElement: HTMLMediaElement = img as HTMLMediaElement
+
+    const c2paDialog = await C2PADialog.create(c2paManifestData, mediaElement, _context.tabId)
 
     // set the validation status: valid, warning if signer is not trusted, error if validation fails
     let validationStatus: VALIDATION_STATUS = 'success'
@@ -330,7 +332,7 @@ browser.runtime.onMessage.addListener(
       pasteUrlIntoInput(url)
       return Promise.resolve()
     }
-    return true // do not handle this request
+    // do not handle this request
   }
 
 )
