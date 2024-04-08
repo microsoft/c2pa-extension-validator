@@ -4,7 +4,7 @@
 */
 
 import browser from 'webextension-polyfill'
-import { PEMtoDER, type CertificateWithThumbprint, calculateSha256CertThumbprintFromDer, calculateSha256CertThumbprintFromX5c } from './certs/certs'
+import { type CertificateWithThumbprint, calculateSha256CertThumbprintFromDer, calculateSha256CertThumbprintFromX5c } from './certs/certs'
 import { type MESSAGE_PAYLOAD } from './types'
 
 // valid JWK key types (to adhere to C2PA cert profile: https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_certificate_profile)
@@ -45,8 +45,8 @@ export interface TrustList {
   website: string
   // last updated date of the trust list (ISO 8601 format)
   last_updated: string
-  // logo of the trust list
-  logo: string
+  // logo of the trust list (optional)
+  logo?: string
   // list of trusted entities
   entities: TrustedEntity[]
 }
@@ -60,20 +60,23 @@ export interface TrustListInfo {
   download_url: string
   website: string
   last_updated: string
-  logo: string
+  logo?: string
   entities_count: number
 }
 
 const getInfoFromTrustList = (tl: TrustList): TrustListInfo => {
-  return {
+  const tli: TrustListInfo = {
     name: tl.name,
     description: tl.description,
     download_url: tl.download_url,
     website: tl.website,
     last_updated: tl.last_updated,
-    logo: tl.logo,
     entities_count: tl.entities.length
   }
+  if (tl.logo) {
+    tli.logo = tl.logo
+  }
+  return tli;
 }
 
 /**
