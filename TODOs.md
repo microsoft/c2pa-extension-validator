@@ -11,7 +11,7 @@
 
 * Add a "verify all assets" option and enable context menu validation
 * Migrate to c2pa-wc lib to display validation results
-* Add other asset types (GIF, SVG, etc.); see https://github.com/contentauth/c2patool
+* Add other asset types (SVG, etc.); see https://github.com/contentauth/c2patool
 * Re-start validation if trust list is added
 * Countermeasures against malicious pages
 * Document attacks and risks (for threat model)

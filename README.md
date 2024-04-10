@@ -11,9 +11,9 @@ The extension must be built and side-loaded into a browser; see the [setup](#set
 
 The extension makes use of [c2pa](https://github.com/contentauth/c2pa-js) library from the [Content Authenticity Initiative](https://github.com/contentauth).
 
-The following asset types can be verified by the extension:
+The following asset types can currently be verified by the extension:
 
-* Images: JPEG, PNG, WEBP
+* Images: GIF, JPEG, PNG, WEBP
 * Videos: mp4
 
 ## Setup
