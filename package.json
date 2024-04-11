@@ -47,5 +47,10 @@
     "tslib": "^2.6.2",
     "typescript": "^5.4.3",
     "webextension-polyfill": "^0.10.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "webpack@>=5.0.0 <5.76.0": ">=5.76.0"
+    }
   }
 }
