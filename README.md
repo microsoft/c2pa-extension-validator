@@ -13,7 +13,7 @@ The extension makes use of [c2pa](https://github.com/contentauth/c2pa-js) librar
 
 The following asset types can currently be verified by the extension:
 
-* Images: GIF, JPEG, PNG, WEBP
+* Images: JPEG, PNG, WEBP
 * Videos: mp4
 
 ## Setup
@@ -77,7 +77,7 @@ The extension automatically scans the current HTML page for C2PA assets and vali
 
 See the [C2PA specification](https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_statements_by_a_validator) for the definition of well-formed manifests and trusted signers.
 
-Note that untrusted _warning_ icon is not currently specified in the [C2PA UX recommendations](https://c2pa.org/specifications/specifications/1.4/ux/UX_Recommendations.html).
+Note that untrusted *warning* icon is not currently specified in the [C2PA UX recommendations](https://c2pa.org/specifications/specifications/1.4/ux/UX_Recommendations.html).
 
 ## Contributing
 

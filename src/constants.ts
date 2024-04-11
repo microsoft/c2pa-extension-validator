@@ -17,7 +17,6 @@ export const MIME = {
   WAV: 'audio/wav',
   X_WAV: 'audio/x-wav',
   AVIF: 'image/avif',
-  GIF: 'image/gif', // not in C2PA lib list
   HEIC: 'image/heic',
   HEIF: 'image/heif',
   JPEG: 'image/jpeg',

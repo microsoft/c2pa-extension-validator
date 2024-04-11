@@ -9,8 +9,6 @@ import { decode as jxtDecode } from './jpegxt.js'
 import { parseMP4Header } from './mp4'
 import { decode as webpDecode } from './webp'
 import { decode as pngDecode } from './png'
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-import { decode as gifDecode } from './gif'
 
 export function getManifestFromMetadata (type: string, buffer: Uint8Array): Uint8Array | null {
   switch (type) {
@@ -22,8 +20,6 @@ export function getManifestFromMetadata (type: string, buffer: Uint8Array): Uint
       return webp(buffer)
     case MIME.PNG:
       return png(buffer)
-    case MIME.GIF:
-      return gif(buffer)
     case MIME.C2PA:
     case MIME.APPLICATION_MP4:
     case MIME.X_C2PA_MANIFEST_STORE:
@@ -72,8 +68,4 @@ function png (buffer: Uint8Array): Uint8Array | null {
     return caBx.data
   }
   return null
-}
-
-function gif (buffer: Uint8Array): Uint8Array | null {
-  throw new Error('GIF manifest extraction is not implemented')
 }

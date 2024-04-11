@@ -3,7 +3,7 @@
 # NOTE: first generate the test certs by calling generate-cert-chain.sh
 
 cert_types=("trusted" "untrusted")
-extensions=("gif" "jpg" "mov" "mp4" "png" "webp")
+extensions=("jpg" "mov" "mp4" "png" "webp")
 
 # sign the test files
 for cert_type in "${cert_types[@]}"; do
