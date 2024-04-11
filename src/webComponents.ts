@@ -228,7 +228,7 @@ export class C2paOverlay extends LitElement {
         display: inline-block; /* Makes the container fit the content */
       }
       
-      .popover-content {
+      .popover-content-0 {
           display: none; /* Initially hidden */
           position: absolute;
           z-index: 100; /* Ensure it sits on top of other content */
@@ -241,8 +241,42 @@ export class C2paOverlay extends LitElement {
           box-shadow: 0px 2px 5px rgba(0,0,0,0.2); /* Optional */
       }
 
+      .popover-content {
+          display: none; /* Initially hidden */
+          position: fixed; /* Position relative to the viewport */
+          top: 50%; /* Center vertically */
+          left: 50%; /* Center horizontally */
+          transform: translate(-50%, -50%); /* Adjust the centered position */
+          z-index: 100; /* Ensure it sits on top of other content */
+          white-space: nowrap; /* Prevent text from wrapping, optional */
+          padding: 10px;
+          background-color: white; /* Or any other color */
+          border: 1px solid #ccc; /* Optional */
+          border-radius: 5px; /* Optional */
+          box-shadow: 0px 2px 5px rgba(0,0,0,0.2); /* Optional */
+      }
+
       .image-container:hover .popover-content {
           display: block; /* Show on hover */
+      }
+
+      #cert-issuer {
+        font-size: 11px;
+        line-height: 15px;
+        max-width: 260px;
+      }
+
+      #cert-issuer > span {
+        font-weight: bold;
+        font-size: 11px;
+      }
+
+      #cert-issuer > div {
+        font-size: 11px;
+        margin-top: 0;
+        margin-bottom: 0;
+        padding: 0;
+        padding-left: 10px;
       }
 
   `]
@@ -373,6 +407,13 @@ export class C2paOverlay extends LitElement {
 
   render (): TemplateResult {
     const trusted = this.status?.trusted === true
+    const manifestMap = this.c2paResult?.manifestStore?.manifests
+    const manifestCount = manifestMap === undefined ? 0 : Object.keys(manifestMap).length
+    let mediaType = (this.c2paResult?.source?.type ?? 'unknown/unknown').split('/')[0]
+    mediaType = mediaType.charAt(0).toUpperCase() + mediaType.slice(1)
+    const signingCert = this.c2paResult?.certChain?.[0]
+    const parsedCert = signingCert == null ? undefined : parseCertificate(signingCert)
+    const trustlist = this.c2paResult?.trustList
     // const thumbUrl = this.thumbprintUrl ?? chrome.runtime.getURL('icons/movie.svg')
     return html`
     <div id='container'>
@@ -381,17 +422,49 @@ export class C2paOverlay extends LitElement {
               <img class="thumbnail" id="thumbnail" src="${this.thumbprintUrl ?? chrome.runtime.getURL('icons/movie.svg')}">
           </div>
           <div>
-              <div id="divSigned">Image signed by ${trusted ? '' : html`<span class="bold">untrusted</span> entity `}<span class="bold">${this.signer}</span> 
+              <div id="divSigned">${mediaType} ${manifestCount > 1 ? 'last ' : ''}signed by ${trusted ? '' : html`<span class="bold">untrusted</span> entity `}<span class="bold">${this.signer}</span> 
                   <div class="image-container">
                       <img class="certIcon clickable" src="icons/cert.svg" alt="Cert Icon">
                       <div class="popover-content">
-                        <p>Line 1 of text</p>
-                        <p>Line 2 of text</p>
-                        <!-- Add more lines as needed -->
+                        ${signingCert === undefined
+? '<p>No certificate found<p>'
+                        : html`<div id="cert-issuer">
+                                <span>Issuer</span>
+                                  <div>${parsedCert?.issuer.cn}</div>
+                                  <div>${parsedCert?.issuer.o}</div>
+                                  ${parsedCert?.issuer.ou === 'unknown' ? '' : html`<div>${parsedCert?.issuer.ou}</div>`}
+                                <span>Subject</span>
+                                  <div>${parsedCert?.subject.cn}</div>
+                                  <div>${parsedCert?.subject.o}</div>
+                                  ${parsedCert?.subject.ou === 'unknown' ? '' : html`<div>${parsedCert?.subject.ou}</div>`}
+                                <span>Valid</span>
+                                  <div>${parsedCert?.validFrom} - ${parsedCert?.validTo}</div>
+                                <span>Thumbprint</span>
+                                  <div style="font-family: 'Roboto Mono', monospace;">${signingCert.sha256Thumbprint.substring(0, 32)}</div>
+                                  <div style="font-family: 'Roboto Mono', monospace;">${signingCert.sha256Thumbprint.substring(32)}</div>
+                        </div>
+                        `}                      
                       </div>
                   </div>
               </div>
-              ${trusted ? html`<div id="divTrust">Part of trust list: <span class="bold">${this.trustList}</span></div>` : ''}
+              ${!trusted
+              ? ''
+              : html`<div id="divTrust">Part of trust list: <span class="bold">${this.trustList}</span>
+              <div class="image-container">
+              <img class="certIcon clickable" src="icons/cert.svg" alt="Cert Icon">
+              <div class="popover-content">
+                ${signingCert === undefined
+                  ? '<p>No certificate found<p>'
+                  : html`<div id="cert-issuer">
+                        <span>Trust list for</span>
+                          <div>${trustlist?.tlInfo.description}</div>
+                        <span>Signer</span>
+                          <div>${trustlist?.entity.display_name}</div>
+                    </div>
+                `}                      
+              </div>
+          </div>        
+              </div>`}
           </div>
       </div>
       ${this.validationSection(this._c2paResult?.manifestStore?.validationStatus)}
@@ -585,15 +658,50 @@ const signSvg = 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%
 
 function certificateItems (certificates: CertificateWithThumbprint[]): IconTextItem[] {
   return certificates.map((cert) => {
+    const parsedCert = parseCertificate(cert)
     return {
       icon: 'icons/seal.svg',
-      text: [
-        cert.issuer.attributes.find((attr) => attr.shortName === 'O')?.value ?? 'unknown',
-        cert.issuer.attributes.find((attr) => attr.shortName === 'CN')?.value ?? 'unknown',
-        localDateTime(cert.validTo.toString())
-      ]
+      text: [parsedCert.issuer.cn, parsedCert.issuer.o, `${parsedCert.validFrom} - ${parsedCert.validTo}`]
     }
   })
+}
+
+interface CertificateProperties {
+  issuer: { cn: string, o: string, ou: string, c: string, l: string, st: string }
+  subject: { cn: string, o: string, ou: string, c: string, l: string, st: string }
+  validFrom: string
+  validTo: string
+}
+
+/*
+  The x509 lib uses getters to return cert properties that are stripped during serialization.
+  This function extracts the properties that are needed for display
+*/
+function parseCertificate (cert: CertificateWithThumbprint): CertificateProperties {
+  const getShortName = (cert: CertificateWithThumbprint, shortName: string): string => {
+    const attr = cert.subject.attributes.find((attr) => attr.shortName === shortName)
+    return attr?.value ?? 'unknown'
+  }
+  return {
+    issuer: {
+      cn: getShortName(cert, 'CN'),
+      o: getShortName(cert, 'O'),
+      ou: getShortName(cert, 'OU'),
+      c: getShortName(cert, 'C'),
+      l: getShortName(cert, 'L'),
+      st: getShortName(cert, 'ST')
+    },
+    subject: {
+      cn: getShortName(cert, 'CN'),
+      o: getShortName(cert, 'O'),
+      ou: getShortName(cert, 'OU'),
+      c: getShortName(cert, 'C'),
+      l: getShortName(cert, 'L'),
+      st: getShortName(cert, 'ST')
+    },
+    validFrom: localDateTime(cert.validFrom.toString()),
+    validTo: localDateTime(cert.validTo.toString())
+  }
 }
 
 function signatureItems (signature: Signature): IconTextItem[] {

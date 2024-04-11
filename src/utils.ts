@@ -70,12 +70,12 @@ export function localDateTime (isoDateString: string): string {
   // Use Intl.DateTimeFormat to format the date
   const options: Intl.DateTimeFormatOptions = {
     year: 'numeric',
-    month: 'long',
+    month: 'short',
     day: 'numeric',
     // hour: 'numeric',
     // minute: 'numeric',
     // second: 'numeric',
-    timeZoneName: 'short',
+    // timeZoneName: 'short',
     hour12: true
   }
   const formattedDate = new Intl.DateTimeFormat('en-US', options).format(date)
