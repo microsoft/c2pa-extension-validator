@@ -3,7 +3,6 @@
 ## Pre-OSS release
 
 * Verify BBC content directly from their web site (e.g., <https://www.bbc.com/news/world-europe-68541911>); if it doesn't work, let's create an issue
-* Show cert info in popup UI (when clicking cert icon)
 * Fix HTML accessibility
 * Delete this TODO.md file, and file remaining tasks as GitHub issues
 
