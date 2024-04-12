@@ -1,3 +1,5 @@
+<style>h2 { padding-top: 40px;}</style>
+
 # C2PA Extension Validator
 
 *NOTE*: this project is a developer preview prototype; it is not meant to be used in production.
@@ -67,17 +69,31 @@ Users must import a list of trusted signers for C2PA assets to be validated prop
 
 *Note*: the underlying C2PA library that does the certificate validation does not currently accept trust anchors to create complete X.509 chains; the full certificate chain must therefore be present in a C2PA manifest to be considered valid.
 
-The extension automatically scans the current HTML page for C2PA assets and validates them. An icon representing the validation status is then overlayed on the asset:
+The extension automatically scans the current HTML page for C2PA assets and validates them. An icon representing the validation status is then overlaid on the asset:
 
 |                                                                  |                                                                                     |
 |------------------------------------------------------------------|-------------------------------------------------------------------------------------|
-| <img src="./public/icons/cr.svg" alt="valid icon" width="50">    |a valid asset, i.e. a well-formed C2PA manifest signed by a trusted issuer           |
+| <img src="./public/icons/cr.svg" alt="valid icon" width="50">    | a valid asset, i.e. a well-formed C2PA manifest signed by a trusted issuer          |
 | <img src="./public/icons/cr!.svg" alt="warning icon" width="50"> | an untrusted asset, i.e., a well-formed C2PA manifest signed by an untrusted issuer |
 | <img src="./public/icons/crx.svg" alt="invalid icon" width="50"> | a invalid asset                                                                     |
 
 See the [C2PA specification](https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_statements_by_a_validator) for the definition of well-formed manifests and trusted signers.
 
 Note that untrusted *warning* icon is not currently specified in the [C2PA UX recommendations](https://c2pa.org/specifications/specifications/1.4/ux/UX_Recommendations.html).
+
+## Extension Limitations
+
+The extension currently has a few limitations:
+
+* **IFrames and shadow-roots** *: Media within child documents like IFrames and shadow roots are not currently validated.
+* **Icon and overlay placement** *: The extension does not currently account for the visibility of media on the page, which may result in icons and overlays appearing in unexpected locations.
+* **Malicious web pages** *: Currently, there are limited countermeasures against web pages that would spoof, alter, or remove the extension's output.
+* **Accessibility** *: The extension's UI elements are not fully accessible.
+* **Conflict with other extensions** *: The extension may conflict with other extensions that modify the DOM or media elements. It is currently unknown which extensions may conflict with this extension.
+* **Partial media support** *: The extension currently supports only a subset of media types supported by the underlying C2PA validation library.
+* **Firefox compatibility** *: The extension currently does not work with Firefox.
+
+**\*** To be addressed in a future release
 
 ## Contributing
 
