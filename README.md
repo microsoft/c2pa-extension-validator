@@ -2,7 +2,7 @@
 
 *NOTE*: this project is a developer preview prototype; it is not meant to be used in production. One goal of the project is to incubate updates and extensions to the C2PA specifications; as such the browser validator might not be fully compliant with the current version of the specifications.
 
-This project contains a Edge/Chrome/Firefox browser extension that can validate [C2PA](https://c2pa.org) assets. Our goal is to provide a developer tool to
+This project contains a Edge/Chrome browser extension that can validate [C2PA](https://c2pa.org) assets. Our goal is to provide a developer tool to
 
 1. encourage experimentation with C2PA technologies, and
 2. enable rapid prototyping of new C2PA features.
@@ -38,17 +38,8 @@ Follow the side-loading instruction for your browser to load the extension:
 
 * [Edge](https://learn.microsoft.com/en-us/microsoft-edge/extensions-chromium/getting-started/extension-sideloading)  
 * [Chrome](https://developer.chrome.com/docs/extensions/mv3/getstarted/development-basics/#load-unpacked)  
-* [Firefox](https://extensionworkshop.com/documentation/develop/temporary-installation-in-firefox/)
 
-The Edge/Chrome `manifest.json` file is located at `dist/chrome`. The Firefox `manifest.json` file is located at `dist/firefox`.
-
-Firefox requires additional extension permissions to download manifests from external sites:
-
-  1. In the Firefox address bar go to `about:addons` to see the installed extensions
-  2. Find **Cross-Platform Origin of Content Extension** and click the `...` button to the right
-  3. Select **Manage** from the pop-up menu
-  4. Click the **Permission** tab
-  5. Enable **Access your data for all websites**
+The Edge/Chrome `manifest.json` file is located in `dist/chrome`.
 
 ### Test the extension
 
