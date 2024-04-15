@@ -1,7 +1,7 @@
 /*
-*  Copyright (c) Microsoft Corporation.
-*  Licensed under the MIT license.
-*/
+ *  Copyright (c) Microsoft Corporation.
+ *  Licensed under the MIT license.
+ */
 
 import browser from 'webextension-polyfill'
 import { createC2pa, type C2pa, type C2paReadResult, createL2ManifestStore, type L2ManifestStore, selectEditsAndActivity, type TranslatedDictionaryCategory } from 'c2pa'
@@ -9,7 +9,7 @@ import { extractCertChain } from './certs/certs.js'
 import { serialize } from './serialize.js'
 import { type Certificate } from '@fidm/x509'
 import { checkTrustListInclusionRemote, type TrustListMatch } from './trustlist.js'
-import { type MESSAGE_PAYLOAD } from './types.js'
+import { DID_NOT_HANDLE, type MESSAGE_PAYLOAD } from './constants.js'
 
 console.debug('C2pa: Script: start')
 
@@ -52,7 +52,7 @@ export async function init (): Promise<void> {
       if (request.action === 'validateUrl') {
         return Promise.resolve(_validateUrl(request.data as string))
       }
-      // return true // do not handle this request; allow another listener to handle it
+      return DID_NOT_HANDLE
     }
   )
 }

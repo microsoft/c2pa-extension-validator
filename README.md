@@ -81,6 +81,7 @@ The extension currently has a few limitations that will be addressed in future r
 * **Conflict with other extensions**: The extension may conflict with other extensions that modify the DOM or media elements. It is currently unknown which extensions may conflict with this extension.
 * **Partial media support**: The extension currently supports only a subset of media types supported by the underlying C2PA validation library.
 * **Firefox compatibility**: The extension currently does not work with Firefox.
+* **Time Stamps Authority Claims**: Trustlist validation currently fails when media uses [sigTst](https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_time_stamps) and not X509 cert chains.
 
 ## Contributing
 

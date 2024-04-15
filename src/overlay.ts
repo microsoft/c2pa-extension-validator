@@ -1,9 +1,10 @@
-/* eslint-disable @typescript-eslint/no-non-null-assertion */
-// Copyright (c) Microsoft Corporation.
-// Licensed under the MIT license.
+/*
+ *  Copyright (c) Microsoft Corporation.
+ *  Licensed under the MIT license.
+ */
 
 import browser from 'webextension-polyfill'
-import { type MESSAGE_PAYLOAD } from './types'
+import { DID_NOT_HANDLE, type MESSAGE_PAYLOAD } from './constants'
 import { type C2paResult } from './c2pa'
 import { type FrameMessage } from './iframe'
 
@@ -122,6 +123,7 @@ export class C2PADialog /* extends HTMLElement */ {
 
     // Attach the click event listener to the new header
     header.addEventListener('click', function () {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const icon = this.querySelector('.collapsible-icon')!
       const nextContent = this.nextElementSibling as HTMLElement
 
@@ -170,5 +172,6 @@ browser.runtime.onMessage.addListener(
         iframe.style.height = `${request.data as number}px`
       }
     }
+    return DID_NOT_HANDLE
   }
 )

@@ -1,17 +1,12 @@
 /*
-*  Copyright (c) Microsoft Corporation.
-*  Licensed under the MIT license.
-*/
+ *  Copyright (c) Microsoft Corporation.
+ *  Licensed under the MIT license.
+ */
 
 import { arrayBufferToBase64, blobToDataURL, isKeyedObject, isObject, base64ToArrayBuffer, dataURLtoBlob } from './utils.js'
 
 export const REFERENCE_ID = '__ref'
 export const CIRCLE_ID = '__circle'
-
-/*
-*  Copyright (c) Microsoft Corporation.
-*  Licensed under the MIT license.
-*/
 
 interface WeekMapWithCounter extends WeakMap<object, unknown> {
   counter: number

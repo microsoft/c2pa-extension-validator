@@ -1,7 +1,7 @@
 /*
-*  Copyright (c) Microsoft Corporation.
-*  Licensed under the MIT license.
-*/
+ *  Copyright (c) Microsoft Corporation.
+ *  Licensed under the MIT license.
+ */
 
 /**
  * Retrieves the value from local storage for the specified key.

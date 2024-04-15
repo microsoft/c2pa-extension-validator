@@ -1,11 +1,11 @@
 /*
-*  Copyright (c) Microsoft Corporation.
-*  Licensed under the MIT license.
-*/
+ *  Copyright (c) Microsoft Corporation.
+ *  Licensed under the MIT license.
+ */
 
 import browser from 'webextension-polyfill'
-import { type CertificateWithThumbprint, calculateSha256CertThumbprintFromDer, calculateSha256CertThumbprintFromX5c } from './certs/certs'
-import { type MESSAGE_PAYLOAD } from './types'
+import { type CertificateWithThumbprint, calculateSha256CertThumbprintFromX5c } from './certs/certs'
+import { DID_NOT_HANDLE, type MESSAGE_PAYLOAD } from './constants'
 
 // valid JWK key types (to adhere to C2PA cert profile: https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_certificate_profile)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -51,8 +51,6 @@ export interface TrustList {
   entities: TrustedEntity[]
 }
 
-let globalTrustLists: TrustList[] = []
-
 // trust list info (subset of the trust list data)
 export interface TrustListInfo {
   name?: string
@@ -64,6 +62,8 @@ export interface TrustListInfo {
   entities_count: number
 }
 
+let globalTrustLists: TrustList[] = []
+
 const getInfoFromTrustList = (tl: TrustList): TrustListInfo => {
   const tli: TrustListInfo = {
     description: tl.description,
@@ -72,13 +72,13 @@ const getInfoFromTrustList = (tl: TrustList): TrustListInfo => {
     last_updated: tl.last_updated,
     entities_count: tl.entities.length
   }
-  if (tl.name) {
+  if (tl.name != null) {
     tli.name = tl.name
   }
-  if (tl.logo) {
+  if (tl.logo != null) {
     tli.logo = tl.logo
   }
-  return tli;
+  return tli
 }
 
 /**
@@ -86,7 +86,7 @@ const getInfoFromTrustList = (tl: TrustList): TrustListInfo => {
  * @returns The trust list infos if available, otherwise undefined.
  */
 export function getTrustListInfos (): TrustListInfo[] | undefined {
-  if (globalTrustLists && globalTrustLists.length > 0) {
+  if (globalTrustLists != null && globalTrustLists.length > 0) {
     return globalTrustLists.map(tl => getInfoFromTrustList(tl))
   } else {
     return undefined
@@ -107,7 +107,7 @@ export async function addTrustList (tl: TrustList): Promise<TrustListInfo> {
   // make sure each certificate has a thumbprint, if not, calculate it
   for (const entity of tl.entities) {
     for (const jwk of entity.jwks.keys) {
-      if (!jwk['x5t#S256'] && jwk.x5c && jwk.x5c.length > 0) {
+      if ((jwk['x5t#S256'] == null) && (jwk.x5c != null) && jwk.x5c.length > 0) {
         // calculate the thumbprint of the first cert in the chain
         try {
           jwk['x5t#S256'] = await calculateSha256CertThumbprintFromX5c(jwk.x5c[0])
@@ -182,7 +182,7 @@ export interface TrustListMatch {
  */
 export function checkTrustListInclusion (certChain: CertificateWithThumbprint[]): TrustListMatch | null {
   console.debug('checkTrustListInclusion called')
-  if (globalTrustLists && globalTrustLists.length > 0) {
+  if (globalTrustLists != null && globalTrustLists.length > 0) {
     // for each trust list
     for (const trustList of globalTrustLists) {
       // for each entity's certs in the list (current and expired), check if it matches a cert in the chain
@@ -191,7 +191,7 @@ export function checkTrustListInclusion (certChain: CertificateWithThumbprint[])
         for (const jwkCert of jwks.keys) {
           // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
           for (const cert of certChain) {
-            if (jwkCert['x5t#S256'] && jwkCert['x5t#S256'].toLowerCase() === cert.sha256Thumbprint && entity.isCA === cert.isCA) {
+            if ((jwkCert['x5t#S256'] != null) && jwkCert['x5t#S256'].toLowerCase() === cert.sha256Thumbprint && entity.isCA === cert.isCA) {
               // found a match
               const tlInfo = getInfoFromTrustList(trustList)
               console.debug('Trust list match:', entity, cert)
@@ -240,10 +240,11 @@ export async function init (): Promise<void> {
         return Promise.resolve(addTrustList(request.data as TrustList))
       }
       if (request.action === 'removeTrustList') {
-        return Promise.resolve(void removeTrustList(request.data as number))
+        removeTrustList(request.data as number)
+        return Promise.resolve()
       }
 
-      // return true // do not handle this request; allow the next listener to handle it
+      return DID_NOT_HANDLE
     }
   )
 }

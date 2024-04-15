@@ -1,3 +1,8 @@
+/*
+ *  Copyright (c) Microsoft Corporation.
+ *  Licensed under the MIT license.
+ */
+
 import { bytesToHex, formatUUID } from '../utils.js'
 import { ByteReader } from './byteReader.js'
 

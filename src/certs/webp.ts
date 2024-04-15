@@ -1,3 +1,8 @@
+/*
+ *  Copyright (c) Microsoft Corporation.
+ *  Licensed under the MIT license.
+ */
+
 import { ByteReader } from './byteReader.js'
 
 export function decode (buffer: ArrayBuffer): Record<string, Uint8Array> {

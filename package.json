@@ -9,7 +9,7 @@
     "prebuild": "node update-version.js",
     "build": "cross-env NODE_ENV=production rollup -c",
     "build:debug": "cross-env NODE_ENV=development rollup -c",
-    "build:watch": "cross-env NODE_ENV=development rollup -c --watch",
+    "build:dev": "cross-env NODE_ENV=development rollup -c --watch",
     "test": "echo \"Error: no tests\" && exit 1"
   },
   "author": "",

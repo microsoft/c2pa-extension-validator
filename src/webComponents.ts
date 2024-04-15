@@ -1,3 +1,8 @@
+/*
+ *  Copyright (c) Microsoft Corporation.
+ *  Licensed under the MIT license.
+ */
+
 import browser from 'webextension-polyfill'
 import { LitElement, html, css, type TemplateResult } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
@@ -102,7 +107,7 @@ export class C2paOverlay extends LitElement {
       }
 
       #inspectionLink {
-        /* padding: 0px 5px; */
+
       }
 
       .bold {
@@ -181,20 +186,19 @@ export class C2paOverlay extends LitElement {
         display: inline-block;
         padding: 6px;
         margin: 0px 15px;
-        font-size: 12px; /* Adjust font-size as needed */
-        font-family: Arial, sans-serif; /* Use whatever font-family you prefer */
-        color: #777777; /* Text color */
-        background-color: #fff; /* Button background color */
-        border: 2px solid #777777; /* Border color and width */
-        border-radius: 20px; /* Adjust border-radius to get the desired rounded corners */
+        font-size: 12px;
+        font-family: Arial, sans-serif;
+        color: #777777;
+        background-color: #fff;
+        border: 2px solid #777777;
+        border-radius: 20px;
         text-align: center;
         cursor: pointer;
-        text-decoration: none; /* Remove underline from links */
+        text-decoration: none;
       }
     
-      /* Optionally add hover effect */
       .button:hover {
-        background-color: #f2f2f2; /* Slightly darker background on hover */
+        background-color: #f2f2f2;
       }
 
       .additional-info {
@@ -204,12 +208,12 @@ export class C2paOverlay extends LitElement {
         display: flex;        
         flex-direction: column;
         gap: 15px;
-        justify-content: space-between; /* Distribute space between items */
+        justify-content: space-between;
       }
 
       .link-style {
-        color: inherit; /* Retain the text color */
-        text-decoration: underline; /* Underline the text */
+        color: inherit;
+        text-decoration: underline;
       }
       
       /* Ensure the color doesn't change on hover, focus, or after being visited */
@@ -225,39 +229,39 @@ export class C2paOverlay extends LitElement {
 
       .image-container {
         position: relative;
-        display: inline-block; /* Makes the container fit the content */
+        display: inline-block;
       }
       
       .popover-content-0 {
-          display: none; /* Initially hidden */
+          display: none;
           position: absolute;
-          z-index: 100; /* Ensure it sits on top of other content */
-          left: 100%; /* Adjust as needed */
-          white-space: nowrap; /* Prevent text from wrapping, optional */
+          z-index: 100;
+          left: 100%;
+          white-space: nowrap;
           padding: 10px;
-          background-color: white; /* Or any other color */
-          border: 1px solid #ccc; /* Optional */
-          border-radius: 5px; /* Optional */
-          box-shadow: 0px 2px 5px rgba(0,0,0,0.2); /* Optional */
+          background-color: white;
+          border: 1px solid #ccc; 
+          border-radius: 5px;
+          box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
       }
 
       .popover-content {
-          display: none; /* Initially hidden */
-          position: fixed; /* Position relative to the viewport */
-          top: 50%; /* Center vertically */
-          left: 50%; /* Center horizontally */
-          transform: translate(-50%, -50%); /* Adjust the centered position */
-          z-index: 100; /* Ensure it sits on top of other content */
-          white-space: nowrap; /* Prevent text from wrapping, optional */
+          display: none;
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          z-index: 100;
+          white-space: nowrap;
           padding: 10px;
-          background-color: white; /* Or any other color */
-          border: 1px solid #ccc; /* Optional */
-          border-radius: 5px; /* Optional */
-          box-shadow: 0px 2px 5px rgba(0,0,0,0.2); /* Optional */
+          background-color: white;
+          border: 1px solid #ccc;
+          border-radius: 5px;
+          box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
       }
 
       .image-container:hover .popover-content {
-          display: block; /* Show on hover */
+          display: block;
       }
 
       #cert-issuer {
@@ -519,12 +523,10 @@ export class C2paCollapsible extends LitElement {
     sharedStyles,
     css`
     .collapsible-container {
-      /* border-radius: 5px; */
-      /* margin-bottom: 5px; */
+
     }
     .collapsible-header {
       cursor: pointer;
-      /* padding: 10px; */
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -538,7 +540,7 @@ export class C2paCollapsible extends LitElement {
       padding: 0 0 0 20px;
     }
     .collapsible-content.open  {
-      max-height: 400px; /* Adjust as necessary */
+      max-height: 400px;
     }
     .icon {
       transition: transform 0.3s ease;
@@ -604,33 +606,33 @@ export class C2paGridDisplay extends LitElement {
     css`
       .grid-container {
         display: grid;
-        grid-template-columns: auto 1fr; /* Icon column and text column */
+        grid-template-columns: auto 1fr;
         gap: 8px 20px;
-        align-items: center; /* Center items vertically */
+        align-items: center;
         margin: 10px 0
       }
       .icon {
-        width: 20px; /* Adjust based on your needs */
-        height: 20px; /* Adjust based on your needs */
-        grid-row: span 1; /* Each icon takes up one row */
+        width: 20px;
+        height: 20px; 
+        grid-row: span 1;
         color: green;
       }
       img {
         width: 100%;
         height: 100%;
-        object-fit: cover; /* Adjust as needed */
+        object-fit: cover;
       }
       .text-block {
         display: flex;
-        flex-direction: column; /* Stack text lines vertically */
-        justify-content: center; /* Center text lines vertically if there's extra space */
+        flex-direction: column; 
+        justify-content: center;
       }
       .text-line {
         font-size: 12px;
         margin-bottom: 0px;
       }
       .text-line:last-child {
-        margin-bottom: 0; /* No extra space at the bottom of the last line */
+        margin-bottom: 0;
       }
     `]
 

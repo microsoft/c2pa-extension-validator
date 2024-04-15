@@ -2,10 +2,10 @@
  *  Copyright (c) Microsoft Corporation.
  *  Licensed under the MIT license.
  */
+
 import browser from 'webextension-polyfill'
-import { type MESSAGE_PAYLOAD } from './types'
 import { init as initTrustList } from './trustlist'
-import { MESSAGE_C2PA_INSPECT_URL, REMOTE_VALIDATION_LINK } from './constants'
+import { DID_NOT_HANDLE, MESSAGE_C2PA_INSPECT_URL, REMOTE_VALIDATION_LINK, type MESSAGE_PAYLOAD } from './constants'
 import { type C2paError, type C2paResult } from './c2pa'
 console.debug('Background: Script: start')
 
@@ -53,7 +53,7 @@ browser.runtime.onMessage.addListener(
           }, 1000)
         })
     }
-    // return true // do not handle this request; allow the next listener to handle it
+    return DID_NOT_HANDLE
   }
 )
 
@@ -118,8 +118,6 @@ browser.tabs.onActivated.addListener(activeInfo => {
   })
 })
 
-void init()
-
 async function validateUrl (url: string): Promise<C2paResult | C2paError> {
   console.debug('sendMessage:', { action: 'validateUrl', data: url })
   const trustListMatch = await browser.runtime.sendMessage({ action: 'validateUrl', data: url })
@@ -143,5 +141,7 @@ async function openOrSwitchToTab (url: string): Promise<browser.Tabs.Tab> {
 
   return tab
 }
+
+void init()
 
 console.debug('Background: Script: end')

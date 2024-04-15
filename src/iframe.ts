@@ -1,15 +1,11 @@
+/*
+ *  Copyright (c) Microsoft Corporation.
+ *  Licensed under the MIT license.
+ */
+
 import browser from 'webextension-polyfill'
 import { type C2paResult } from './c2pa'
 import { type C2paOverlay } from './webComponents'
-
-/*
-  SignatureInfo is from c2pa lib but not exported
-*/
-export interface SignatureInfo {
-  issuer?: string
-  time?: string
-  cert_serial_number?: string
-}
 
 export interface FrameMessage {
   secret: string
@@ -20,6 +16,10 @@ export interface FrameMessage {
 export interface ContentMessage {
   action: string
   data: unknown
+}
+
+export interface Parameters {
+  name: string
 }
 
 const urlParams = new URLSearchParams(window.location.search)
@@ -53,11 +53,6 @@ function processMessageQueue (): void {
     if (message.action === 'c2paResult') {
       const c2paResult: C2paResult = message.data as C2paResult
 
-      // const manifestSummary: ManifestSummary = document.createElement('cai-manifest-summary')
-      // manifestSummary.manifestStore = c2paResult.l2
-      // document.getElementById('container')?.appendChild(manifestSummary)
-
-      // populate(message.data as C2paResult)
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const overlay: C2paOverlay = document.querySelector('c2pa-overlay')!
       overlay.c2paResult = c2paResult
@@ -136,7 +131,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Initialize ResizeObserver
 const resizeObserver = new ResizeObserver(entries => {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   for (const entry of entries) {
     // Assuming we are only observing one element, the first entry is our target element
     // If entry.contentRect.height is different from your last known height, you can call onHeightChange
@@ -148,13 +142,8 @@ const resizeObserver = new ResizeObserver(entries => {
 })
 
 // Start observing an element
-// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
 const elementToObserve = document.body
 resizeObserver.observe(elementToObserve)
-
-export interface Parameters {
-  name: string
-}
 
 void init()
 

@@ -10,7 +10,7 @@ import { Buffer } from 'buffer' // required for polyfill
 import { getManifestFromMetadata } from './metadata.js'
 import { bytesToHex } from '../utils.js'
 
-interface COSE {
+export interface COSE {
   0: Uint8Array
   1: { x5chain: Uint8Array[] }
   2: null

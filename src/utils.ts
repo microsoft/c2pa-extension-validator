@@ -1,3 +1,8 @@
+/*
+ *  Copyright (c) Microsoft Corporation.
+ *  Licensed under the MIT license.
+ */
+
 import browser from 'webextension-polyfill'
 import 'dotenv/config'
 import { DEFAULT_MESSAGE_TIMEOUT } from './constants'

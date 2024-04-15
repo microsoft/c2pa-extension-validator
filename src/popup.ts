@@ -1,7 +1,7 @@
 /*
-*  Copyright (c) Microsoft Corporation.
-*  Licensed under the MIT license.
-*/
+ *  Copyright (c) Microsoft Corporation.
+ *  Licensed under the MIT license.
+ */
 
 import browser from 'webextension-polyfill'
 import { type TrustList, type TrustListInfo, getTrustListInfosRemote, addTrustListRemote, removeTrustListRemote } from './trustlist.js'
@@ -129,7 +129,7 @@ async function displayTrustListInfos (): Promise<void> {
         const trustListInfo = document.getElementById('trust-list-info') as HTMLDivElement
         trustListInfo.style.display = 'block'
 
-        if (!tlis || tlis.length === 0) {
+        if ((tlis == null) || tlis.length === 0) {
           trustListInfo.innerHTML = '<p>No trust list set</p>'
         } else {
           let listHtml = '<p>Trust Lists:</p><ul>'

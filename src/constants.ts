@@ -1,12 +1,20 @@
 /*
-*  Copyright (c) Microsoft Corporation.
-*  Licensed under the MIT license.
-*/
+ *  Copyright (c) Microsoft Corporation.
+ *  Licensed under the MIT license.
+ */
+
+export interface MESSAGE_PAYLOAD {
+  action: string
+  data: unknown
+  frame?: string
+}
 
 export const MESSAGE_SAMPLE = 'MESSAGE_SAMPLE'
 export const MESSAGE_OFFSCREEN_C2PA_READ = 'MESSAGE_OFFSCREEN_C2PA_READ'
 export const MESSAGE_C2PA_INSPECT_URL = 'MESSAGE_C2PA_INSPECT_URL'
 export const DEFAULT_MESSAGE_TIMEOUT = 50000 /* 5 sec */
+export const REMOTE_VALIDATION_LINK = 'https://contentintegrity.microsoft.com/check'
+export const DID_NOT_HANDLE = undefined
 export const MIME = {
   C2PA: 'application/c2pa',
   APPLICATION_MP4: 'application/mp4',
@@ -30,4 +38,3 @@ export const MIME = {
   X_MSVIDEO: 'video/x-msvideo',
   PDF: 'application/pdf'
 }
-export const REMOTE_VALIDATION_LINK = 'https://contentintegrity.microsoft.com/check'

@@ -1,11 +1,12 @@
 /*
-*  Copyright (c) Microsoft Corporation.
-*  Licensed under the MIT license.
-*/
+ *  Copyright (c) Microsoft Corporation.
+ *  Licensed under the MIT license.
+ */
+
 import browser from 'webextension-polyfill'
-import { MESSAGE_C2PA_INSPECT_URL, REMOTE_VALIDATION_LINK } from './constants.js'
+import { DID_NOT_HANDLE, MESSAGE_C2PA_INSPECT_URL, REMOTE_VALIDATION_LINK } from './constants.js'
 import { type C2paImage, icon, type VALIDATION_STATUS } from './icon.js'
-import { C2PADialog } from './c2paStatus.js'
+import { C2PADialog } from './overlay.js'
 import { deserialize } from './serialize.js'
 import { blobToDataURL, sendMessageWithTimeout } from './utils.js'
 
@@ -17,7 +18,7 @@ import { blobToDataURL, sendMessageWithTimeout } from './utils.js'
 import './manifest.chrome.v3.json'
 import './manifest.firefox.v3.json'
 import { type C2paError, type C2paResult } from './c2pa.js'
-import { type MESSAGE_PAYLOAD } from './types.js'
+import { type MESSAGE_PAYLOAD } from './constants.js'
 
 console.debug('Content: Script: start')
 
@@ -332,7 +333,7 @@ browser.runtime.onMessage.addListener(
       pasteUrlIntoInput(url)
       return Promise.resolve()
     }
-    // do not handle this request
+    return DID_NOT_HANDLE
   }
 
 )
