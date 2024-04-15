@@ -35,7 +35,6 @@ const messageQueue: FrameMessage[] = []
 
 window.addEventListener('message', function (event) {
   messageQueue.push(event.data as FrameMessage)
-  console.debug(`IFrame: ${_frameId}: Message received:`, event.data)
   processMessageQueue()
 })
 
@@ -57,7 +56,6 @@ function processMessageQueue (): void {
       const overlay: C2paOverlay = document.querySelector('c2pa-overlay')!
       overlay.c2paResult = c2paResult
       void sendMessageToContent({ action: 'updateFrame', data: document.documentElement.scrollHeight }, _tabId)
-      console.debug(`IFrame ${_frameId} message received:`, c2paResult)
     }
     if (message.action === 'close') {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
