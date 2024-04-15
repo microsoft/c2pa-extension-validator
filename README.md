@@ -2,7 +2,7 @@
 
 # C2PA Extension Validator
 
-*NOTE*: this project is a developer preview prototype; it is not meant to be used in production.
+*NOTE*: this project is a developer preview prototype; it is not meant to be used in production. One goal of the project is to incubate updates and extensions to the C2PA specifications; as such the browser validator might not be fully compliant with the current version of the specifications.
 
 This project contains a Edge/Chrome/Firefox browser extension that can validate [C2PA](https://c2pa.org) assets. Our goal is to provide a developer tool to
 
@@ -83,17 +83,15 @@ Note that untrusted *warning* icon is not currently specified in the [C2PA UX re
 
 ## Extension Limitations
 
-The extension currently has a few limitations:
+The extension currently has a few limitations that will be addressed in future releases:
 
-* **IFrames and shadow-roots** *: Media within child documents like IFrames and shadow roots are not currently validated.
-* **Icon and overlay placement** *: The extension does not currently account for the visibility of media on the page, which may result in icons and overlays appearing in unexpected locations.
-* **Malicious web pages** *: Currently, there are limited countermeasures against web pages that would spoof, alter, or remove the extension's output.
-* **Accessibility** *: The extension's UI elements are not fully accessible.
-* **Conflict with other extensions** *: The extension may conflict with other extensions that modify the DOM or media elements. It is currently unknown which extensions may conflict with this extension.
-* **Partial media support** *: The extension currently supports only a subset of media types supported by the underlying C2PA validation library.
-* **Firefox compatibility** *: The extension currently does not work with Firefox.
-
-**\*** To be addressed in a future release
+* **IFrames and shadow-roots**: Media within child documents like IFrames and shadow roots are not currently validated.
+* **Icon and overlay placement**: The extension does not currently account for the visibility of media on the page, which may result in icons and overlays appearing in unexpected locations.
+* **Malicious web pages**: Currently, there are limited countermeasures against web pages that would spoof, alter, or remove the extension's output.
+* **Accessibility**: The extension's UI elements are not fully accessible.
+* **Conflict with other extensions**: The extension may conflict with other extensions that modify the DOM or media elements. It is currently unknown which extensions may conflict with this extension.
+* **Partial media support**: The extension currently supports only a subset of media types supported by the underlying C2PA validation library.
+* **Firefox compatibility**: The extension currently does not work with Firefox.
 
 ## Contributing
 
