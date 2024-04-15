@@ -1,5 +1,3 @@
-<style>h2 { padding-top: 40px;}</style>
-
 # C2PA Extension Validator
 
 *NOTE*: this project is a developer preview prototype; it is not meant to be used in production. One goal of the project is to incubate updates and extensions to the C2PA specifications; as such the browser validator might not be fully compliant with the current version of the specifications.
