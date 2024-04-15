@@ -36,7 +36,7 @@ export interface TrustedEntity {
 
 export interface TrustList {
   // name of the trust list
-  name: string
+  name?: string
   // description of the trust list
   description: string
   // download url of the trust list
@@ -55,7 +55,7 @@ let globalTrustLists: TrustList[] = []
 
 // trust list info (subset of the trust list data)
 export interface TrustListInfo {
-  name: string
+  name?: string
   description: string
   download_url: string
   website: string
@@ -66,12 +66,14 @@ export interface TrustListInfo {
 
 const getInfoFromTrustList = (tl: TrustList): TrustListInfo => {
   const tli: TrustListInfo = {
-    name: tl.name,
     description: tl.description,
     download_url: tl.download_url,
     website: tl.website,
     last_updated: tl.last_updated,
     entities_count: tl.entities.length
+  }
+  if (tl.name) {
+    tli.name = tl.name
   }
   if (tl.logo) {
     tli.logo = tl.logo
