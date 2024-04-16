@@ -63,7 +63,7 @@ The extension automatically scans the current HTML page for C2PA assets and vali
 |                                                                  |                                                                                     |
 |------------------------------------------------------------------|-------------------------------------------------------------------------------------|
 | <img src="./public/icons/cr.svg" alt="valid icon" width="50">    | a valid asset, i.e. a well-formed C2PA manifest signed by a trusted issuer          |
-| <img src="./public/icons/cr!.svg" alt="warning icon" width="50"> | an untrusted asset, i.e., a well-formed C2PA manifest signed by an untrusted issuer |
+| <img src="./public/icons/cr!.svg" alt="warning icon" width="50"> | an untrusted asset, i.e., a well-formed C2PA manifest signed by an unknown issuer |
 | <img src="./public/icons/crx.svg" alt="invalid icon" width="50"> | a invalid asset                                                                     |
 
 See the [C2PA specification](https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_statements_by_a_validator) for the definition of well-formed manifests and trusted signers.
