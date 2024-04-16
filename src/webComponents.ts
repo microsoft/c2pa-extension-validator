@@ -390,7 +390,7 @@ export class C2paOverlay extends LitElement {
       result.push(html`
       <div id="untrusted">
         <img id="untrustedIcon" src="icons/!.svg">
-        <div id="untrustedText"><span class="bold">${this.signer}</span> is untrusted</div>
+        <div id="untrustedText"><span class="bold">${this.signer}</span> is unknown</div>
       </div>`
       )
     }
@@ -426,7 +426,7 @@ export class C2paOverlay extends LitElement {
               <img class="thumbnail" id="thumbnail" src="${this.thumbprintUrl ?? chrome.runtime.getURL('icons/movie.svg')}">
           </div>
           <div>
-              <div id="divSigned">${mediaType} ${manifestCount > 1 ? 'last ' : ''}signed by ${trusted ? '' : html`<span class="bold">untrusted</span> entity `}<span class="bold">${this.signer}</span> 
+              <div id="divSigned">${mediaType} ${manifestCount > 1 ? 'last ' : ''}signed by ${trusted ? '' : html`<span class="bold">unknown</span> entity `}<span class="bold">${this.signer}</span> 
                   <div class="image-container">
                       <img class="certIcon clickable" src="icons/cert.svg" alt="Cert Icon">
                       <div class="popover-content">
