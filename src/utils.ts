@@ -26,9 +26,8 @@ export async function blobToDataURL (blob: Blob): Promise<string> {
   })
 }
 
-export function arrayBufferToBase64 (buffer: ArrayBuffer): string {
+export function bytesToBase64 (bytes: Uint8Array): string {
   let binary = ''
-  const bytes = new Uint8Array(buffer)
   for (let i = 0; i < bytes.byteLength; i++) {
     binary += String.fromCharCode(bytes[i])
   }

@@ -12,7 +12,7 @@ import { bytesToHex } from '../utils.js'
 
 export interface COSE {
   0: Uint8Array
-  1: { x5chain: Uint8Array[] }
+  1: { x5chain?: Uint8Array[], sigTst?: { tstTokens: Array<{ val: Uint8Array }> } }
   2: null
   3: Uint8Array
 }
@@ -98,9 +98,15 @@ function getCertChain (jumbf: JumbfResult): Uint8Array[] | null {
   const cborContentBox = jumbfBox.boxes[0] as ContentBox
   const cbor = cborDecode(cborContentBox.data)
   const cose = (cbor as { tag: number | string, value: COSE }).value
-  let x5chain = cose[1].x5chain
-  // if only one cert is included, we get a Uint8Array instead of an array of Uint8Array
-  x5chain = x5chain instanceof Uint8Array ? [x5chain] : x5chain
-
-  return x5chain
+  if (cose?.[1]?.x5chain != null) {
+    let x5chain = cose[1].x5chain
+    x5chain = x5chain instanceof Uint8Array ? [x5chain] : x5chain
+    return x5chain
+  } else if ((cose?.[1]?.sigTst) != null) {
+    const cb = cborDecode(cose[0]) as Record<number, Uint8Array[]>
+    let x5chain = cb[33] // 33 = x5chain
+    x5chain = x5chain instanceof Uint8Array ? [x5chain] : x5chain
+    return x5chain
+  }
+  return null
 }
