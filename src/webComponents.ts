@@ -79,7 +79,7 @@ export class C2paOverlay extends LitElement {
           background-color: var(--border-color);
       }
       
-      .certIcon {
+      .verifiedIcon {
           width: 1.2em;
           vertical-align:text-bottom;
       }
@@ -232,19 +232,6 @@ export class C2paOverlay extends LitElement {
         display: inline-block;
       }
       
-      .popover-content-0 {
-          display: none;
-          position: absolute;
-          z-index: 100;
-          left: 100%;
-          white-space: nowrap;
-          padding: 10px;
-          background-color: white;
-          border: 1px solid #ccc; 
-          border-radius: 5px;
-          box-shadow: 0px 2px 5px rgba(0,0,0,0.2);
-      }
-
       .popover-content {
           display: none;
           position: fixed;
@@ -252,7 +239,6 @@ export class C2paOverlay extends LitElement {
           left: 50%;
           transform: translate(-50%, -50%);
           z-index: 100;
-          white-space: nowrap;
           padding: 10px;
           background-color: white;
           border: 1px solid #ccc;
@@ -264,18 +250,18 @@ export class C2paOverlay extends LitElement {
           display: block;
       }
 
-      #cert-issuer {
+      #verified-info {
         font-size: 11px;
         line-height: 15px;
         max-width: 260px;
       }
 
-      #cert-issuer > span {
+      #verified-info > span {
         font-weight: bold;
         font-size: 11px;
       }
 
-      #cert-issuer > div {
+      #verified-info > div {
         font-size: 11px;
         margin-top: 0;
         margin-bottom: 0;
@@ -428,11 +414,11 @@ export class C2paOverlay extends LitElement {
           <div>
               <div id="divSigned">${mediaType} ${manifestCount > 1 ? 'last ' : ''}signed by ${trusted ? '' : html`<span class="bold">unknown</span> entity `}<span class="bold">${this.signer}</span> 
                   <div class="image-container">
-                      <img class="certIcon clickable" src="icons/cert.svg" alt="Cert Icon">
+                      <img class="verifiedIcon clickable" src="icons/verified.svg" alt="Verified Icon">
                       <div class="popover-content">
                         ${signingCert === undefined
-? '<p>No certificate found<p>'
-                        : html`<div id="cert-issuer">
+                        ? '<p>No certificate found<p>'
+                        : html`<div id="verified-info">
                                 <span>Issuer</span>
                                   <div>${parsedCert?.issuer.cn}</div>
                                   <div>${parsedCert?.issuer.o}</div>
@@ -455,17 +441,14 @@ export class C2paOverlay extends LitElement {
               ? ''
               : html`<div id="divTrust">Part of trust list: <span class="bold">${this.trustList}</span>
               <div class="image-container">
-              <img class="certIcon clickable" src="icons/cert.svg" alt="Cert Icon">
+              <img class="verifiedIcon clickable" src="icons/verified.svg" alt="Verified Icon">
               <div class="popover-content">
-                ${signingCert === undefined
-                  ? '<p>No certificate found<p>'
-                  : html`<div id="cert-issuer">
-                        <span>Trust list for</span>
-                          <div>${trustlist?.tlInfo.description}</div>
-                        <span>Signer</span>
-                          <div>${trustlist?.entity.display_name}</div>
-                    </div>
-                `}                      
+                  <div id="verified-info">
+                      <span>Trust list description</span>
+                      <div>${trustlist?.tlInfo.description}</div>
+                      <span>Signer</span>
+                       <div>${trustlist?.entity.display_name}</div>
+                  </div>
               </div>
           </div>        
               </div>`}
