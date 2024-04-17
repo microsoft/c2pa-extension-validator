@@ -3,7 +3,7 @@
  *  Licensed under the MIT license.
  */
 
-import { arrayBufferToBase64, blobToDataURL, isKeyedObject, isObject, base64ToArrayBuffer, dataURLtoBlob } from './utils.js'
+import { bytesToBase64, blobToDataURL, isKeyedObject, isObject, base64ToArrayBuffer, dataURLtoBlob } from './utils.js'
 
 export const REFERENCE_ID = '__ref'
 export const CIRCLE_ID = '__circle'
@@ -41,7 +41,7 @@ async function _serialize (obj: unknown, alreadySerialized: WeekMapWithCounter):
   }
 
   if (obj instanceof ArrayBuffer) {
-    const base64 = arrayBufferToBase64(obj)
+    const base64 = bytesToBase64(new Uint8Array(obj))
     result = { type: 'ArrayBuffer', data: base64 }
   }
 
