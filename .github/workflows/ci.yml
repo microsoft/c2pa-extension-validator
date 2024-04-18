@@ -20,13 +20,13 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: '20'
-        cache: 'pnpm'
+        cache: 'npm'
 
     - name: Install dependencies
-      run: pnpm install
+      run: npm install
 
     - name: Build the project
-      run: pnpm build
+      run: npm build
 
     - name: Archive production artifacts
       uses: actions/upload-artifact@v3
