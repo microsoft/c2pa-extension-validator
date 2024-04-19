@@ -403,7 +403,7 @@ export class C2paOverlay extends LitElement {
     const signingCert = this.c2paResult?.certChain?.[0]
     const parsedCert = signingCert == null ? undefined : parseCertificate(signingCert)
     const trustlist = this.c2paResult?.trustList
-    const trustlistLogo = trustlist?.tlInfo.logo ? trustlist?.tlInfo.logo : 'icons/verified.svg'
+    const trustlistLogo = trustlist?.tlInfo.logo_icon ? trustlist?.tlInfo.logo_icon : 'icons/verified.svg'
     return html`
     <div id='container'>
       <div class='title'>
