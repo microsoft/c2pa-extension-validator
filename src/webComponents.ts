@@ -268,7 +268,6 @@ export class C2paOverlay extends LitElement {
         padding: 0;
         padding-left: 10px;
       }
-
   `]
 
   private _c2paResult: C2paResult | undefined
@@ -404,7 +403,7 @@ export class C2paOverlay extends LitElement {
     const signingCert = this.c2paResult?.certChain?.[0]
     const parsedCert = signingCert == null ? undefined : parseCertificate(signingCert)
     const trustlist = this.c2paResult?.trustList
-    // const thumbUrl = this.thumbprintUrl ?? chrome.runtime.getURL('icons/movie.svg')
+    const trustlistLogo = trustlist?.tlInfo.logo_icon ? trustlist?.tlInfo.logo_icon : 'icons/verified.svg'
     return html`
     <div id='container'>
       <div class='title'>
@@ -440,17 +439,17 @@ export class C2paOverlay extends LitElement {
               ${!trusted
               ? ''
               : html`<div id="divTrust">Part of trust list: <span class="bold">${this.trustList}</span>
-              <div class="image-container">
-              <img class="verifiedIcon clickable" src="icons/verified.svg" alt="Verified Icon">
-              <div class="popover-content">
-                  <div id="verified-info">
-                      <span>Trust list description</span>
-                      <div>${trustlist?.tlInfo.description}</div>
-                      <span>Signer</span>
-                       <div>${trustlist?.entity.display_name}</div>
+                  <div class="image-container">
+                      <img class="verifiedIcon clickable" src="${trustlistLogo}" alt="Verified Icon">
+                      <div class="popover-content">
+                          <div id="verified-info">
+                              <span>Trust list description</span>
+                              <div>${trustlist?.tlInfo.description}</div>
+                              <span>Signer</span>
+                              <div>${trustlist?.entity.display_name}</div>
+                          </div>
+                      </div>
                   </div>
-              </div>
-          </div>        
               </div>`}
           </div>
       </div>

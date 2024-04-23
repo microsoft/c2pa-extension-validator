@@ -35,6 +35,8 @@ export interface TrustedEntity {
 }
 
 export interface TrustList {
+  // version of the trust list schema
+  version?: string
   // name of the trust list
   name?: string
   // description of the trust list
@@ -46,19 +48,20 @@ export interface TrustList {
   // last updated date of the trust list (ISO 8601 format)
   last_updated: string
   // logo of the trust list (optional)
-  logo?: string
+  logo_icon?: string
   // list of trusted entities
   entities: TrustedEntity[]
 }
 
 // trust list info (subset of the trust list data)
 export interface TrustListInfo {
+  version?: string
   name?: string
   description: string
   download_url: string
   website: string
   last_updated: string
-  logo?: string
+  logo_icon?: string
   entities_count: number
 }
 
@@ -72,11 +75,14 @@ const getInfoFromTrustList = (tl: TrustList): TrustListInfo => {
     last_updated: tl.last_updated,
     entities_count: tl.entities.length
   }
+  if (tl.version != null) {
+    tli.version = tl.version
+  }
   if (tl.name != null) {
     tli.name = tl.name
   }
-  if (tl.logo != null) {
-    tli.logo = tl.logo
+  if (tl.logo_icon != null) {
+    tli.logo_icon = tl.logo_icon
   }
   return tli
 }
