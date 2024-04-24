@@ -39,14 +39,6 @@ function pasteUrlIntoInput (url: string): void {
   }, 0)
 }
 
-/*
-    If this is test page, do not run do C2PA validation
-    Instead listen for messages from the background script
-  */
-// if (window.location.href.startsWith(REMOTE_VALIDATION_LINK)) {
-//   return
-// }
-
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   /*
     Populate the IFrame with C2PA validation results for a media element.
