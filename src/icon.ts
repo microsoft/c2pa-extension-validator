@@ -77,11 +77,11 @@ function setIcon (icon: C2paImage): void {
   const zIndex = window.getComputedStyle(node).getPropertyValue('z-index')
   img.style.zIndex = `${Number.parseInt(zIndex) + 1}`
   document.body.appendChild(img)
-  updateIconPosition(icon, 30, 60)
+  updateIconPosition(icon, 30, 30)
 }
 
 window.addEventListener('resize', function () {
   store.forEach((icon) => {
-    updateIconPosition(icon, 30, 60)
+    updateIconPosition(icon, 30, 30)
   })
 })

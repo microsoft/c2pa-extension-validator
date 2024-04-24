@@ -4,10 +4,11 @@
  */
 
 import { type C2paError, type C2paResult } from './c2pa'
-import { MSG_C2PA_INSPECT_URL, MSG_CHILD_REQUEST, MSG_FRAME_CLICK, MSG_GET_CONTAINER_OFFSET, MSG_PARENT_RESPONSE, MSG_VALIDATE_URL } from './constants'
+import { MSG_C2PA_INSPECT_URL, MSG_CHILD_REQUEST, MSG_FRAME_CLICK, MSG_GET_CONTAINER_OFFSET, MSG_PARENT_RESPONSE, MSG_REQUEST_C2PA_ENTRIES, MSG_RESPONSE_C2PA_ENTRIES, MSG_VALIDATE_URL } from './constants'
 import { type MediaElement } from './content'
 import { type C2paImage, icon, type VALIDATION_STATUS } from './icon'
 import { deserialize, serialize } from './serialize'
+import { blobToDataURL } from './utils'
 
 console.debug('%cFRAME:', 'color: magenta', window.location)
 
@@ -24,7 +25,7 @@ export interface Rect {
 
 const topLevelFrame = window === window.top
 let messageCounter = 0
-const media = new WeakMap<MediaElement, C2paImage>()
+const media = new Map<MediaElement, { validation: C2paResult, icon: C2paImage, status: VALIDATION_STATUS }>()
 
 if (window.location.href.startsWith('chrome-extension:') || window.location.href.startsWith('moz-extension:')) {
   throw new Error('Ignoring extension IFrame')
@@ -119,7 +120,7 @@ function addMediaElement (mediaElement: MediaElement): void {
 async function validateMediaElement (mediaElement: MediaElement): Promise<void> {
   const source = mediaElement.currentSrc ?? mediaElement.src
   if (source == null || source === '') {
-    console.error('MediaElement lacks src:')
+    console.debug('MediaElement lacks src')
     return
   }
   const c2paResult = await c2paValidateImage(source)
@@ -147,14 +148,14 @@ async function validateMediaElement (mediaElement: MediaElement): Promise<void> 
       }
     })
   })
-  media.set(mediaElement, c2aIcon)
+  media.set(mediaElement, { validation: c2paResult, icon: c2aIcon, status: validationStatus })
 }
 
 function removeMediaElement (mediaElement: MediaElement): void {
   console.debug('%cMedia element removed:', 'color: #FF1010', mediaElement.src)
   const c2paImage = media.get(mediaElement)
   if (c2paImage != null) {
-    c2paImage.img.remove()
+    c2paImage.icon.img.remove()
     media.delete(mediaElement)
   }
 }
@@ -266,4 +267,27 @@ document.addEventListener('DOMContentLoaded', function () {
 */
 document.addEventListener('click', (event) => {
   void chrome.runtime.sendMessage({ action: MSG_FRAME_CLICK, data: null })
+})
+
+export interface MSG_RESPONSE_C2PA_ENTRIES_PAYLOAD {
+  name: string
+  status: VALIDATION_STATUS
+  thumbnail: string | null
+}
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  if (message.action === MSG_REQUEST_C2PA_ENTRIES) {
+    void (async () => {
+      for (const [, entry] of media.entries()) {
+        const blob = entry.validation.source.thumbnail.blob
+        const response = {
+          name: entry.validation.source.metadata.filename,
+          status: entry.status,
+          thumbnail: blob != null ? await blobToDataURL(blob) : null
+        }
+        void chrome.runtime.sendMessage({ action: MSG_RESPONSE_C2PA_ENTRIES, data: response })
+      }
+    })()
+    // multiple frames will act on this message, so we send the response as a separate message
+  }
 })
