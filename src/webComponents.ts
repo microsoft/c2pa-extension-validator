@@ -3,12 +3,12 @@
  *  Licensed under the MIT license.
  */
 
-import browser from 'webextension-polyfill'
 import { LitElement, html, css, type TemplateResult } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
 import { type CertificateWithThumbprint, type C2paResult } from './c2pa'
 import { type ManifestStore } from 'c2pa'
 import { localDateTime } from './utils'
+import { MSG_L3_INSPECT_URL } from './constants'
 
 /*
   The C2pa library does not export all its types, se we extract them from
@@ -385,11 +385,11 @@ export class C2paOverlay extends LitElement {
 
   private readonly handleClick = (): void => {
     console.debug('sendMessage:', {
-      action: 'inspectUrl',
+      action: MSG_L3_INSPECT_URL,
       data: this.c2paResult?.url
     })
-    void browser.runtime.sendMessage({
-      action: 'inspectUrl',
+    void chrome.runtime.sendMessage({
+      action: MSG_L3_INSPECT_URL,
       data: this.c2paResult?.url
     })
   }
@@ -403,7 +403,7 @@ export class C2paOverlay extends LitElement {
     const signingCert = this.c2paResult?.certChain?.[0]
     const parsedCert = signingCert == null ? undefined : parseCertificate(signingCert)
     const trustlist = this.c2paResult?.trustList
-    const trustlistLogo = trustlist?.tlInfo.logo_icon ? trustlist?.tlInfo.logo_icon : 'icons/verified.svg'
+    const trustlistLogo = trustlist?.tlInfo.logo_icon != null ? trustlist?.tlInfo.logo_icon : 'icons/verified.svg'
     return html`
     <div id='container'>
       <div class='title'>
@@ -567,7 +567,6 @@ export class C2paCollapsible extends LitElement {
   }
 
   renderIcon (state: 'open' | 'closed'): TemplateResult {
-    console.debug('renderIcon', state)
     const iconClass = state === 'open' ? 'icon rotated' : 'icon'
     return html`<svg class="${iconClass}" viewBox="0 0 512 512">
       <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">

@@ -3,9 +3,8 @@
  *  Licensed under the MIT license.
  */
 
-import browser from 'webextension-polyfill'
 import 'dotenv/config'
-import { DEFAULT_MESSAGE_TIMEOUT } from './constants'
+import { DEFAULT_MSG_TIMEOUT } from './constants'
 
 export const DEBUG = process.env.NODE_ENV?.toUpperCase() !== 'PRODUCTION'
 
@@ -86,9 +85,9 @@ export function localDateTime (isoDateString: string): string {
   return formattedDate
 }
 
-export async function sendMessageWithTimeout<T> (message: unknown, timeout: number = DEFAULT_MESSAGE_TIMEOUT): Promise<T> {
+export async function sendMessageWithTimeout<T> (message: unknown, timeout: number = DEFAULT_MSG_TIMEOUT): Promise<T> {
   console.debug('sendMessageWithTimeout:', message)
-  const messagePromise = browser.runtime.sendMessage(message)
+  const messagePromise = chrome.runtime.sendMessage(message)
     .catch((error) => {
       console.error('Error sending message:', error)
       throw error

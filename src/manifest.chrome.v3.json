@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "c2pa-extension-validator",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "permissions": [
         "storage",
         "scripting",
@@ -9,7 +9,8 @@
         "notifications",
         "webRequest",
         "tabs",
-        "webNavigation"
+        "webNavigation",
+        "activeTab"
     ],
     "host_permissions": [
         "<all_urls>"
@@ -35,6 +36,16 @@
                 "<all_urls>"
             ],
             "js": [
+                "inject.js"
+            ],
+            "run_at": "document_start",
+            "all_frames": true
+        },
+        {
+            "matches": [
+                "<all_urls>"
+            ],
+            "js": [
                 "content.js"
             ],
             "run_at": "document_start"
@@ -50,8 +61,7 @@
                 "icons/verified.svg",
                 "icons/movie.svg",
                 "toolkit_bg.wasm",
-                "iframe.html",
-                "iframe.js"
+                "iframe.html"
             ],
             "matches": [
                 "<all_urls>"

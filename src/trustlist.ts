@@ -5,7 +5,7 @@
 
 import browser from 'webextension-polyfill'
 import { type CertificateWithThumbprint, calculateSha256CertThumbprintFromX5c } from './certs/certs'
-import { DID_NOT_HANDLE, type MESSAGE_PAYLOAD } from './constants'
+import { AWAIT_ASYNC_RESPONSE, MSG_ADD_TRUSTLIST, MSG_CHECK_TRUSTLIST_INCLUSION, MSG_GET_TRUSTLIST_INFOS, MSG_REMOVE_TRUSTLIST, type MSG_PAYLOAD } from './constants'
 
 // valid JWK key types (to adhere to C2PA cert profile: https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_certificate_profile)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -216,41 +216,41 @@ export function checkTrustListInclusion (certChain: CertificateWithThumbprint[])
 }
 
 export async function checkTrustListInclusionRemote (certChain: CertificateWithThumbprint[]): Promise<TrustListMatch | null> {
-  return await browser.runtime.sendMessage({ action: 'checkTrustListInclusion', data: certChain })
+  return await chrome.runtime.sendMessage({ action: MSG_CHECK_TRUSTLIST_INCLUSION, data: certChain })
 }
 
 export async function getTrustListInfosRemote (): Promise<TrustListInfo[] | undefined> {
-  return await browser.runtime.sendMessage({ action: 'getTrustListInfos', data: undefined })
+  return await chrome.runtime.sendMessage({ action: MSG_GET_TRUSTLIST_INFOS, data: undefined })
 }
 
 export async function addTrustListRemote (tl: TrustList): Promise<TrustListInfo> {
-  return await browser.runtime.sendMessage({ action: 'addTrustList', data: tl })
+  return await chrome.runtime.sendMessage({ action: MSG_ADD_TRUSTLIST, data: tl })
 }
 
 export async function removeTrustListRemote (index: number): Promise<void> {
-  return await browser.runtime.sendMessage({ action: 'removeTrustList', data: index })
+  await chrome.runtime.sendMessage({ action: MSG_REMOVE_TRUSTLIST, data: index })
 }
 
 export async function init (): Promise<void> {
   void loadTrustLists()
-  browser.runtime.onMessage.addListener(
+  chrome.runtime.onMessage.addListener(
     // eslint-disable-next-line @typescript-eslint/promise-function-async
-    (request: MESSAGE_PAYLOAD, _sender) => {
-      if (request.action === 'checkTrustListInclusion') {
-        return Promise.resolve(checkTrustListInclusion(request.data as CertificateWithThumbprint[]))
+    (request: MSG_PAYLOAD, sender, sendResponse) => {
+      if (request.action === MSG_CHECK_TRUSTLIST_INCLUSION) {
+        sendResponse(checkTrustListInclusion(request.data as CertificateWithThumbprint[]))
       }
-      if (request.action === 'getTrustListInfos') {
-        return Promise.resolve(getTrustListInfos())
+      if (request.action === MSG_GET_TRUSTLIST_INFOS) {
+        sendResponse(getTrustListInfos())
       }
-      if (request.action === 'addTrustList') {
-        return Promise.resolve(addTrustList(request.data as TrustList))
+      if (request.action === MSG_ADD_TRUSTLIST) {
+        sendResponse(addTrustList(request.data as TrustList))
       }
-      if (request.action === 'removeTrustList') {
+      if (request.action === MSG_REMOVE_TRUSTLIST) {
         removeTrustList(request.data as number)
-        return Promise.resolve()
+        sendResponse(null)
       }
 
-      return DID_NOT_HANDLE
+      return AWAIT_ASYNC_RESPONSE
     }
   )
 }
