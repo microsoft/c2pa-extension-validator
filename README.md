@@ -74,14 +74,12 @@ Note that untrusted *warning* icon is not currently specified in the [C2PA UX re
 
 The extension currently has a few limitations that will be addressed in future releases:
 
-* **IFrames and shadow-roots**: Media within child documents like IFrames and shadow roots are not currently validated.
 * **Icon and overlay placement**: The extension does not currently account for the visibility of media on the page, which may result in icons and overlays appearing in unexpected locations.
 * **Malicious web pages**: Currently, there are limited countermeasures against web pages that would spoof, alter, or remove the extension's output.
 * **Accessibility**: The extension's UI elements are not fully accessible.
 * **Conflict with other extensions**: The extension may conflict with other extensions that modify the DOM or media elements. It is currently unknown which extensions may conflict with this extension.
 * **Partial media support**: The extension currently supports only a subset of media types supported by the underlying C2PA validation library.
 * **Firefox compatibility**: The extension currently does not work with Firefox.
-* **Time Stamps Authority Claims**: Trustlist validation currently fails when media uses [sigTst](https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_time_stamps) and not X509 cert chains.
 
 ## Contributing
 

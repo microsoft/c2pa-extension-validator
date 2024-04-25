@@ -144,7 +144,7 @@ const onwarn = (warning, warn) => {
   background.js
 */
 const background = {
-  input: ['src/background.ts', 'src/popup.ts', 'src/options.ts', 'src/offscreen.ts', 'src/iframe.ts', 'src/webComponents.ts'],
+  input: ['src/background.ts', 'src/popup.ts', 'src/options.ts', 'src/offscreen.ts', 'src/overlayFrame.ts', 'src/webComponents.ts'],
   treeshake: { moduleSideEffects: [] },
   output: {
     dir: 'dist/chrome',
@@ -186,7 +186,24 @@ const content = {
   onwarn
 }
 
-export default [background, content]
+/*
+  inject.js
+*/
+const inject = {
+  input: 'src/inject.ts',
+  treeshake: { moduleSideEffects: [] },
+  output: {
+    file: 'dist/chrome/inject.js',
+    name: 'inject',
+    format: 'iife', // always iife as this code is injected into the tab and not imported
+    ...output
+  },
+  watch,
+  plugins,
+  onwarn
+}
+
+export default [background, content, inject]
 
 // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
 function eslint (options = {}) {
