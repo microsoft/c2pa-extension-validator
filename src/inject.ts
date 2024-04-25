@@ -288,6 +288,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         void chrome.runtime.sendMessage({ action: MSG_RESPONSE_C2PA_ENTRIES, data: response })
       }
     })()
-    // multiple frames will act on this message, so we send the response as a separate message
+    // multiple frames will act on this message, so we must not respond directly
   }
 })

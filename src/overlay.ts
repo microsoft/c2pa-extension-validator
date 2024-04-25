@@ -42,9 +42,7 @@ export class C2paOverlay /* extends HTMLElement */ {
       (request: MSG_PAYLOAD, sender, sendResponse) => {
         if (request.action === MSG_UPDATE_FRAME_HEIGHT) {
           this._iframe.style.height = `${request.data as number}px`
-          sendResponse({ status: 'OK' })
         }
-        return AWAIT_ASYNC_RESPONSE
       }
     )
   }

@@ -243,14 +243,12 @@ export async function init (): Promise<void> {
         sendResponse(getTrustListInfos())
       }
       if (request.action === MSG_ADD_TRUSTLIST) {
-        sendResponse(addTrustList(request.data as TrustList))
+        void addTrustList(request.data as TrustList).then(sendResponse)
+        return AWAIT_ASYNC_RESPONSE
       }
       if (request.action === MSG_REMOVE_TRUSTLIST) {
         removeTrustList(request.data as number)
-        sendResponse(null)
       }
-
-      return AWAIT_ASYNC_RESPONSE
     }
   )
 }
