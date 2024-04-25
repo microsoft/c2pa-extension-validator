@@ -113,11 +113,11 @@ async function displayTrustListInfos (): Promise<void> {
   console.debug('displayTrustListInfos called')
   void getTrustListInfosRemote()
     .then(
-      (tlis: TrustListInfo[] | undefined) => {
+      (tlis: TrustListInfo[]) => {
         const trustListInfo = document.getElementById('trust-list-info') as HTMLDivElement
         trustListInfo.style.display = 'block'
 
-        if ((tlis == null) || tlis.length === 0) {
+        if (tlis.length === 0) {
           trustListInfo.innerHTML = '<p>No trust list set</p>'
         } else {
           let listHtml = '<p>Trust Lists:</p><ul>'

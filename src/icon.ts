@@ -3,85 +3,104 @@
  *  Licensed under the MIT license.
  */
 
+import { CR_ICON_SIZE, CR_ICON_MARGIN, CR_ICON_Z_INDEX, type VALIDATION_STATUS } from './constants'
 import { type MediaElement } from './content'
 
-const CR_VALID_ICON: string = chrome.runtime.getURL('icons/cr.svg')
-const CR_ERROR_ICON: string = chrome.runtime.getURL('icons/crx.svg')
-const CR_WARNING_ICON: string = chrome.runtime.getURL('icons/cr!.svg')
-
-const store = new Map<HTMLElement, C2paImage>()
-
-export type VALIDATION_STATUS = 'success' | 'warning' | 'error'
-const statusIcon = (status: VALIDATION_STATUS): string => {
-  switch (status) {
-    case 'success':
-      return CR_VALID_ICON
-    case 'warning':
-      return CR_WARNING_ICON
-    case 'error':
-      return CR_ERROR_ICON
-  }
+const imageSources: { [key in VALIDATION_STATUS]: string } = {
+  success: chrome.runtime.getURL('icons/cr.svg'),
+  warning: chrome.runtime.getURL('icons/cr!.svg'),
+  error: chrome.runtime.getURL('icons/crx.svg')
 }
 
-export interface C2paImage {
-  img: HTMLImageElement
-  parent: HTMLElement
-  url: string
-}
-
-export function icon (parent: MediaElement, url: string, status: VALIDATION_STATUS, listener: (this: HTMLImageElement, ev: MouseEvent) => unknown): C2paImage {
-  const img = createImg(statusIcon(status))
-  const c2paImage: C2paImage = { img, parent, url }
-
-  img.addEventListener('click', listener)
-  store.set(parent, c2paImage)
-  setIcon(c2paImage)
-  return c2paImage
+const images: { [key in VALIDATION_STATUS]: HTMLImageElement } = {
+  success: createImg(imageSources.success),
+  warning: createImg(imageSources.warning),
+  error: createImg(imageSources.error)
 }
 
 function createImg (url: string): HTMLImageElement {
   const img = document.createElement('img')
-  img.style.height = '2em'
-  img.style.width = '2em'
-  img.style.border = 'none'
+  img.style.height = CR_ICON_SIZE
+  img.style.width = CR_ICON_SIZE
+  img.style.position = 'absolute'
+  img.style.padding = '0'
+  img.style.margin = '0'
+  img.style.zIndex = CR_ICON_Z_INDEX.toString()
   img.setAttribute('src', url)
   img.setAttribute('alt', 'Content Credentials')
   img.setAttribute('title', 'Content Credentials')
   return img
 }
 
-function updateIconPosition (icon: C2paImage, MINICONSIZE: number, MAXICONSIZE: number): void {
-  const img = icon.img
-  const rect = icon.parent.getBoundingClientRect()
-
-  // Calculate width and height as 10% of the parent's size, but constrain within min and max sizes
-  const scaleSize = Math.min(rect.width, rect.height) * 0.1 // 10% of the smaller dimension of parent
-  const size = Math.max(Math.min(scaleSize, MAXICONSIZE), MINICONSIZE) // Constrain between MIN and MAX
-
-  img.style.width = `${size}px`
-  img.style.height = `${size}px` // Keep the icon square
-  img.style.position = 'absolute' // Ensure position is absolute to place it correctly
-  img.style.padding = '0'
-  img.style.margin = '0'
-
-  // Position the icon in the top right corner of the parent
-  img.style.top = `${rect.top + window.scrollY + 5}px` // Use rect.top for vertical positioning
-  img.style.left = `${rect.right + window.scrollX - size - 5}px` // Adjusted to keep the icon in the right
-}
-
-function setIcon (icon: C2paImage): void {
-  const node = icon.parent
-  const img = icon.img
-  img.style.position = 'absolute'
-  // make sure the zIndex is higher than that of the target element
-  const zIndex = window.getComputedStyle(node).getPropertyValue('z-index')
-  img.style.zIndex = `${Number.parseInt(zIndex) + 1}`
-  document.body.appendChild(img)
-  updateIconPosition(icon, 30, 30)
-}
-
+/*
+  When the web page is resized, the parent images can shift in ways that make the CR icon no longer line up with the parent image.
+  To address this, we need to listen for the resize event and reposition the CR icons.
+*/
 window.addEventListener('resize', function () {
-  store.forEach((icon) => {
-    updateIconPosition(icon, 30, 30)
-  })
+  CrIcon.updateAll()
 })
+
+export class CrIcon {
+  private static readonly _store = new Set<CrIcon>()
+  private readonly _crImg: HTMLImageElement
+  private readonly _parent: MediaElement
+  private _status: VALIDATION_STATUS
+  private _clickListener: ((this: HTMLImageElement, ev: MouseEvent) => unknown) | undefined
+
+  constructor (parent: MediaElement, status: VALIDATION_STATUS) {
+    this._parent = parent
+    this._status = status
+    this._crImg = images[status].cloneNode() as HTMLImageElement
+    document.body.appendChild(this._crImg)
+    this.position()
+    CrIcon._store.add(this)
+  }
+
+  public remove (): void {
+    this._clickListener != null && this._crImg.removeEventListener('click', this._clickListener)
+    this._crImg.remove()
+    CrIcon._store.delete(this)
+  }
+
+  public hide (): void {
+    this._crImg.style.display = 'none'
+  }
+
+  public show (): void {
+    this._crImg.style.display = 'absolute'
+  }
+
+  public position (): void {
+    const rect = this._parent.getBoundingClientRect()
+    this._crImg.style.top = `${rect.top + window.scrollY + CR_ICON_MARGIN}px`
+    this._crImg.style.left = `${rect.right + window.scrollX - 30 - CR_ICON_MARGIN}px` // TODO: what is 30?
+  }
+
+  // eslint-disable-next-line accessor-pairs
+  set onClick (listener: (this: HTMLImageElement, ev: MouseEvent) => unknown) {
+    this._clickListener = listener
+    this._crImg.addEventListener('click', listener)
+  }
+
+  get status (): VALIDATION_STATUS {
+    return this._status
+  }
+
+  set status (status: VALIDATION_STATUS) {
+    if (!CrIcon.validateStatus(status)) {
+      throw new Error('Invalid status')
+    }
+    this._status = status
+    this._crImg.src = imageSources[status]
+  }
+
+  private static validateStatus (status: unknown): status is VALIDATION_STATUS {
+    return ['success', 'warning', 'error'].includes(status as string)
+  }
+
+  public static updateAll (): void {
+    CrIcon._store.forEach((icon) => {
+      icon.position()
+    })
+  }
+}
