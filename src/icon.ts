@@ -3,7 +3,7 @@
  *  Licensed under the MIT license.
  */
 
-import { CR_ICON_SIZE, CR_ICON_MARGIN, CR_ICON_Z_INDEX, type VALIDATION_STATUS } from './constants'
+import { CR_ICON_SIZE, CR_ICON_Z_INDEX, type VALIDATION_STATUS, CR_ICON_MARGIN_LEFT, CR_ICON_MARGIN_TOP } from './constants'
 import { type MediaElement } from './content'
 
 const imageSources: { [key in VALIDATION_STATUS]: string } = {
@@ -72,8 +72,8 @@ export class CrIcon {
 
   public position (): void {
     const rect = this._parent.getBoundingClientRect()
-    this._crImg.style.top = `${rect.top + window.scrollY + CR_ICON_MARGIN}px`
-    this._crImg.style.left = `${rect.right + window.scrollX - 30 - CR_ICON_MARGIN}px` // TODO: what is 30?
+    this._crImg.style.top = `${rect.top + window.scrollY + CR_ICON_MARGIN_TOP}px`
+    this._crImg.style.left = `${rect.right + window.scrollX - CR_ICON_MARGIN_LEFT}px` // TODO: what is 30?
   }
 
   // eslint-disable-next-line accessor-pairs

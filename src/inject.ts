@@ -147,7 +147,7 @@ async function validateMediaElement (mediaElement: MediaElement): Promise<void> 
   c2paIcon.onClick = async () => {
     const offsets = await getOffsets(mediaElement)
     void chrome.runtime.sendMessage({
-      action: MSG_VALIDATE_URL, // TODO: change to MSG_DISPLAY_C2PA_OVERLAY
+      action: MSG_VALIDATE_URL,
       data: {
         c2paResult: await serialize(c2paResult),
         position: { x: offsets.x + offsets.width, y: offsets.y }

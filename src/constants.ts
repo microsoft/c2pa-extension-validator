@@ -36,7 +36,8 @@ export const AWAIT_ASYNC_RESPONSE = true
 
 export const CR_ICON_SIZE = '2em'
 export const CR_ICON_Z_INDEX = 10000
-export const CR_ICON_MARGIN = 5
+export const CR_ICON_MARGIN_LEFT = 35
+export const CR_ICON_MARGIN_TOP = 5
 export const OVERLAY_Z_INDEX = 10001
 
 export const MIME = {
