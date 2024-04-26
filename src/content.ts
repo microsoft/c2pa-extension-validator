@@ -3,7 +3,7 @@
  *  Licensed under the MIT license.
  */
 
-import { AWAIT_ASYNC_RESPONSE, MSG_DISPLAY_C2PA_OVERLAY, MSG_FRAME_CLICK, MSG_REMOTE_INSPECT_URL } from './constants'
+import { MSG_DISPLAY_C2PA_OVERLAY, MSG_FRAME_CLICK, MSG_REMOTE_INSPECT_URL } from './constants'
 import { C2paOverlay } from './overlay'
 
 export type MediaElement = (HTMLImageElement | HTMLVideoElement)
@@ -46,21 +46,16 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === MSG_DISPLAY_C2PA_OVERLAY) {
     console.debug('%cCONTENT: VALIDATION_STATUS:', 'color: #A0FF12', message)
     overlay.show(message.data.position.x as number, message.data.position.y as number)
-    sendResponse({ status: 'OK' })
   }
 
   if (message.action === MSG_REMOTE_INSPECT_URL) {
     console.debug(MSG_REMOTE_INSPECT_URL)
     const url = message.data as string
     pasteUrlIntoInput(url)
-    sendResponse({ status: 'OK' })
   }
 
   if (message.action === MSG_FRAME_CLICK) {
     console.debug('CONTENT:', MSG_FRAME_CLICK)
     overlay.hide()
-    sendResponse({ status: 'OK' })
   }
-
-  return AWAIT_ASYNC_RESPONSE
 })

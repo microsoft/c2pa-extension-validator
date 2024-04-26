@@ -22,7 +22,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const data = message.data
 
   if (tabId == null || !Number.isInteger(tabId)) {
-    return AWAIT_ASYNC_RESPONSE
+    return
   }
 
   if (action === MSG_GET_TAB_ID) {
@@ -30,9 +30,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (action === MSG_C2PA_INSPECT_URL) {
-    void validateUrl(data as string).then(result => {
-      sendResponse(result)
-    })
+    void validateUrl(data as string).then(sendResponse)
+    return AWAIT_ASYNC_RESPONSE
   }
 
   if (action === MSG_L3_INSPECT_URL) {
@@ -49,11 +48,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           console.debug('sendMessage:', { action: MSG_REMOTE_INSPECT_URL, data })
           void chrome.tabs.sendMessage(id, { action: MSG_REMOTE_INSPECT_URL, data })
         }, 1000)
-        sendResponse(null)
       })
   }
-
-  return AWAIT_ASYNC_RESPONSE
 })
 
 void initTrustList()

@@ -4,11 +4,16 @@
  */
 
 import { type C2paError, type C2paResult } from './c2pa'
-import { MSG_C2PA_INSPECT_URL, MSG_CHILD_REQUEST, MSG_FRAME_CLICK, MSG_GET_CONTAINER_OFFSET, MSG_PARENT_RESPONSE, MSG_REQUEST_C2PA_ENTRIES, MSG_RESPONSE_C2PA_ENTRIES, MSG_VALIDATE_URL } from './constants'
 import { type MediaElement } from './content'
-import { type C2paImage, icon, type VALIDATION_STATUS } from './icon'
+import { CrIcon } from './icon'
 import { deserialize, serialize } from './serialize'
+import { checkTrustListInclusionRemote } from './trustlist'
 import { blobToDataURL } from './utils'
+import {
+  MSG_C2PA_INSPECT_URL, MSG_CHILD_REQUEST, MSG_FRAME_CLICK, MSG_GET_CONTAINER_OFFSET, MSG_PARENT_RESPONSE,
+  MSG_REQUEST_C2PA_ENTRIES, MSG_RESPONSE_C2PA_ENTRIES, MSG_TRUSTLIST_UPDATE, MSG_VALIDATE_URL,
+  type VALIDATION_STATUS
+} from './constants'
 
 console.debug('%cFRAME:', 'color: magenta', window.location)
 
@@ -25,7 +30,7 @@ export interface Rect {
 
 const topLevelFrame = window === window.top
 let messageCounter = 0
-const media = new Map<MediaElement, { validation: C2paResult, icon: C2paImage, status: VALIDATION_STATUS }>()
+const media = new Map<MediaElement, { validation: C2paResult, icon: CrIcon, status: VALIDATION_STATUS }>()
 
 if (window.location.href.startsWith('chrome-extension:') || window.location.href.startsWith('moz-extension:')) {
   throw new Error('Ignoring extension IFrame')
@@ -138,7 +143,8 @@ async function validateMediaElement (mediaElement: MediaElement): Promise<void> 
   } else if (c2paResult.trustList == null) {
     validationStatus = 'warning'
   }
-  const c2aIcon = icon(mediaElement, source, validationStatus, async () => {
+  const c2paIcon = new CrIcon(mediaElement, validationStatus)
+  c2paIcon.onClick = async () => {
     const offsets = await getOffsets(mediaElement)
     void chrome.runtime.sendMessage({
       action: MSG_VALIDATE_URL,
@@ -147,15 +153,16 @@ async function validateMediaElement (mediaElement: MediaElement): Promise<void> 
         position: { x: offsets.x + offsets.width, y: offsets.y }
       }
     })
-  })
-  media.set(mediaElement, { validation: c2paResult, icon: c2aIcon, status: validationStatus })
+  }
+
+  media.set(mediaElement, { validation: c2paResult, icon: c2paIcon, status: validationStatus })
 }
 
 function removeMediaElement (mediaElement: MediaElement): void {
   console.debug('%cMedia element removed:', 'color: #FF1010', mediaElement.src)
   const c2paImage = media.get(mediaElement)
   if (c2paImage != null) {
-    c2paImage.icon.img.remove()
+    c2paImage.icon.remove()
     media.delete(mediaElement)
   }
 }
@@ -275,6 +282,19 @@ export interface MSG_RESPONSE_C2PA_ENTRIES_PAYLOAD {
   thumbnail: string | null
 }
 
+function updateTrustLists (): void {
+  for (const [, c2paResult] of media.entries()) {
+    if (c2paResult.validation.certChain != null) {
+      void checkTrustListInclusionRemote(c2paResult.validation.certChain).then((trustListMatch) => {
+        if (c2paResult.validation.manifestStore == null) return
+        const c2paStatus = c2paResult.validation.manifestStore.validationStatus.length > 0 ? 'error' : 'success'
+        c2paResult.validation.trustList = trustListMatch
+        c2paResult.icon.status = c2paStatus === 'error' ? 'error' : trustListMatch === null ? 'warning' : 'success'
+      })
+    }
+  }
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === MSG_REQUEST_C2PA_ENTRIES) {
     void (async () => {
@@ -289,5 +309,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
     })()
     // multiple frames will act on this message, so we send the response as a separate message
+  }
+  if (message.action === MSG_TRUSTLIST_UPDATE) {
+    updateTrustLists()
   }
 })

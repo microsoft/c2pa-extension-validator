@@ -9,6 +9,8 @@ export interface MSG_PAYLOAD {
   frame?: string
 }
 
+export type VALIDATION_STATUS = 'success' | 'warning' | 'error'
+
 export const MSG_C2PA_INSPECT_URL = 'MSG_C2PA_INSPECT_URL'
 export const MSG_DISPLAY_C2PA_OVERLAY = 'MSG_DISPLAY_C2PA_OVERLAY'
 export const MSG_UPDATE_FRAME_HEIGHT = 'MSG_UPDATE_FRAME_HEIGHT'
@@ -27,10 +29,16 @@ export const MSG_REMOVE_TRUSTLIST = 'MSG_REMOVE_TRUSTLIST'
 export const MSG_FRAME_CLICK = 'MSG_FRAME_CLICK'
 export const MSG_REQUEST_C2PA_ENTRIES = 'MSG_REQUEST_C2PA_ENTRIES'
 export const MSG_RESPONSE_C2PA_ENTRIES = 'MSG_RESPONSE_C2PA_ENTRIES'
-
+export const MSG_TRUSTLIST_UPDATE = 'MSG_TRUSTLIST_UPDATE'
 export const DEFAULT_MSG_TIMEOUT = 5000 /* 5 sec */
 export const REMOTE_VALIDATION_LINK = 'https://contentintegrity.microsoft.com/check'
 export const AWAIT_ASYNC_RESPONSE = true
+
+export const CR_ICON_SIZE = '2em'
+export const CR_ICON_Z_INDEX = 10000
+export const CR_ICON_MARGIN_LEFT = 35
+export const CR_ICON_MARGIN_TOP = 5
+export const OVERLAY_Z_INDEX = 10001
 
 export const MIME = {
   C2PA: 'application/c2pa',

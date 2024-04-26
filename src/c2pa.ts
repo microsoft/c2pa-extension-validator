@@ -51,8 +51,8 @@ export async function init (): Promise<void> {
         void _validateUrl(request.data as string).then(result => {
           sendResponse(result)
         })
+        return AWAIT_ASYNC_RESPONSE
       }
-      return AWAIT_ASYNC_RESPONSE
     }
   )
 }

@@ -91,11 +91,11 @@ const getInfoFromTrustList = (tl: TrustList): TrustListInfo => {
  * Retrieves the trust list infos.
  * @returns The trust list infos if available, otherwise undefined.
  */
-export function getTrustListInfos (): TrustListInfo[] | undefined {
+export function getTrustListInfos (): TrustListInfo[] {
   if (globalTrustLists != null && globalTrustLists.length > 0) {
     return globalTrustLists.map(tl => getInfoFromTrustList(tl))
   } else {
-    return undefined
+    return []
   }
 }
 
@@ -132,6 +132,8 @@ export async function addTrustList (tl: TrustList): Promise<TrustListInfo> {
     console.debug(`Trust list stored: ${tl.name}`)
   })
 
+  void notifyTabOfTrustListUpdate()
+
   return getInfoFromTrustList(tl)
 }
 
@@ -151,6 +153,8 @@ export function removeTrustList (index: number): void {
   chrome.storage.local.set({ trustList: globalTrustLists }, function () {
     console.debug(`Trust list removed, index: ${index}, name: ${name}`)
   })
+
+  void notifyTabOfTrustListUpdate()
 }
 
 /**
@@ -219,7 +223,7 @@ export async function checkTrustListInclusionRemote (certChain: CertificateWithT
   return await chrome.runtime.sendMessage({ action: MSG_CHECK_TRUSTLIST_INCLUSION, data: certChain })
 }
 
-export async function getTrustListInfosRemote (): Promise<TrustListInfo[] | undefined> {
+export async function getTrustListInfosRemote (): Promise<TrustListInfo[]> {
   return await chrome.runtime.sendMessage({ action: MSG_GET_TRUSTLIST_INFOS, data: undefined })
 }
 
@@ -229,6 +233,17 @@ export async function addTrustListRemote (tl: TrustList): Promise<TrustListInfo>
 
 export async function removeTrustListRemote (index: number): Promise<void> {
   await chrome.runtime.sendMessage({ action: MSG_REMOVE_TRUSTLIST, data: index })
+}
+
+async function notifyTabOfTrustListUpdate (): Promise<void> {
+  const tabId = await getActiveTabId()
+  if (tabId == null) return
+  void chrome.tabs.sendMessage(tabId, { action: 'MSG_TRUSTLIST_UPDATE', data: null })
+}
+
+async function getActiveTabId (): Promise<number | undefined> {
+  const tabs = await browser.tabs.query({ active: true, currentWindow: true })
+  return tabs?.[0]?.id
 }
 
 export async function init (): Promise<void> {
@@ -243,14 +258,12 @@ export async function init (): Promise<void> {
         sendResponse(getTrustListInfos())
       }
       if (request.action === MSG_ADD_TRUSTLIST) {
-        sendResponse(addTrustList(request.data as TrustList))
+        void addTrustList(request.data as TrustList).then(sendResponse)
+        return AWAIT_ASYNC_RESPONSE
       }
       if (request.action === MSG_REMOVE_TRUSTLIST) {
         removeTrustList(request.data as number)
-        sendResponse(null)
       }
-
-      return AWAIT_ASYNC_RESPONSE
     }
   )
 }

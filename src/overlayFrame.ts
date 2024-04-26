@@ -4,7 +4,7 @@
  */
 
 import { type C2paResult } from './c2pa'
-import { AWAIT_ASYNC_RESPONSE, MSG_DISPLAY_C2PA_OVERLAY, MSG_FRAME_CLICK, MSG_UPDATE_FRAME_HEIGHT, MSG_VALIDATE_URL } from './constants'
+import { MSG_DISPLAY_C2PA_OVERLAY, MSG_FRAME_CLICK, MSG_UPDATE_FRAME_HEIGHT, MSG_VALIDATE_URL } from './constants'
 import { deserialize } from './serialize'
 import { type C2paOverlay } from './webComponents'
 
@@ -25,23 +25,19 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   */
   _tabId = _tabId === -1 ? (sender.tab?.id ?? -1) : _tabId
   if (_tabId === -1) {
-    return AWAIT_ASYNC_RESPONSE
+    return
   }
 
   if (message.action === MSG_FRAME_CLICK) {
-    void sendToContent({ action: MSG_FRAME_CLICK, data: null })
-    sendResponse({ status: 'OK' })
+    sendToContent({ action: MSG_FRAME_CLICK, data: null })
   }
 
   if (message.action === MSG_VALIDATE_URL) {
     const c2paResult = deserialize(message.data.c2paResult) as C2paResult
     const position = message.data.position as { x: number, y: number }
     _overlay.c2paResult = c2paResult
-    void sendToContent({ action: MSG_DISPLAY_C2PA_OVERLAY, data: { position } })
-    sendResponse({ status: 'OK' })
+    sendToContent({ action: MSG_DISPLAY_C2PA_OVERLAY, data: { position } })
   }
-
-  return AWAIT_ASYNC_RESPONSE
 })
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -58,10 +54,10 @@ const resizeObserver = new ResizeObserver(entries => {
   // We are only observing the body element, so expect only one entry
   for (const entry of entries) {
     const newHeight = Math.floor(entry.contentRect.height)
-    void sendToContent({ action: MSG_UPDATE_FRAME_HEIGHT, data: newHeight })
+    sendToContent({ action: MSG_UPDATE_FRAME_HEIGHT, data: newHeight })
   }
 })
 
-async function sendToContent (message: unknown): Promise<unknown> {
-  return await chrome.tabs.sendMessage(_tabId, message)
+function sendToContent (message: unknown): void {
+  void chrome.tabs.sendMessage(_tabId, message)
 }

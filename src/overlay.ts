@@ -3,7 +3,7 @@
  *  Licensed under the MIT license.
  */
 
-import { AWAIT_ASYNC_RESPONSE, MSG_UPDATE_FRAME_HEIGHT, type MSG_PAYLOAD } from './constants'
+import { MSG_UPDATE_FRAME_HEIGHT, OVERLAY_Z_INDEX, type MSG_PAYLOAD } from './constants'
 
 console.debug('Overlay.ts: load')
 
@@ -18,7 +18,7 @@ export class C2paOverlay /* extends HTMLElement */ {
     iframe.tabIndex = 0
     iframe.style.cssText = `
     position: absolute;
-    z-index: 1000;
+    z-index: ${OVERLAY_Z_INDEX};
     visibility: hidden;
     resize: none;
     overflow: hidden;
@@ -42,9 +42,7 @@ export class C2paOverlay /* extends HTMLElement */ {
       (request: MSG_PAYLOAD, sender, sendResponse) => {
         if (request.action === MSG_UPDATE_FRAME_HEIGHT) {
           this._iframe.style.height = `${request.data as number}px`
-          sendResponse({ status: 'OK' })
         }
-        return AWAIT_ASYNC_RESPONSE
       }
     )
   }
