@@ -8,7 +8,7 @@ import { extractCertChain } from './certs/certs.js'
 import { serialize } from './serialize.js'
 import { type Certificate } from '@fidm/x509'
 import { checkTrustListInclusionRemote, type TrustListMatch } from './trustlist.js'
-import { AWAIT_ASYNC_RESPONSE, MSG_INSPECT_URL, type MSG_PAYLOAD } from './constants.js'
+import { AWAIT_ASYNC_RESPONSE, MSG_C2PA_INSPECT_URL, type MSG_PAYLOAD } from './constants.js'
 
 console.debug('C2pa: Script: start')
 
@@ -47,7 +47,7 @@ export async function init (): Promise<void> {
 
   chrome.runtime.onMessage.addListener(
     (request: MSG_PAYLOAD, sender, sendResponse) => {
-      if (request.action === MSG_INSPECT_URL) {
+      if (request.action === MSG_C2PA_INSPECT_URL) {
         void _validateUrl(request.data as string).then(result => {
           sendResponse(result)
         })
@@ -98,11 +98,6 @@ async function _validateUrl (url: string): Promise<C2paResult | C2paError> {
   const serializedResult = await serialize(result) as C2paResult
 
   return serializedResult
-}
-
-export async function validateUrl (url: string): Promise<C2paResult | C2paError> {
-  const trustListMatch = await chrome.runtime.sendMessage({ action: MSG_INSPECT_URL, data: url })
-  return trustListMatch
 }
 
 console.debug('C2pa: Script: end')

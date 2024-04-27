@@ -5,8 +5,8 @@
 
 import browser from 'webextension-polyfill'
 import { init as initTrustList } from './trustlist'
-import { AWAIT_ASYNC_RESPONSE, MSG_C2PA_INSPECT_URL, MSG_GET_TAB_ID, MSG_INSPECT_URL, MSG_L3_INSPECT_URL, MSG_REMOTE_INSPECT_URL, REMOTE_VALIDATION_LINK } from './constants'
-import { type C2paError, type C2paResult } from './c2pa'
+import { MSG_GET_TAB_ID, MSG_L3_INSPECT_URL, MSG_REMOTE_INSPECT_URL, REMOTE_VALIDATION_LINK } from './constants'
+
 console.debug('Background: Script: start')
 
 browser.webRequest.onBeforeRequest.addListener(
@@ -27,11 +27,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (action === MSG_GET_TAB_ID) {
     sendResponse(tabId)
-  }
-
-  if (action === MSG_C2PA_INSPECT_URL) {
-    void validateUrl(data as string).then(sendResponse)
-    return AWAIT_ASYNC_RESPONSE
   }
 
   if (action === MSG_L3_INSPECT_URL) {
@@ -76,12 +71,6 @@ async function init (): Promise<void> {
     title: 'Content Credentials',
     message: 'Loaded'
   })
-}
-
-async function validateUrl (url: string): Promise<C2paResult | C2paError> {
-  console.debug('sendMessage:', { action: MSG_INSPECT_URL, data: url })
-  const trustListMatch = await chrome.runtime.sendMessage({ action: MSG_INSPECT_URL, data: url })
-  return trustListMatch
 }
 
 async function openOrSwitchToTab (url: string): Promise<browser.Tabs.Tab> {
