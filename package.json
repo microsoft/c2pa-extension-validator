@@ -51,6 +51,9 @@
   "pnpm": {
     "overrides": {
       "webpack@>=5.0.0 <5.76.0": ">=5.76.0"
+    },
+    "patchedDependencies": {
+      "c2pa@0.19.1": "patches/c2pa@0.19.1.patch"
     }
   }
 }

@@ -1,0 +1,47 @@
+diff --git a/dist/c2pa.esm.js b/dist/c2pa.esm.js
+index ea541d7bf18696a95e7c43f7cefa9b45d5d121a9..a1d0dcdff84d36d5b3f2b8a7a1ee3d3f324bb052 100644
+--- a/dist/c2pa.esm.js
++++ b/dist/c2pa.esm.js
+@@ -21292,17 +21292,24 @@ function createWorkerPool(config) {
+  */
+ const dbg$4 = debug('c2pa:workers');
+ async function createPoolWrapper(config) {
+-    const res = await fetch(config.scriptSrc);
+-    if (!res.ok)
+-        throw new InvalidWorkerSourceError(config.scriptSrc, res);
+-    const src = await res.text();
+-    // @TODO: check subresource integrity
+-    dbg$4('Fetched worker from %s (%d bytes)', config.scriptSrc, src.length);
+-    const workerBlob = new Blob([src], { type: 'application/javascript' });
+-    const workerUrl = URL.createObjectURL(workerBlob);
++	/*
++
++		Firefox v3 extension CSP restrictions will not allow a worker to be instantiated from a blob source.
++		Since we are including this lib as a static file, the transformation from URL to blob is unnecessary.
++		We instantiate the worker the extension supplied URL directly.
++
++	*/
++    // const res = await fetch(config.scriptSrc);
++    // if (!res.ok)
++    //     throw new InvalidWorkerSourceError(config.scriptSrc, res);
++    // const src = await res.text();
++    // // @TODO: check subresource integrity
++    // dbg$4('Fetched worker from %s (%d bytes)', config.scriptSrc, src.length);
++    // const workerBlob = new Blob([src], { type: 'application/javascript' });
++    // const workerUrl = URL.createObjectURL(workerBlob);
+     const workerPool = createWorkerPool({
+         ...config,
+-        scriptSrc: workerUrl,
++        scriptSrc: config.scriptSrc,
+     });
+     const pool = {
+         compileWasm: async (...args) => workerPool.execute('compileWasm', args),
+@@ -21313,7 +21320,7 @@ async function createPoolWrapper(config) {
+     return {
+         ...pool,
+         dispose: () => {
+-            URL.revokeObjectURL(workerUrl);
++            URL.revokeObjectURL(config.scriptSrc);
+             return workerPool.terminate();
+         },
+     };

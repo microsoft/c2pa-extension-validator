@@ -203,7 +203,7 @@ const inject = {
   onwarn
 }
 
-export default [background, content, inject]
+export default [content, inject, background]
 
 // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
 function eslint (options = {}) {
