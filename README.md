@@ -38,8 +38,15 @@ Follow the side-loading instruction for your browser to load the extension:
 
 * [Edge](https://learn.microsoft.com/en-us/microsoft-edge/extensions-chromium/getting-started/extension-sideloading)  
 * [Chrome](https://developer.chrome.com/docs/extensions/mv3/getstarted/development-basics/#load-unpacked)  
+* [Firefox](https://extensionworkshop.com/documentation/develop/temporary-installation-in-firefox/)
 
-The Edge/Chrome `manifest.json` file is located in `dist/chrome`.
+The Edge/Chrome `manifest.json` file is located in `dist/chrome`. The Firefox `manifest.json` file is located at `dist/firefox`.
+
+To enable the extension in Firefox, you need to grant specific user permissions:
+  1. Open the Firefox menu and select `Add-ons`.
+  2. Click on the `Extensions` tab.
+  3. Find the C2PA Extension Validator and click `Permissions`.
+  4. Enable the `Access your data for all websites` permission.
 
 ### Test the extension
 
@@ -79,30 +86,12 @@ The extension currently has a few limitations that will be addressed in future r
 * **Accessibility**: The extension's UI elements are not fully accessible.
 * **Conflict with other extensions**: The extension may conflict with other extensions that modify the DOM or media elements. It is currently unknown which extensions may conflict with this extension.
 * **Partial media support**: The extension currently supports only a subset of media types supported by the underlying C2PA validation library.
-
-## Firefox Compatibility
-
-This extension is compatible with Firefox, although it requires additional setup steps compared to Chrome/Edge.
-
-### Initial Setup
-
-* To enable the extension in Firefox, you need to grant specific user permissions:
-  1. Open the Firefox menu and select `Add-ons`.
-  2. Click on the `Extensions` tab.
-  3. Find the C2PA Extension Validator and click `Options`.
-  4. Enable the `Access your data for all websites` permission.
-
-### Known Issues and Workarounds
-
-* **Popup Window Bug**: Firefox has a known issue where the popup window closes immediately after opening the trust list file picker dialog, preventing the trust list from being applied. To work around this:
-  1. Open a new tab and navigate to `about:config`.
-  2. Search for `ui.popup.disable_autohide` and set it to `true`.
-  
-  **Note: This change keeps the popup window open until you press the [esc] key**
-
-* **Web Worker Script Loading**: The `c2pa` library attempts to load scripts into a web worker from a blob-data URL, which Firefox blocks by default without a configurable way to allow it. A patch cof `node_modules/c2pa/dist/c2pa.esm.js:createPoolWrapper` allows loading from a local extension URL instead. Ensure the patch is applied by running `pnpm install`, as `npm install` does not apply it. Be cautious when updating the `c2pa` library as it may require reapplying or reconstructing the patch.
-
-* **Messaging Limitations** Firefox extension messaging has stricter limitations compared to Chrome/Edge. Content/injected scripts cannot directly pass messages to each other; they must route messages via the background script. This may affect functionality if you modify the extension, as messaging behavior that works in Chrome/Edge might not work in Firefox.
+* **Firefox compatibility**: here are known issues and workarounds for Firefox:
+  * **Popup Window Bug**: Firefox has a known issue where the popup window closes immediately after opening the trust list file picker dialog, preventing the trust list from being applied. To work around this:
+    1. Open a new tab and navigate to `about:config`.
+    2. Search for `ui.popup.disable_autohide` and set it to `true`. **Note**: This change keeps the popup window open until you press the [esc] key.
+  * **Web Worker Script Loading**: The `c2pa` library attempts to load scripts into a web worker from a blob-data URL, which Firefox blocks by default without a configurable way to allow it. A patch cof `node_modules/c2pa/dist/c2pa.esm.js:createPoolWrapper` allows loading from a local extension URL instead. Ensure the patch is applied by running `pnpm install`, as `npm install` does not apply it. Be cautious when updating the `c2pa` library as it may require reapplying or reconstructing the patch.
+  * **Messaging Limitations** Firefox extension messaging has stricter limitations compared to Chrome/Edge. Content/injected scripts cannot directly pass messages to each other; they must route messages via the background script. This may affect functionality if you modify the extension, as messaging behavior that works in Chrome/Edge might not work in Firefox.
 
 ## Contributing
 
