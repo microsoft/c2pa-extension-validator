@@ -4,7 +4,7 @@
  */
 
 import { type C2paResult } from './c2pa'
-import { MSG_DISPLAY_C2PA_OVERLAY, MSG_FRAME_CLICK, MSG_UPDATE_FRAME_HEIGHT, MSG_VALIDATE_URL } from './constants'
+import { MSG_DISPLAY_C2PA_OVERLAY, MSG_FRAME_CLICK, MSG_FORWARD_TO_CONTENT, MSG_UPDATE_FRAME_HEIGHT, MSG_VALIDATE_URL } from './constants'
 import { deserialize } from './serialize'
 import { type C2paOverlay } from './webComponents'
 
@@ -59,5 +59,9 @@ const resizeObserver = new ResizeObserver(entries => {
 })
 
 function sendToContent (message: unknown): void {
+  if (_tabId === -1 || typeof chrome.tabs === 'undefined') {
+    void chrome.runtime.sendMessage({ action: MSG_FORWARD_TO_CONTENT, data: message })
+    return
+  }
   void chrome.tabs.sendMessage(_tabId, message)
 }

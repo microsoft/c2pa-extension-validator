@@ -5,7 +5,7 @@
 
 import browser from 'webextension-polyfill'
 import { init as initTrustList } from './trustlist'
-import { MSG_GET_TAB_ID, MSG_L3_INSPECT_URL, MSG_REMOTE_INSPECT_URL, REMOTE_VALIDATION_LINK } from './constants'
+import { MSG_GET_TAB_ID, MSG_L3_INSPECT_URL, MSG_REMOTE_INSPECT_URL, MSG_FORWARD_TO_CONTENT, REMOTE_VALIDATION_LINK } from './constants'
 
 console.debug('Background: Script: start')
 
@@ -44,6 +44,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           void chrome.tabs.sendMessage(id, { action: MSG_REMOTE_INSPECT_URL, data })
         }, 1000)
       })
+  }
+
+  if (action === MSG_FORWARD_TO_CONTENT) {
+    void chrome.tabs.sendMessage(tabId, data)
   }
 })
 
