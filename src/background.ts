@@ -4,8 +4,11 @@
  */
 
 import browser from 'webextension-polyfill'
-import { init as initTrustList } from './trustlist'
-import { MSG_GET_TAB_ID, MSG_L3_INSPECT_URL, MSG_REMOTE_INSPECT_URL, MSG_FORWARD_TO_CONTENT, REMOTE_VALIDATION_LINK } from './constants'
+import { MSG_GET_TAB_ID, MSG_L3_INSPECT_URL, MSG_REMOTE_INSPECT_URL, MSG_FORWARD_TO_CONTENT, REMOTE_VALIDATION_LINK, MSG_VALIDATE_URL, AWAIT_ASYNC_RESPONSE } from './constants'
+import 'c2pa'
+import { validateUrl as c2paValidateUrl } from './c2paProxy'
+import { checkTrustListInclusion } from './trustlist'
+import { type C2paError, type C2paResult } from './c2pa'
 
 console.debug('Background: Script: start')
 
@@ -49,9 +52,22 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (action === MSG_FORWARD_TO_CONTENT) {
     void chrome.tabs.sendMessage(tabId, data)
   }
+
+  if (action === MSG_VALIDATE_URL) {
+    void validateUrl(data as string).then(sendResponse)
+    return AWAIT_ASYNC_RESPONSE
+  }
 })
 
-void initTrustList()
+async function validateUrl (url: string): Promise<C2paResult | C2paError> {
+  const c2paResult = await c2paValidateUrl(url)
+  if (c2paResult instanceof Error) {
+    return c2paResult
+  }
+  const trustListMatch = await checkTrustListInclusion(c2paResult.certChain ?? [])
+  c2paResult.trustList = trustListMatch
+  return c2paResult
+}
 
 async function init (): Promise<void> {
   if (chrome.offscreen !== undefined) {

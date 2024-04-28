@@ -91,11 +91,11 @@ const getInfoFromTrustList = (tl: TrustList): TrustListInfo => {
  * Retrieves the trust list infos.
  * @returns The trust list infos if available, otherwise undefined.
  */
-export function getTrustListInfos (): TrustListInfo[] {
+export async function getTrustListInfos (): Promise<TrustListInfo[]> {
   if (globalTrustLists != null && globalTrustLists.length > 0) {
-    return globalTrustLists.map(tl => getInfoFromTrustList(tl))
+    return await Promise.resolve(globalTrustLists.map(tl => getInfoFromTrustList(tl)))
   } else {
-    return []
+    return await Promise.resolve([])
   }
 }
 
@@ -141,7 +141,7 @@ export async function addTrustList (tl: TrustList): Promise<TrustListInfo> {
  * Removes a trust list from the trust list array.
  * @param index index of the trust list to remove
  */
-export function removeTrustList (index: number): void {
+export async function removeTrustList (index: number): Promise<void> {
   console.debug('removeTrustList called')
 
   const name = globalTrustLists[index].name
@@ -190,7 +190,7 @@ export interface TrustListMatch {
  * @param certChain a certificate chain
  * @returns a trust list match object if found, otherwise null
  */
-export function checkTrustListInclusion (certChain: CertificateWithThumbprint[]): TrustListMatch | null {
+export async function checkTrustListInclusion (certChain: CertificateWithThumbprint[]): Promise<TrustListMatch | null> {
   console.debug('checkTrustListInclusion called')
   if (globalTrustLists != null && globalTrustLists.length > 0) {
     // for each trust list
@@ -205,11 +205,11 @@ export function checkTrustListInclusion (certChain: CertificateWithThumbprint[])
               // found a match
               const tlInfo = getInfoFromTrustList(trustList)
               console.debug('Trust list match:', entity, cert)
-              return {
+              return await Promise.resolve({
                 tlInfo,
                 entity,
                 cert
-              }
+              })
             }
           }
         }
@@ -217,22 +217,6 @@ export function checkTrustListInclusion (certChain: CertificateWithThumbprint[])
     }
   }
   return null
-}
-
-export async function checkTrustListInclusionRemote (certChain: CertificateWithThumbprint[]): Promise<TrustListMatch | null> {
-  return await chrome.runtime.sendMessage({ action: MSG_CHECK_TRUSTLIST_INCLUSION, data: certChain })
-}
-
-export async function getTrustListInfosRemote (): Promise<TrustListInfo[]> {
-  return await chrome.runtime.sendMessage({ action: MSG_GET_TRUSTLIST_INFOS, data: undefined })
-}
-
-export async function addTrustListRemote (tl: TrustList): Promise<TrustListInfo> {
-  return await chrome.runtime.sendMessage({ action: MSG_ADD_TRUSTLIST, data: tl })
-}
-
-export async function removeTrustListRemote (index: number): Promise<void> {
-  await chrome.runtime.sendMessage({ action: MSG_REMOVE_TRUSTLIST, data: index })
 }
 
 async function notifyTabOfTrustListUpdate (): Promise<void> {
@@ -252,18 +236,23 @@ export async function init (): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/promise-function-async
     (request: MSG_PAYLOAD, sender, sendResponse) => {
       if (request.action === MSG_CHECK_TRUSTLIST_INCLUSION) {
-        sendResponse(checkTrustListInclusion(request.data as CertificateWithThumbprint[]))
+        void checkTrustListInclusion(request.data as CertificateWithThumbprint[]).then(sendResponse)
+        return AWAIT_ASYNC_RESPONSE
       }
       if (request.action === MSG_GET_TRUSTLIST_INFOS) {
-        sendResponse(getTrustListInfos())
+        void getTrustListInfos().then(sendResponse)
+        return AWAIT_ASYNC_RESPONSE
       }
       if (request.action === MSG_ADD_TRUSTLIST) {
         void addTrustList(request.data as TrustList).then(sendResponse)
         return AWAIT_ASYNC_RESPONSE
       }
       if (request.action === MSG_REMOVE_TRUSTLIST) {
-        removeTrustList(request.data as number)
+        void removeTrustList(request.data as number).then(sendResponse)
+        return AWAIT_ASYNC_RESPONSE
       }
     }
   )
 }
+
+void init()

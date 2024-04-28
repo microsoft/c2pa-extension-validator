@@ -4,7 +4,7 @@
  */
 
 import { type C2paResult } from './c2pa'
-import { MSG_DISPLAY_C2PA_OVERLAY, MSG_FRAME_CLICK, MSG_FORWARD_TO_CONTENT, MSG_UPDATE_FRAME_HEIGHT, MSG_VALIDATE_URL } from './constants'
+import { MSG_DISPLAY_C2PA_OVERLAY, MSG_FRAME_CLICK, MSG_FORWARD_TO_CONTENT, MSG_UPDATE_FRAME_HEIGHT, MSG_OPEN_OVERLAY } from './constants'
 import { deserialize } from './serialize'
 import { type C2paOverlay } from './webComponents'
 
@@ -32,7 +32,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     sendToContent({ action: MSG_FRAME_CLICK, data: null })
   }
 
-  if (message.action === MSG_VALIDATE_URL) {
+  if (message.action === MSG_OPEN_OVERLAY) {
     const c2paResult = deserialize(message.data.c2paResult) as C2paResult
     const position = message.data.position as { x: number, y: number }
     _overlay.c2paResult = c2paResult

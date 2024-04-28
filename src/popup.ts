@@ -3,7 +3,7 @@
  *  Licensed under the MIT license.
  */
 
-import { type TrustList, type TrustListInfo, getTrustListInfosRemote, addTrustListRemote, removeTrustListRemote } from './trustlist.js'
+import { type TrustList, type TrustListInfo, getTrustListInfos, addTrustList, removeTrustList } from './trustlistProxy.js'
 import packageManifest from '../package.json'
 import { MSG_REQUEST_C2PA_ENTRIES, MSG_RESPONSE_C2PA_ENTRIES } from './constants.js'
 import { type MSG_RESPONSE_C2PA_ENTRIES_PAYLOAD } from './inject.js'
@@ -92,7 +92,7 @@ trustListInput.addEventListener('change', function (event) {
       ) as TrustList
       try {
         // set the trust list
-        void addTrustListRemote(json)
+        void addTrustList(json)
           .then((trustListInfo: TrustListInfo) => {
             console.debug(`trust list loaded: ${trustListInfo.name}`)
             void displayTrustListInfos()
@@ -111,7 +111,7 @@ trustListInput.addEventListener('change', function (event) {
  */
 async function displayTrustListInfos (): Promise<void> {
   console.debug('displayTrustListInfos called')
-  void getTrustListInfosRemote()
+  void getTrustListInfos()
     .then(
       (tlis: TrustListInfo[]) => {
         const trustListInfo = document.getElementById('trust-list-info') as HTMLDivElement
@@ -144,7 +144,7 @@ if (trustListInfoElement !== null) {
       event.preventDefault() // Prevent default link action
       const index = target.getAttribute('data-index')
       if (index !== null) {
-        void removeTrustListRemote(parseInt(index))
+        void removeTrustList(parseInt(index))
           .then(async () => { await displayTrustListInfos() })
       }
     }
