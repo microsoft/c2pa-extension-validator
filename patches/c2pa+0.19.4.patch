@@ -1,8 +1,8 @@
-diff --git a/dist/c2pa.esm.js b/dist/c2pa.esm.js
-index ea541d7bf18696a95e7c43f7cefa9b45d5d121a9..a1d0dcdff84d36d5b3f2b8a7a1ee3d3f324bb052 100644
---- a/dist/c2pa.esm.js
-+++ b/dist/c2pa.esm.js
-@@ -21292,17 +21292,24 @@ function createWorkerPool(config) {
+diff --git a/node_modules/c2pa/dist/c2pa.esm.js b/node_modules/c2pa/dist/c2pa.esm.js
+index 6221bf9..a1e3525 100644
+--- a/node_modules/c2pa/dist/c2pa.esm.js
++++ b/node_modules/c2pa/dist/c2pa.esm.js
+@@ -21293,17 +21293,24 @@ function createWorkerPool(config) {
   */
  const dbg$4 = debug('c2pa:workers');
  async function createPoolWrapper(config) {
@@ -36,7 +36,7 @@ index ea541d7bf18696a95e7c43f7cefa9b45d5d121a9..a1d0dcdff84d36d5b3f2b8a7a1ee3d3f
      });
      const pool = {
          compileWasm: async (...args) => workerPool.execute('compileWasm', args),
-@@ -21313,7 +21320,7 @@ async function createPoolWrapper(config) {
+@@ -21314,7 +21321,7 @@ async function createPoolWrapper(config) {
      return {
          ...pool,
          dispose: () => {
