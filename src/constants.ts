@@ -34,7 +34,6 @@ export const MSG_FORWARD_TO_CONTENT = 'MSG_FORWARD_TO_CONTENT'
 export const DEFAULT_MSG_TIMEOUT = 5000 /* 5 sec */
 export const REMOTE_VALIDATION_LINK = 'https://contentintegrity.microsoft.com/check'
 export const AWAIT_ASYNC_RESPONSE = true
-export const MSG_SELECT_TRUSTLIST_FILE = 'MSG_SELECT_TRUSTLIST_FILE'
 
 export const CR_ICON_SIZE = '2em'
 export const CR_ICON_Z_INDEX = 10000
