@@ -1,6 +1,6 @@
 {
   "name": "c2pa-extension-validator.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Browser extension to validate C2PA images",
   "main": "index.js",
   "type": "module",
