@@ -4,7 +4,7 @@
  */
 
 import { type C2paResult } from './c2pa'
-import { MSG_DISPLAY_C2PA_OVERLAY, MSG_FRAME_CLICK, MSG_FORWARD_TO_CONTENT, MSG_UPDATE_FRAME_HEIGHT, MSG_OPEN_OVERLAY } from './constants'
+import { MSG_DISPLAY_C2PA_OVERLAY, MSG_FORWARD_TO_CONTENT, MSG_UPDATE_FRAME_HEIGHT, MSG_OPEN_OVERLAY } from './constants'
 import { deserialize } from './serialize'
 import { type C2paOverlay } from './webComponents'
 
@@ -17,21 +17,11 @@ export interface FrameMessage {
 }
 
 let _overlay: C2paOverlay
-let _tabId = -1
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   /*
     Populate the IFrame with C2PA validation results for a media element.
   */
-  _tabId = _tabId === -1 ? (sender.tab?.id ?? -1) : _tabId
-  if (_tabId === -1) {
-    return
-  }
-
-  if (message.action === MSG_FRAME_CLICK) {
-    sendToContent({ action: MSG_FRAME_CLICK, data: null })
-  }
-
   if (message.action === MSG_OPEN_OVERLAY) {
     const c2paResult = deserialize(message.data.c2paResult) as C2paResult
     const position = message.data.position as { x: number, y: number }
@@ -59,9 +49,5 @@ const resizeObserver = new ResizeObserver(entries => {
 })
 
 function sendToContent (message: unknown): void {
-  if (_tabId === -1 || typeof chrome.tabs === 'undefined') {
-    void chrome.runtime.sendMessage({ action: MSG_FORWARD_TO_CONTENT, data: message })
-    return
-  }
-  void chrome.tabs.sendMessage(_tabId, message)
+  void chrome.runtime.sendMessage({ action: MSG_FORWARD_TO_CONTENT, data: message })
 }

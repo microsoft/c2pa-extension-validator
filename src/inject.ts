@@ -12,7 +12,7 @@ import { blobToDataURL } from './utils'
 import {
   MSG_VALIDATE_URL, MSG_CHILD_REQUEST, MSG_FRAME_CLICK, MSG_GET_CONTAINER_OFFSET, MSG_PARENT_RESPONSE,
   MSG_REQUEST_C2PA_ENTRIES, MSG_RESPONSE_C2PA_ENTRIES, MSG_TRUSTLIST_UPDATE, MSG_OPEN_OVERLAY,
-  type VALIDATION_STATUS
+  type VALIDATION_STATUS, MSG_FORWARD_TO_CONTENT
 } from './constants'
 
 console.debug('%cFRAME:', 'color: magenta', window.location)
@@ -146,12 +146,9 @@ async function validateMediaElement (mediaElement: MediaElement): Promise<void> 
   const c2paIcon = new CrIcon(mediaElement, validationStatus)
   c2paIcon.onClick = async () => {
     const offsets = await getOffsets(mediaElement)
-    void chrome.runtime.sendMessage({
+    sendToContent({
       action: MSG_OPEN_OVERLAY,
-      data: {
-        c2paResult: await serialize(c2paResult),
-        position: { x: offsets.x + offsets.width, y: offsets.y }
-      }
+      data: { c2paResult: await serialize(c2paResult), position: { x: offsets.x + offsets.width, y: offsets.y } }
     })
   }
 
@@ -273,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function () {
   The overlayFrame listens for this message and forwards it to the content script.
 */
 document.addEventListener('click', (event) => {
-  void chrome.runtime.sendMessage({ action: MSG_FRAME_CLICK, data: null })
+  sendToContent({ action: MSG_FRAME_CLICK, data: null })
 })
 
 export interface MSG_RESPONSE_C2PA_ENTRIES_PAYLOAD {
@@ -314,3 +311,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     updateTrustLists()
   }
 })
+
+function sendToContent (message: unknown): void {
+  void chrome.runtime.sendMessage({ action: MSG_FORWARD_TO_CONTENT, data: message })
+}

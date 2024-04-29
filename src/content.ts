@@ -58,4 +58,28 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.debug('CONTENT:', MSG_FRAME_CLICK)
     overlay.hide()
   }
+
+  if (message.action === 'MSG_SELECT_TRUSTLIST_FILE') {
+    // create file input element
+    const fileInput = document.createElement('input')
+    fileInput.type = 'file'
+    fileInput.accept = '.json'
+    // fileInput.style.display = 'hidden'
+    document.body.appendChild(fileInput)
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files?.[0]
+      if (file == null) {
+        return
+      }
+      const reader = new FileReader()
+      reader.onload = () => {
+        const trustList = JSON.parse(reader.result as string)
+        console.debug('Trust list:', trustList)
+      }
+      reader.readAsText(file)
+    })
+    setTimeout(() => {
+      fileInput.showPicker()
+    }, 100)
+  }
 })

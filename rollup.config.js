@@ -142,9 +142,9 @@ const onwarn = (warning, warn) => {
 }
 
 /*
-  background.js
+  background.js (Chrome v3)
 */
-const background = {
+const backgroundC = {
   input: ['src/background.ts', 'src/popup.ts', 'src/options.ts', 'src/c2pa.ts', 'src/overlayFrame.ts', 'src/webComponents.ts'],
   treeshake: { moduleSideEffects: [] },
   output: {
@@ -165,6 +165,29 @@ const background = {
       ],
       // Wait for the bundle to be written to disk before copying the files, otherwise the firefox folder will be empty
       hook: 'writeBundle'
+    }),
+    ...plugins
+  ],
+  onwarn
+}
+
+/*
+  background.js (Firefox v3)
+*/
+const backgroundFF = {
+  input: ['src/background.ts'],
+  treeshake: { moduleSideEffects: [] },
+  output: {
+    dir: 'dist/firefox',
+    format: 'esm',
+    ...output
+  },
+  watch,
+  plugins: [
+    alias({
+      entries: [
+        { find: './c2paProxy', replacement: './c2pa' }
+      ]
     }),
     ...plugins
   ],
@@ -204,7 +227,7 @@ const inject = {
   onwarn
 }
 
-export default [content, inject, background]
+export default [content, inject, backgroundC, backgroundFF]
 
 // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
 function eslint (options = {}) {
