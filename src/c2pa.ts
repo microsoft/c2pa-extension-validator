@@ -7,8 +7,8 @@ import { createC2pa, type C2pa, type C2paReadResult, createL2ManifestStore, type
 import { extractCertChain } from './certs/certs.js'
 import { serialize } from './serialize.js'
 import { type Certificate } from '@fidm/x509'
-import { checkTrustListInclusionRemote, type TrustListMatch } from './trustlist.js'
-import { AWAIT_ASYNC_RESPONSE, MSG_INSPECT_URL, type MSG_PAYLOAD } from './constants.js'
+import { type TrustListMatch } from './trustlistProxy.js'
+import { AWAIT_ASYNC_RESPONSE, MSG_C2PA_VALIDATE_URL, type MSG_PAYLOAD } from './constants.js'
 
 console.debug('C2pa: Script: start')
 
@@ -47,17 +47,15 @@ export async function init (): Promise<void> {
 
   chrome.runtime.onMessage.addListener(
     (request: MSG_PAYLOAD, sender, sendResponse) => {
-      if (request.action === MSG_INSPECT_URL) {
-        void _validateUrl(request.data as string).then(result => {
-          sendResponse(result)
-        })
+      if (request.action === MSG_C2PA_VALIDATE_URL) {
+        void validateUrl(request.data as string).then(sendResponse)
         return AWAIT_ASYNC_RESPONSE
       }
     }
   )
 }
 
-async function _validateUrl (url: string): Promise<C2paResult | C2paError> {
+export async function validateUrl (url: string): Promise<C2paResult | C2paError> {
   if (c2pa == null) {
     return new Error('C2PA not initialized') as C2paError
   }
@@ -81,15 +79,13 @@ async function _validateUrl (url: string): Promise<C2paResult | C2paError> {
   const editsAndActivity = ((c2paResult.manifestStore?.activeManifest) != null) ? await selectEditsAndActivity(c2paResult.manifestStore?.activeManifest) : null
   console.log(JSON.stringify(editsAndActivity, null, 2))
 
-  const trustListMatch = await checkTrustListInclusionRemote(certChain)
-
   const serializedIssuer = await serialize(certChain[0].issuer) as Certificate
   console.debug('Issuer: ', serializedIssuer)
 
   const result: C2paResult = {
     ...c2paResult,
     url,
-    trustList: trustListMatch,
+    trustList: null,
     certChain,
     l2,
     editsAndActivity
@@ -100,9 +96,6 @@ async function _validateUrl (url: string): Promise<C2paResult | C2paError> {
   return serializedResult
 }
 
-export async function validateUrl (url: string): Promise<C2paResult | C2paError> {
-  const trustListMatch = await chrome.runtime.sendMessage({ action: MSG_INSPECT_URL, data: url })
-  return trustListMatch
-}
+void init()
 
 console.debug('C2pa: Script: end')

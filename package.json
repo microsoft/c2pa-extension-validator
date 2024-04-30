@@ -1,12 +1,13 @@
 {
   "name": "c2pa-extension-validator.",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Browser extension to validate C2PA images",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "clean": "rimraf dist && rimraf node_modules/.cache/rollup-plugin-typescript2",
     "prebuild": "node update-version.js",
+    "postinstall": "patch-package",
     "build": "cross-env NODE_ENV=production rollup -c",
     "build:debug": "cross-env NODE_ENV=development rollup -c",
     "build:dev": "cross-env NODE_ENV=development rollup -c --watch",
@@ -17,6 +18,7 @@
   "devDependencies": {
     "@contentauth/toolkit": "^0.11.1",
     "@fidm/x509": "^1.2.1",
+    "@rollup/plugin-alias": "^5.1.0",
     "@rollup/plugin-commonjs": "^25.0.7",
     "@rollup/plugin-json": "^6.1.0",
     "@rollup/plugin-node-resolve": "^15.2.3",
@@ -27,7 +29,7 @@
     "@types/webextension-polyfill": "^0.10.7",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
-    "c2pa": "^0.19.1",
+    "c2pa": "^0.19.4",
     "c2pa-wc": "^0.12.1",
     "cross-env": "^7.0.3",
     "dotenv": "^16.4.5",
@@ -39,6 +41,7 @@
     "eslint-plugin-promise": "^6.1.1",
     "exifreader": "^4.21.1",
     "lit": "^3.1.2",
+    "patch-package": "^8.0.0",
     "rimraf": "^5.0.5",
     "rollup": "^4.13.2",
     "rollup-plugin-copy": "^3.5.0",
@@ -47,10 +50,5 @@
     "tslib": "^2.6.2",
     "typescript": "^5.4.3",
     "webextension-polyfill": "^0.10.0"
-  },
-  "pnpm": {
-    "overrides": {
-      "webpack@>=5.0.0 <5.76.0": ">=5.76.0"
-    }
   }
 }

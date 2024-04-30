@@ -3,6 +3,7 @@
  *  Licensed under the MIT license.
  */
 
+import alias from '@rollup/plugin-alias'
 import commonjs from '@rollup/plugin-commonjs'
 import json from '@rollup/plugin-json'
 import resolve from '@rollup/plugin-node-resolve'
@@ -141,10 +142,10 @@ const onwarn = (warning, warn) => {
 }
 
 /*
-  background.js
+  background.js (Chrome v3)
 */
-const background = {
-  input: ['src/background.ts', 'src/popup.ts', 'src/options.ts', 'src/offscreen.ts', 'src/overlayFrame.ts', 'src/webComponents.ts'],
+const backgroundC = {
+  input: ['src/background.ts', 'src/popup.ts', 'src/options.ts', 'src/c2pa.ts', 'src/overlayFrame.ts', 'src/webComponents.ts'],
   treeshake: { moduleSideEffects: [] },
   output: {
     dir: 'dist/chrome',
@@ -164,6 +165,29 @@ const background = {
       ],
       // Wait for the bundle to be written to disk before copying the files, otherwise the firefox folder will be empty
       hook: 'writeBundle'
+    }),
+    ...plugins
+  ],
+  onwarn
+}
+
+/*
+  background.js (Firefox v3)
+*/
+const backgroundFF = {
+  input: ['src/background.ts'],
+  treeshake: { moduleSideEffects: [] },
+  output: {
+    dir: 'dist/firefox',
+    format: 'esm',
+    ...output
+  },
+  watch,
+  plugins: [
+    alias({
+      entries: [
+        { find: './c2paProxy', replacement: './c2pa' }
+      ]
     }),
     ...plugins
   ],
@@ -203,7 +227,7 @@ const inject = {
   onwarn
 }
 
-export default [background, content, inject]
+export default [content, inject, backgroundC, backgroundFF]
 
 // eslint-disable-next-line no-unused-vars, @typescript-eslint/no-unused-vars
 function eslint (options = {}) {

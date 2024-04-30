@@ -7,12 +7,12 @@ import { type C2paError, type C2paResult } from './c2pa'
 import { type MediaElement } from './content'
 import { CrIcon } from './icon'
 import { deserialize, serialize } from './serialize'
-import { checkTrustListInclusionRemote } from './trustlist'
+import { checkTrustListInclusion } from './trustlistProxy'
 import { blobToDataURL } from './utils'
 import {
-  MSG_C2PA_INSPECT_URL, MSG_CHILD_REQUEST, MSG_FRAME_CLICK, MSG_GET_CONTAINER_OFFSET, MSG_PARENT_RESPONSE,
-  MSG_REQUEST_C2PA_ENTRIES, MSG_RESPONSE_C2PA_ENTRIES, MSG_TRUSTLIST_UPDATE, MSG_VALIDATE_URL,
-  type VALIDATION_STATUS
+  MSG_VALIDATE_URL, MSG_CHILD_REQUEST, MSG_FRAME_CLICK, MSG_GET_CONTAINER_OFFSET, MSG_PARENT_RESPONSE,
+  MSG_REQUEST_C2PA_ENTRIES, MSG_RESPONSE_C2PA_ENTRIES, MSG_TRUSTLIST_UPDATE, MSG_OPEN_OVERLAY,
+  type VALIDATION_STATUS, MSG_FORWARD_TO_CONTENT
 } from './constants'
 
 console.debug('%cFRAME:', 'color: magenta', window.location)
@@ -146,12 +146,9 @@ async function validateMediaElement (mediaElement: MediaElement): Promise<void> 
   const c2paIcon = new CrIcon(mediaElement, validationStatus)
   c2paIcon.onClick = async () => {
     const offsets = await getOffsets(mediaElement)
-    void chrome.runtime.sendMessage({
-      action: MSG_VALIDATE_URL,
-      data: {
-        c2paResult: await serialize(c2paResult),
-        position: { x: offsets.x + offsets.width, y: offsets.y }
-      }
+    sendToContent({
+      action: MSG_OPEN_OVERLAY,
+      data: { c2paResult: await serialize(c2paResult), position: { x: offsets.x + offsets.width, y: offsets.y } }
     })
   }
 
@@ -231,7 +228,7 @@ function combineOffsets (offset: Rect, parent: Rect): Rect {
 }
 
 async function c2paValidateImage (url: string): Promise<C2paResult | C2paError> {
-  const result = await chrome.runtime.sendMessage({ action: MSG_C2PA_INSPECT_URL, data: url }).catch((error) => {
+  const result = await chrome.runtime.sendMessage({ action: MSG_VALIDATE_URL, data: url }).catch((error) => {
     console.error('Error sending message:', error)
     return new Error('Error sending message') as C2paError
   })
@@ -273,7 +270,7 @@ document.addEventListener('DOMContentLoaded', function () {
   The overlayFrame listens for this message and forwards it to the content script.
 */
 document.addEventListener('click', (event) => {
-  void chrome.runtime.sendMessage({ action: MSG_FRAME_CLICK, data: null })
+  sendToContent({ action: MSG_FRAME_CLICK, data: null })
 })
 
 export interface MSG_RESPONSE_C2PA_ENTRIES_PAYLOAD {
@@ -285,7 +282,7 @@ export interface MSG_RESPONSE_C2PA_ENTRIES_PAYLOAD {
 function updateTrustLists (): void {
   for (const [, c2paResult] of media.entries()) {
     if (c2paResult.validation.certChain != null) {
-      void checkTrustListInclusionRemote(c2paResult.validation.certChain).then((trustListMatch) => {
+      void checkTrustListInclusion(c2paResult.validation.certChain).then((trustListMatch) => {
         if (c2paResult.validation.manifestStore == null) return
         const c2paStatus = c2paResult.validation.manifestStore.validationStatus.length > 0 ? 'error' : 'success'
         c2paResult.validation.trustList = trustListMatch
@@ -314,3 +311,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     updateTrustLists()
   }
 })
+
+function sendToContent (message: unknown): void {
+  void chrome.runtime.sendMessage({ action: MSG_FORWARD_TO_CONTENT, data: message })
+}
