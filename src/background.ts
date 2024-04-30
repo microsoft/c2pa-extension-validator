@@ -3,7 +3,6 @@
  *  Licensed under the MIT license.
  */
 
-import browser from 'webextension-polyfill'
 import { MSG_GET_TAB_ID, MSG_L3_INSPECT_URL, MSG_REMOTE_INSPECT_URL, MSG_FORWARD_TO_CONTENT, REMOTE_VALIDATION_LINK, MSG_VALIDATE_URL, AWAIT_ASYNC_RESPONSE } from './constants'
 import 'c2pa'
 import { validateUrl as c2paValidateUrl } from './c2paProxy'
@@ -12,7 +11,7 @@ import { type C2paError, type C2paResult } from './c2pa'
 
 console.debug('Background: Script: start')
 
-browser.webRequest.onBeforeRequest.addListener(
+chrome.webRequest.onBeforeRequest.addListener(
   function (details) {
     console.debug('Background: Intercepted image request: ', details.url, 'color: #2784BC;')
   },
@@ -85,7 +84,7 @@ async function init (): Promise<void> {
       })
   }
 
-  await browser.notifications.create({
+  chrome.notifications.create({
     type: 'basic',
     iconUrl: 'icons/cr128.png',
     title: 'Content Credentials',
@@ -93,19 +92,20 @@ async function init (): Promise<void> {
   })
 }
 
-async function openOrSwitchToTab (url: string): Promise<browser.Tabs.Tab> {
-  const openTabs = await browser.tabs.query({ url: REMOTE_VALIDATION_LINK })
+async function openOrSwitchToTab (url: string): Promise<chrome.tabs.Tab> {
+  const openTabs = await chrome.tabs.query({ url: REMOTE_VALIDATION_LINK })
 
-  let tab: browser.Tabs.Tab
+  let tab: chrome.tabs.Tab
 
   if (openTabs.length > 0) {
     tab = openTabs[0]
-    await browser.tabs.update(tab.id, { active: true })
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    await chrome.tabs.update(tab.id!, { active: true })
     if (tab.windowId != null) {
-      await browser.windows.update(tab.windowId, { focused: true })
+      await chrome.windows.update(tab.windowId, { focused: true })
     }
   } else {
-    tab = await browser.tabs.create({ url: REMOTE_VALIDATION_LINK })
+    tab = await chrome.tabs.create({ url: REMOTE_VALIDATION_LINK })
   }
 
   return tab

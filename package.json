@@ -48,7 +48,6 @@
     "rollup-plugin-node-polyfills": "^0.2.1",
     "rollup-plugin-typescript2": "^0.36.0",
     "tslib": "^2.6.2",
-    "typescript": "^5.4.3",
-    "webextension-polyfill": "^0.10.0"
+    "typescript": "^5.4.3"
   }
 }
