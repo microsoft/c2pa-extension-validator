@@ -279,6 +279,8 @@ export class C2paOverlay extends LitElement {
 
   private trustList?: string
 
+  private trustListUrl?: string
+
   private status?: { errors: boolean, trusted: boolean }
 
   @property({ type: Boolean })
@@ -338,6 +340,8 @@ export class C2paOverlay extends LitElement {
     this.signer = newValue?.manifestStore?.activeManifest.signatureInfo?.issuer ?? 'unknown entity'
 
     this.trustList = newValue?.trustList?.tlInfo.name ?? 'unknown'
+  
+    this.trustListUrl = newValue?.trustListUrl ?? undefined
   }
 
   private setStatus (c2paResult: C2paResult): { errors: boolean, trusted: boolean } {
@@ -378,6 +382,11 @@ export class C2paOverlay extends LitElement {
         <div id="untrustedText"><span class="bold">${this.signer}</span> is unknown</div>
       </div>`
       )
+      if (this.trustListUrl != null) {
+        result.push(html`
+        <div>${this.signer} claims to be part of this <a href="${this.trustListUrl}" target="_blank">trust list</a>.</div>
+        `)
+      }
     }
 
     return result

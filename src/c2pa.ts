@@ -18,6 +18,7 @@ export interface C2paResult extends C2paReadResult {
   url: string
   certChain: CertificateWithThumbprint[] | null
   trustList: TrustListMatch | null
+  trustListUrl: string | null
   l2: L2ManifestStore
   editsAndActivity: TranslatedDictionaryCategory[] | null
 }
@@ -83,6 +84,10 @@ async function _validateUrl (url: string): Promise<C2paResult | C2paError> {
 
   const trustListMatch = await checkTrustListInclusionRemote(certChain)
 
+  const rcgi: any = c2paResult.manifestStore?.activeManifest?.claimGeneratorInfo[0]; // casting to "any" since 'trust_list_info' does not exist on type 'ResolvedClaimGeneratorInfo'
+  const trustListUrl = rcgi?.trust_list_info ?? undefined;
+  console.log("trustListUrl", trustListUrl)
+
   const serializedIssuer = await serialize(certChain[0].issuer) as Certificate
   console.debug('Issuer: ', serializedIssuer)
 
@@ -90,6 +95,7 @@ async function _validateUrl (url: string): Promise<C2paResult | C2paError> {
     ...c2paResult,
     url,
     trustList: trustListMatch,
+    trustListUrl: trustListUrl,
     certChain,
     l2,
     editsAndActivity
