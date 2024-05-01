@@ -30,7 +30,7 @@
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
     "c2pa": "^0.19.4",
-    "c2pa-wc": "^0.12.1",
+    "c2pa-wc": "^0.13.0",
     "cross-env": "^7.0.3",
     "dotenv": "^16.4.5",
     "eslint": "^8.57.0",
