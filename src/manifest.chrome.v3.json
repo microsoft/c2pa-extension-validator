@@ -10,7 +10,8 @@
         "webRequest",
         "tabs",
         "webNavigation",
-        "activeTab"
+        "activeTab",
+        "contextMenus"
     ],
     "host_permissions": [
         "<all_urls>"

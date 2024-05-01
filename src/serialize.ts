@@ -99,7 +99,7 @@ function isSerializedObject (obj: unknown): obj is SerializedData {
   return isKeyedObject(obj) && ('type' in (obj as object)) && ('data' in (obj as object))
 }
 
-export function deserialize (object: unknown): unknown {
+export function deserialize <T> (object: T): T {
   const refs = new Map<number, unknown>()
   const pending = new Map<number, Array<{ parent: unknown, key: number | string }>>()
 
@@ -181,5 +181,5 @@ export function deserialize (object: unknown): unknown {
   }
 
   const deserializedData = _deserialize(object)
-  return deserializedData
+  return deserializedData as T
 }

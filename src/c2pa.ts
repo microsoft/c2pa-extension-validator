@@ -77,7 +77,7 @@ export async function validateUrl (url: string): Promise<C2paResult | C2paError>
   const l2 = l2Full.manifestStore
 
   const editsAndActivity = ((c2paResult.manifestStore?.activeManifest) != null) ? await selectEditsAndActivity(c2paResult.manifestStore?.activeManifest) : null
-  console.log(JSON.stringify(editsAndActivity, null, 2))
+  console.debug(JSON.stringify(editsAndActivity, null, 2))
 
   const serializedIssuer = await serialize(certChain[0].issuer) as Certificate
   console.debug('Issuer: ', serializedIssuer)

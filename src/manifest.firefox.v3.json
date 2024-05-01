@@ -9,7 +9,8 @@
         "webRequest",
         "tabs",
         "webNavigation",
-        "activeTab"
+        "activeTab",
+        "contextMenus"
     ],
     "background": {
         "scripts": [

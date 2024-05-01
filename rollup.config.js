@@ -145,7 +145,7 @@ const onwarn = (warning, warn) => {
   background.js (Chrome v3)
 */
 const backgroundC = {
-  input: ['src/background.ts', 'src/popup.ts', 'src/options.ts', 'src/c2pa.ts', 'src/overlayFrame.ts', 'src/webComponents.ts'],
+  input: ['src/background.ts', 'src/popup.ts', 'src/options.ts', 'src/c2pa.ts', 'src/overlayFrame.ts', 'src/webComponents.ts', 'src/components/toggle.ts'],
   treeshake: { moduleSideEffects: [] },
   output: {
     dir: 'dist/chrome',

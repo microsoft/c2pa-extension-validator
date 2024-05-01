@@ -2,6 +2,7 @@
  *  Copyright (c) Microsoft Corporation.
  *  Licensed under the MIT license.
  */
+import 'dotenv/config'
 
 export interface MSG_PAYLOAD {
   action: string
@@ -19,7 +20,7 @@ export const MSG_OPEN_OVERLAY = 'MSG_OPEN_OVERLAY'
 export const MSG_PARENT_RESPONSE = 'MSG_PARENT_RESPONSE'
 export const MSG_CHILD_REQUEST = 'MSG_CHILD_REQUEST'
 export const MSG_GET_CONTAINER_OFFSET = 'MSG_GET_CONTAINER_OFFSET'
-export const MSG_GET_TAB_ID = 'MSG_GET_TAB_ID'
+export const MSG_GET_ID = 'MSG_GET_ID'
 export const MSG_L3_INSPECT_URL = 'MSG_L3_INSPECT_URL'
 export const MSG_REMOTE_INSPECT_URL = 'MSG_REMOTE_INSPECT_URL'
 export const MSG_CHECK_TRUSTLIST_INCLUSION = 'MSG_CHECK_TRUSTLIST_INCLUSION'
@@ -31,9 +32,14 @@ export const MSG_REQUEST_C2PA_ENTRIES = 'MSG_REQUEST_C2PA_ENTRIES'
 export const MSG_RESPONSE_C2PA_ENTRIES = 'MSG_RESPONSE_C2PA_ENTRIES'
 export const MSG_TRUSTLIST_UPDATE = 'MSG_TRUSTLIST_UPDATE'
 export const MSG_FORWARD_TO_CONTENT = 'MSG_FORWARD_TO_CONTENT'
+export const MSG_SHOW_CONTEXT_MENU = 'MSG_SHOW_CONTEXT_MENU'
+export const MSG_C2PA_RESULT_FROM_CONTEXT = 'MSG_C2PA_RESULT_FROM_CONTEXT'
+export const MSG_AUTO_SCAN_UPDATED = 'MSG_AUTO_SCAN_UPDATED'
+
 export const DEFAULT_MSG_TIMEOUT = 5000 /* 5 sec */
 export const REMOTE_VALIDATION_LINK = 'https://contentintegrity.microsoft.com/check'
 export const AWAIT_ASYNC_RESPONSE = true
+export const AUTO_SCAN_DEFAULT = process.env.AUTO_SCAN?.toLowerCase() === 'true' || false
 
 export const CR_ICON_SIZE = '2em'
 export const CR_ICON_Z_INDEX = 10000
