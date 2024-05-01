@@ -12,7 +12,8 @@ import { blobToDataURL } from './utils'
 import {
   MSG_VALIDATE_URL, MSG_CHILD_REQUEST, MSG_FRAME_CLICK, MSG_GET_CONTAINER_OFFSET, MSG_PARENT_RESPONSE,
   MSG_REQUEST_C2PA_ENTRIES, MSG_RESPONSE_C2PA_ENTRIES, MSG_TRUSTLIST_UPDATE, MSG_OPEN_OVERLAY,
-  type VALIDATION_STATUS, MSG_FORWARD_TO_CONTENT
+  type VALIDATION_STATUS, MSG_FORWARD_TO_CONTENT, MSG_C2PA_RESULT_FROM_CONTEXT, MSG_GET_ID,
+  MSG_AUTO_SCAN_UPDATED, AUTO_SCAN_DEFAULT
 } from './constants'
 
 console.debug('%cFRAME:', 'color: magenta', window.location)
@@ -28,9 +29,40 @@ export interface Rect {
   left: number
 }
 
+interface TabAndFrameId {
+  tab: number
+  frame: number
+}
+
 const topLevelFrame = window === window.top
+let _autoObserve = AUTO_SCAN_DEFAULT
 let messageCounter = 0
 const media = new Map<MediaElement, { validation: C2paResult, icon: CrIcon, status: VALIDATION_STATUS }>()
+let _id: TabAndFrameId
+const observer = new MutationObserver((mutationsList: MutationRecord[]) => {
+  mutationsList.forEach(mutation => {
+    if (mutation.addedNodes.length > 0) {
+      processElements(Array.from(mutation.addedNodes), addMediaElement)
+    }
+    if (mutation.removedNodes.length > 0) {
+      processElements(Array.from(mutation.removedNodes), removeMediaElement)
+    }
+    if (mutation.type === 'attributes') {
+      if (mutation.target.nodeName !== 'IMG' && mutation.target.nodeName !== 'VIDEO') return
+      if (mutation.attributeName === 'src') {
+        updateMediaElement(mutation.target as MediaElement, mutation.oldValue ?? '')
+      }
+    }
+  })
+})
+
+void chrome.storage.local.get('autoScan').then((result) => {
+  _autoObserve = result.autoScan ?? AUTO_SCAN_DEFAULT
+})
+
+void chrome.runtime.sendMessage({ action: MSG_GET_ID }).then((id) => {
+  _id = id
+})
 
 if (window.location.href.startsWith('chrome-extension:') || window.location.href.startsWith('moz-extension:')) {
   throw new Error('Ignoring extension IFrame')
@@ -129,12 +161,17 @@ async function validateMediaElement (mediaElement: MediaElement): Promise<void> 
     return
   }
   const c2paResult = await c2paValidateImage(source)
+
+  void handleValidationResult(mediaElement, c2paResult)
+}
+
+async function handleValidationResult (mediaElement: MediaElement, c2paResult: C2paResult | C2paError): Promise<void> {
   if (c2paResult instanceof Error) {
     console.error('Error validating image:', c2paResult)
     return
   }
   if (c2paResult.manifestStore == null) {
-    console.debug('Content: No C2PA manifest found:', source)
+    console.debug('Content: No C2PA manifest found:', mediaElement.currentSrc ?? mediaElement.src)
     return
   }
   let validationStatus: VALIDATION_STATUS = 'success'
@@ -150,6 +187,13 @@ async function validateMediaElement (mediaElement: MediaElement): Promise<void> 
       action: MSG_OPEN_OVERLAY,
       data: { c2paResult: await serialize(c2paResult), position: { x: offsets.x + offsets.width, y: offsets.y } }
     })
+  }
+
+  // remove the previous icon and mediaElement from the map if it exists
+  const previousC2paImage = media.get(mediaElement)
+  if (previousC2paImage != null) {
+    previousC2paImage.icon.remove()
+    media.delete(mediaElement)
   }
 
   media.set(mediaElement, { validation: c2paResult, icon: c2paIcon, status: validationStatus })
@@ -240,27 +284,15 @@ async function c2paValidateImage (url: string): Promise<C2paResult | C2paError> 
 
 document.addEventListener('DOMContentLoaded', function () {
   console.debug('%cLOAD:', 'color: brown', document)
+  if (_autoObserve) startObserving()
+})
+
+function startObserving (): void {
   findMediaElements(document.body, addMediaElement)
-  const observer = new MutationObserver((mutationsList: MutationRecord[]) => {
-    mutationsList.forEach(mutation => {
-      if (mutation.addedNodes.length > 0) {
-        processElements(Array.from(mutation.addedNodes), addMediaElement)
-      }
-      if (mutation.removedNodes.length > 0) {
-        processElements(Array.from(mutation.removedNodes), removeMediaElement)
-      }
-      if (mutation.type === 'attributes') {
-        if (mutation.target.nodeName !== 'IMG' && mutation.target.nodeName !== 'VIDEO') return
-        if (mutation.attributeName === 'src') {
-          updateMediaElement(mutation.target as MediaElement, mutation.oldValue ?? '')
-        }
-      }
-    })
-  })
   observer.observe(
     document.body,
     { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] /*, attributeOldValue: true */ })
-})
+}
 
 /*
   Detect clicks within this frame and notify the content script. This is used to hide the overlay.
@@ -293,6 +325,10 @@ function updateTrustLists (): void {
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  const action = message.action
+  const data = message.data
+  if (action == null || data === undefined) return
+
   if (message.action === MSG_REQUEST_C2PA_ENTRIES) {
     void (async () => {
       for (const [, entry] of media.entries()) {
@@ -310,8 +346,36 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === MSG_TRUSTLIST_UPDATE) {
     updateTrustLists()
   }
+  if (message.action === MSG_C2PA_RESULT_FROM_CONTEXT && _id != null) {
+    if (data?.frame !== _id.frame || data?.c2paResult == null || data.url == null || _lastContextTarget == null) return
+    if (data.url !== _lastContextTarget?.src && data.url !== _lastContextTarget?.currentSrc) {
+      console.debug('Context menu result URL mismatch:', data.url, _lastContextTarget?.src)
+      return
+    }
+    const c2paResultOrError = data.c2paResult as C2paResult | C2paError
+    console.debug('MSG_C2PA_RESULT_FROM_CONTEXT:', _lastContextTarget, data.c2paResult)
+    void handleValidationResult(_lastContextTarget, c2paResultOrError)
+  }
+  if (message.action === MSG_AUTO_SCAN_UPDATED) {
+    _autoObserve = data as boolean
+    _autoObserve ? startObserving() : observer.disconnect()
+    if (!_autoObserve) {
+      // remove all icons for the dom
+      for (const [, c2paImage] of media.entries()) {
+        c2paImage.icon.remove()
+      }
+      media.clear()
+    }
+  }
 })
 
 function sendToContent (message: unknown): void {
   void chrome.runtime.sendMessage({ action: MSG_FORWARD_TO_CONTENT, data: message })
 }
+
+let _lastContextTarget: MediaElement | null = null
+
+document.addEventListener('contextmenu', event => {
+  _lastContextTarget = event.target as MediaElement
+  console.debug('CONTEXT MENU:', event)
+})

@@ -3,8 +3,7 @@
  *  Licensed under the MIT license.
  */
 
-import browser from 'webextension-polyfill'
-import { MSG_GET_TAB_ID, MSG_L3_INSPECT_URL, MSG_REMOTE_INSPECT_URL, MSG_FORWARD_TO_CONTENT, REMOTE_VALIDATION_LINK, MSG_VALIDATE_URL, AWAIT_ASYNC_RESPONSE } from './constants'
+import { MSG_GET_ID, MSG_L3_INSPECT_URL, MSG_REMOTE_INSPECT_URL, MSG_FORWARD_TO_CONTENT, REMOTE_VALIDATION_LINK, MSG_VALIDATE_URL, AWAIT_ASYNC_RESPONSE, MSG_C2PA_RESULT_FROM_CONTEXT, AUTO_SCAN_DEFAULT, MSG_AUTO_SCAN_UPDATED, type MSG_PAYLOAD } from './constants'
 import 'c2pa'
 import { validateUrl as c2paValidateUrl } from './c2paProxy'
 import { checkTrustListInclusion } from './trustlist'
@@ -12,7 +11,43 @@ import { type C2paError, type C2paResult } from './c2pa'
 
 console.debug('Background: Script: start')
 
-browser.webRequest.onBeforeRequest.addListener(
+chrome.runtime.onInstalled.addListener(function (details) {
+  if (details.reason === 'install') {
+    console.debug('This is a first-time install!')
+    void chrome.storage.local.set({ autoScan: AUTO_SCAN_DEFAULT })
+  } else if (details.reason === 'update') {
+    console.debug('The extension has been updated to version:', chrome.runtime.getManifest().version)
+  } else if (details.reason === 'chrome_update') {
+    console.debug('Chrome has been updated.')
+  }
+})
+
+chrome.contextMenus.create({
+  id: 'validateMediaElement',
+  title: 'Inspect Content Credentials',
+  contexts: ['audio', 'image', 'video'],
+  documentUrlPatterns: ['<all_urls>']
+})
+
+chrome.contextMenus.onClicked.addListener((info, tab) => {
+  const url = info.srcUrl
+  if (url == null) {
+    return
+  }
+
+  void validateUrl(url).then(c2paResult => {
+    if (c2paResult instanceof Error) {
+      console.error('Error validating URL:', c2paResult)
+      return
+    }
+    const message = { action: MSG_C2PA_RESULT_FROM_CONTEXT, data: { url, c2paResult, frame: info.frameId } }
+    if (tab?.id != null) {
+      void chrome.tabs.sendMessage(tab.id, message)
+    }
+  })
+})
+
+chrome.webRequest.onBeforeRequest.addListener(
   function (details) {
     console.debug('Background: Intercepted image request: ', details.url, 'color: #2784BC;')
   },
@@ -24,12 +59,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const action = message.action
   const data = message.data
 
-  if (tabId == null || !Number.isInteger(tabId)) {
-    return
-  }
-
-  if (action === MSG_GET_TAB_ID) {
-    sendResponse(tabId)
+  if (action === MSG_GET_ID) {
+    sendResponse({ tab: tabId, frame: sender.frameId })
   }
 
   if (action === MSG_L3_INSPECT_URL) {
@@ -49,13 +80,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       })
   }
 
-  if (action === MSG_FORWARD_TO_CONTENT) {
+  if (action === MSG_FORWARD_TO_CONTENT && tabId != null) {
     void chrome.tabs.sendMessage(tabId, data)
   }
 
   if (action === MSG_VALIDATE_URL) {
     void validateUrl(data as string).then(sendResponse)
     return AWAIT_ASYNC_RESPONSE
+  }
+
+  if (action === MSG_AUTO_SCAN_UPDATED) {
+    void chrome.storage.local.set({ autoScan: data })
+    void sendMessageToAllTabs({ action: MSG_AUTO_SCAN_UPDATED, data })
   }
 })
 
@@ -85,7 +121,7 @@ async function init (): Promise<void> {
       })
   }
 
-  await browser.notifications.create({
+  chrome.notifications.create({
     type: 'basic',
     iconUrl: 'icons/cr128.png',
     title: 'Content Credentials',
@@ -93,22 +129,33 @@ async function init (): Promise<void> {
   })
 }
 
-async function openOrSwitchToTab (url: string): Promise<browser.Tabs.Tab> {
-  const openTabs = await browser.tabs.query({ url: REMOTE_VALIDATION_LINK })
+async function openOrSwitchToTab (url: string): Promise<chrome.tabs.Tab> {
+  const openTabs = await chrome.tabs.query({ url: REMOTE_VALIDATION_LINK })
 
-  let tab: browser.Tabs.Tab
+  let tab: chrome.tabs.Tab
 
   if (openTabs.length > 0) {
     tab = openTabs[0]
-    await browser.tabs.update(tab.id, { active: true })
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    await chrome.tabs.update(tab.id!, { active: true })
     if (tab.windowId != null) {
-      await browser.windows.update(tab.windowId, { focused: true })
+      await chrome.windows.update(tab.windowId, { focused: true })
     }
   } else {
-    tab = await browser.tabs.create({ url: REMOTE_VALIDATION_LINK })
+    tab = await chrome.tabs.create({ url: REMOTE_VALIDATION_LINK })
   }
 
   return tab
+}
+
+async function sendMessageToAllTabs (message: MSG_PAYLOAD): Promise<void> {
+  const tabs = await chrome.tabs.query({})
+  tabs.filter(tab => tab.id != null).forEach(function (tab) {
+    if (tab.id == null) {
+      return
+    }
+    void chrome.tabs.sendMessage(tab.id, message)
+  })
 }
 
 void init()

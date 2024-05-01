@@ -104,9 +104,6 @@ devDependencies:
   typescript:
     specifier: ^5.4.3
     version: 5.4.5
-  webextension-polyfill:
-    specifier: ^0.10.0
-    version: 0.10.0
 
 packages:
 
@@ -3433,10 +3430,6 @@ packages:
     dependencies:
       glob-to-regexp: 0.4.1
       graceful-fs: 4.2.11
-    dev: true
-
-  /webextension-polyfill@0.10.0:
-    resolution: {integrity: sha512-c5s35LgVa5tFaHhrZDnr3FpQpjj1BB+RXhLTYUxGqBVN460HkbM8TBtEqdXWbpTKfzwCcjAZVF7zXCYSKtcp9g==}
     dev: true
 
   /webpack-sources@3.2.3:

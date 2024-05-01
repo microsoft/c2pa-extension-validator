@@ -5,8 +5,9 @@
 
 import { type TrustList, type TrustListInfo, getTrustListInfos, addTrustList, removeTrustList } from './trustlistProxy.js'
 import packageManifest from '../package.json'
-import { MSG_REQUEST_C2PA_ENTRIES, MSG_RESPONSE_C2PA_ENTRIES } from './constants.js'
+import { AUTO_SCAN_DEFAULT, MSG_AUTO_SCAN_UPDATED, MSG_REQUEST_C2PA_ENTRIES, MSG_RESPONSE_C2PA_ENTRIES } from './constants.js'
 import { type MSG_RESPONSE_C2PA_ENTRIES_PAYLOAD } from './inject.js'
+import { type ToggleSwitch } from './components/toggle.js'
 
 console.debug('popup.js: load')
 
@@ -16,6 +17,18 @@ document.addEventListener('DOMContentLoaded', function (): void {
   if (versionElement !== null) {
     versionElement.textContent = packageManifest.version
   }
+
+  const autoScanToggle = document.getElementById('toggleAutoScan') as ToggleSwitch
+
+  chrome.storage.local.get('autoScan', (result) => {
+    autoScanToggle.checked = result.autoScan ?? AUTO_SCAN_DEFAULT
+  })
+
+  autoScanToggle.addEventListener('change', (event) => {
+    const checked = (event as CustomEvent).detail.checked
+    void chrome.storage.local.set({ autoScan: checked })
+    void chrome.runtime.sendMessage({ action: MSG_AUTO_SCAN_UPDATED, data: checked })
+  })
 
   // Add event listeners to switch tabs
   const tabs = document.querySelectorAll('.tab')

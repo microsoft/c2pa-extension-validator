@@ -3,7 +3,6 @@
  *  Licensed under the MIT license.
  */
 
-import browser from 'webextension-polyfill'
 import { type CertificateWithThumbprint, calculateSha256CertThumbprintFromX5c } from './certs/certs'
 import { AWAIT_ASYNC_RESPONSE, MSG_ADD_TRUSTLIST, MSG_CHECK_TRUSTLIST_INCLUSION, MSG_GET_TRUSTLIST_INFOS, MSG_REMOVE_TRUSTLIST, type MSG_PAYLOAD } from './constants'
 
@@ -162,7 +161,7 @@ export async function removeTrustList (index: number): Promise<void> {
  */
 export async function loadTrustLists (): Promise<void> {
   // load the trust lists from storage
-  const trustListStore = await browser.storage.local.get('trustList') as { trustList: TrustList[] }
+  const trustListStore = await chrome.storage.local.get('trustList') as { trustList: TrustList[] }
   console.debug('getTrustList result:', trustListStore)
   const storedTrustList = trustListStore.trustList
   if (storedTrustList != null) {
@@ -226,7 +225,7 @@ async function notifyTabOfTrustListUpdate (): Promise<void> {
 }
 
 async function getActiveTabId (): Promise<number | undefined> {
-  const tabs = await browser.tabs.query({ active: true, currentWindow: true })
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
   return tabs?.[0]?.id
 }
 
