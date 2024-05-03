@@ -6,14 +6,11 @@
     "title": "Some cards",
     "assertions": [
         {
-            "label": "stds.schema-org.CreativeWork",
+            "label": "c2pa.actions",
             "data": {
-                "@context": "https://schema.org",
-                "@type": "CreativeWork",
-                "author": [
+                "actions": [
                     {
-                        "@type": "Person",
-                        "name": "Signer"
+                        "action": "c2pa.created"
                     }
                 ]
             }
