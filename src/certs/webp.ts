@@ -28,6 +28,12 @@ export function decode (buffer: ArrayBuffer): Record<string, Uint8Array> {
     const fourCC = reader.string(4).trim()
     const chunkSize = reader.uint32(reader.littleEndian)
     const data = reader.Uint8Array(chunkSize)
+    if (chunkSize % 2 !== 0) { // RIFF chunks are 2-byte aligned using a zero-byte as padding
+      const pad = reader.byte()
+      if (pad !== 0) {
+        throw new Error('Invalid padding byte')
+      }
+    }
     chunks[fourCC] = data
   }
 
