@@ -408,7 +408,7 @@ export class C2paOverlay extends LitElement {
     <div id='container'>
       <div class='title'>
           <div class="thumbnailFrame clickable">
-              <img class="thumbnail" id="thumbnail" src="${this.thumbprintUrl ?? chrome.runtime.getURL('icons/movie.svg')}">
+              <img class="thumbnail" id="thumbnail" src="${this.thumbprintUrl ?? chrome.runtime.getURL('icons/video.svg')}">
           </div>
           <div>
               <div id="divSigned">${mediaType} ${manifestCount > 1 ? 'last ' : ''}signed by ${trusted ? '' : html`<span class="bold">unknown</span> entity `}<span class="bold">${this.signer}</span> 

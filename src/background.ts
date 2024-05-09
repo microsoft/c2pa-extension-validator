@@ -20,14 +20,17 @@ chrome.runtime.onInstalled.addListener(function (details) {
   } else if (details.reason === 'chrome_update') {
     console.debug('Chrome has been updated.')
   }
+  createContextMenu()
 })
 
-chrome.contextMenus.create({
-  id: 'validateMediaElement',
-  title: 'Inspect Content Credentials',
-  contexts: ['audio', 'image', 'video'],
-  documentUrlPatterns: ['<all_urls>']
-})
+function createContextMenu (): void {
+  chrome.contextMenus.create({
+    id: 'validateMediaElement',
+    title: 'Inspect Content Credentials',
+    contexts: ['audio', 'image', 'video'],
+    documentUrlPatterns: ['<all_urls>']
+  })
+}
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   const url = info.srcUrl

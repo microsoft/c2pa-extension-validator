@@ -55,7 +55,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (message.action === MSG_FRAME_CLICK) {
-    console.debug('CONTENT:', MSG_FRAME_CLICK)
     overlay.hide()
   }
 })

@@ -10,7 +10,7 @@ export interface MSG_PAYLOAD {
   frame?: string
 }
 
-export type VALIDATION_STATUS = 'success' | 'warning' | 'error'
+export type VALIDATION_STATUS = 'success' | 'warning' | 'error' | 'img' | 'video' | 'none'
 
 export const MSG_VALIDATE_URL = 'MSG_VALIDATE_URL'
 export const MSG_C2PA_VALIDATE_URL = 'MSG_C2PA_VALIDATE_URL'
@@ -46,6 +46,8 @@ export const CR_ICON_Z_INDEX = 10000
 export const CR_ICON_MARGIN_LEFT = 35
 export const CR_ICON_MARGIN_TOP = 5
 export const OVERLAY_Z_INDEX = 10001
+
+export const IS_DEBUG = (process.env.NODE_ENV === 'development'.toString())
 
 export const MIME = {
   C2PA: 'application/c2pa',
