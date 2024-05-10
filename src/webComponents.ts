@@ -5,10 +5,11 @@
 
 import { LitElement, html, css, type TemplateResult } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
-import { type CertificateWithThumbprint, type C2paResult } from './c2pa'
-import { type ManifestStore } from 'c2pa'
+import { type C2paResult } from './c2pa'
+import { type CertificateWithThumbprint } from './certs/certs'
 import { localDateTime } from './utils'
 import { MSG_L3_INSPECT_URL } from './constants'
+import { type ManifestStore } from 'c2pa'
 
 /*
   The C2pa library does not export all its types, se we extract them from
@@ -401,7 +402,7 @@ export class C2paOverlay extends LitElement {
     let mediaType = (this.c2paResult?.source?.type ?? 'unknown/unknown').split('/')[0]
     mediaType = mediaType.charAt(0).toUpperCase() + mediaType.slice(1)
     const signingCert = this.c2paResult?.certChain?.[0]
-    const parsedCert = signingCert == null ? undefined : parseCertificate(signingCert)
+    // const parsedCert = signingCert
     const trustlist = this.c2paResult?.trustList
     const trustlistLogo = trustlist?.tlInfo.logo_icon != null ? trustlist?.tlInfo.logo_icon : 'icons/verified.svg'
     return html`
@@ -419,15 +420,15 @@ export class C2paOverlay extends LitElement {
                         ? '<p>No certificate found<p>'
                         : html`<div id="verified-info">
                                 <span>Issuer</span>
-                                  <div>${parsedCert?.issuer.cn}</div>
-                                  <div>${parsedCert?.issuer.o}</div>
-                                  ${parsedCert?.issuer.ou === 'unknown' ? '' : html`<div>${parsedCert?.issuer.ou}</div>`}
+                                  <div>${signingCert?.issuer.CN}</div>
+                                  <div>${signingCert?.issuer.O}</div>
+                                  ${signingCert?.issuer.OU === 'unknown' ? '' : html`<div>${signingCert?.issuer.OU}</div>`}
                                 <span>Subject</span>
-                                  <div>${parsedCert?.subject.cn}</div>
-                                  <div>${parsedCert?.subject.o}</div>
-                                  ${parsedCert?.subject.ou === 'unknown' ? '' : html`<div>${parsedCert?.subject.ou}</div>`}
+                                  <div>${signingCert?.subject.CN}</div>
+                                  <div>${signingCert?.subject.O}</div>
+                                  ${signingCert?.subject.OU === 'unknown' ? '' : html`<div>${signingCert?.subject.OU}</div>`}
                                 <span>Valid</span>
-                                  <div>${parsedCert?.validFrom} - ${parsedCert?.validTo}</div>
+                                  <div>${signingCert?.validFrom} - ${signingCert?.validTo}</div>
                                 <span>Thumbprint</span>
                                   <div style="font-family: 'Roboto Mono', monospace;">${signingCert.sha256Thumbprint.substring(0, 32)}</div>
                                   <div style="font-family: 'Roboto Mono', monospace;">${signingCert.sha256Thumbprint.substring(32)}</div>
@@ -641,51 +642,51 @@ const signSvg = 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%
 
 function certificateItems (certificates: CertificateWithThumbprint[]): IconTextItem[] {
   return certificates.map((cert) => {
-    const parsedCert = parseCertificate(cert)
+    // const parsedCert = parseCertificate(cert)
     return {
       icon: 'icons/seal.svg',
-      text: [parsedCert.issuer.cn, parsedCert.issuer.o, `${parsedCert.validFrom} - ${parsedCert.validTo}`]
+      text: [cert.issuer.CN, cert.issuer.O, `${cert.validFrom} - ${cert.validTo}`]
     }
   })
 }
 
-interface CertificateProperties {
-  issuer: { cn: string, o: string, ou: string, c: string, l: string, st: string }
-  subject: { cn: string, o: string, ou: string, c: string, l: string, st: string }
-  validFrom: string
-  validTo: string
-}
+// interface CertificateProperties {
+//   issuer: { cn: string, o: string, ou: string, c: string, l: string, st: string }
+//   subject: { cn: string, o: string, ou: string, c: string, l: string, st: string }
+//   validFrom: string
+//   validTo: string
+// }
 
 /*
   The x509 lib uses getters to return cert properties that are stripped during serialization.
   This function extracts the properties that are needed for display
 */
-function parseCertificate (cert: CertificateWithThumbprint): CertificateProperties {
-  const getShortName = (cert: CertificateWithThumbprint, shortName: string): string => {
-    const attr = cert.subject.attributes.find((attr) => attr.shortName === shortName)
-    return attr?.value ?? 'unknown'
-  }
-  return {
-    issuer: {
-      cn: getShortName(cert, 'CN'),
-      o: getShortName(cert, 'O'),
-      ou: getShortName(cert, 'OU'),
-      c: getShortName(cert, 'C'),
-      l: getShortName(cert, 'L'),
-      st: getShortName(cert, 'ST')
-    },
-    subject: {
-      cn: getShortName(cert, 'CN'),
-      o: getShortName(cert, 'O'),
-      ou: getShortName(cert, 'OU'),
-      c: getShortName(cert, 'C'),
-      l: getShortName(cert, 'L'),
-      st: getShortName(cert, 'ST')
-    },
-    validFrom: localDateTime(cert.validFrom.toString()),
-    validTo: localDateTime(cert.validTo.toString())
-  }
-}
+// function parseCertificate (cert: CertificateWithThumbprint): CertificateProperties {
+//   const getShortName = (cert: CertificateWithThumbprint, shortName: string): string => {
+//     const attr = cert.subject.attributes.find((attr) => attr.shortName === shortName)
+//     return attr?.value ?? 'unknown'
+//   }
+//   return {
+//     issuer: {
+//       cn: getShortName(cert, 'CN'),
+//       o: getShortName(cert, 'O'),
+//       ou: getShortName(cert, 'OU'),
+//       c: getShortName(cert, 'C'),
+//       l: getShortName(cert, 'L'),
+//       st: getShortName(cert, 'ST')
+//     },
+//     subject: {
+//       cn: getShortName(cert, 'CN'),
+//       o: getShortName(cert, 'O'),
+//       ou: getShortName(cert, 'OU'),
+//       c: getShortName(cert, 'C'),
+//       l: getShortName(cert, 'L'),
+//       st: getShortName(cert, 'ST')
+//     },
+//     validFrom: localDateTime(cert.validFrom.toString()),
+//     validTo: localDateTime(cert.validTo.toString())
+//   }
+// }
 
 function signatureItems (signature: Signature): IconTextItem[] {
   if (signature == null) {

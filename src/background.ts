@@ -88,7 +88,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (action === MSG_VALIDATE_URL) {
-    void validateUrl(data as string).then(sendResponse)
+    void validateUrl(data as string).then((results) => {
+      sendResponse(results)
+    })
     return AWAIT_ASYNC_RESPONSE
   }
 
@@ -105,6 +107,7 @@ async function validateUrl (url: string): Promise<C2paResult | C2paError> {
   }
   const trustListMatch = await checkTrustListInclusion(c2paResult.certChain ?? [])
   c2paResult.trustList = trustListMatch
+  console.debug(`%cresult sent: ${Date.now()}`, 'color:yellow')
   return c2paResult
 }
 

@@ -4,7 +4,7 @@
  */
 
 import { createC2pa, type C2pa, type C2paReadResult, createL2ManifestStore, type L2ManifestStore, selectEditsAndActivity, type TranslatedDictionaryCategory } from 'c2pa'
-import { extractCertChain } from './certs/certs.js'
+import { type CertificateWithThumbprint, extractCertChain } from './certs/certs.js'
 import { serialize } from './serialize.js'
 import { type Certificate } from '@fidm/x509'
 import { type TrustListMatch } from './trustlistProxy.js'
@@ -22,9 +22,9 @@ export interface C2paResult extends C2paReadResult {
   editsAndActivity: TranslatedDictionaryCategory[] | null
 }
 
-export interface CertificateWithThumbprint extends Certificate {
-  sha256Thumbprint: string
-}
+// export interface CertificateWithThumbprint extends CertificateInfo {
+//   sha256Thumbprint: string
+// }
 
 export interface C2paError extends Error {
   url: string
@@ -99,3 +99,11 @@ export async function validateUrl (url: string): Promise<C2paResult | C2paError>
 void init()
 
 console.debug('C2pa: Script: end')
+
+export interface C2paResult2 extends C2paReadResult {
+  url: string
+  certChain: CertificateWithThumbprint[] | null
+  trustList: TrustListMatch | null
+  l2: L2ManifestStore
+  editsAndActivity: TranslatedDictionaryCategory[] | null
+}

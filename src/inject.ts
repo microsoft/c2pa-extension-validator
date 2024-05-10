@@ -300,7 +300,7 @@ MediaMonitor.onMonitoringStop = (): void => {
 }
 
 VisibilityMonitor.onVisible((mediaRecord: MediaRecord): void => {
-  setIcon(mediaRecord)
+  // setIcon(mediaRecord)
   console.debug('%cVisible:', 'color: #75FA8D', mediaRecord.element.src.split('/').pop())
 })
 
@@ -313,6 +313,7 @@ VisibilityMonitor.onEnterViewport((mediaRecord: MediaRecord): void => {
   if (!mediaRecord.state.evaluated && mediaRecord.src != null) {
     mediaRecord.state.evaluated = true
     void c2paValidateImage(mediaRecord.src).then((c2paResult) => {
+      console.debug(`%cresult received: ${Date.now()}`, 'color:yellow')
       console.debug('C2PA Result:', c2paResult)
       if (c2paResult instanceof Error || c2paResult.manifestStore == null) {
         console.error('Error validating image:', c2paResult)
@@ -342,7 +343,9 @@ VisibilityMonitor.onUpdate((mediaRecord: MediaRecord): void => {
 
 function setIcon (mediaRecord: MediaRecord): void {
   if (IS_DEBUG && mediaRecord.state.c2pa == null && mediaRecord.icon == null) {
-    mediaRecord.icon = new CrIcon(mediaRecord.element, mediaRecord.state.type as VALIDATION_STATUS)
+    mediaRecord.onReady = (mediaRecord) => {
+      mediaRecord.icon = new CrIcon(mediaRecord.element, mediaRecord.state.type as VALIDATION_STATUS)
+    }
     return
   }
   if (mediaRecord.state.c2pa == null) return
@@ -353,7 +356,9 @@ function setIcon (mediaRecord: MediaRecord): void {
     c2paStatus = 'warning'
   }
   if (mediaRecord.icon == null) {
-    mediaRecord.icon = new CrIcon(mediaRecord.element, c2paStatus as VALIDATION_STATUS)
+    mediaRecord.onReady = (mediaRecord) => {
+      mediaRecord.icon = new CrIcon(mediaRecord.element, c2paStatus as VALIDATION_STATUS)
+    }
     return
   }
   mediaRecord.icon.status = c2paStatus as VALIDATION_STATUS

@@ -3,7 +3,7 @@
  *  Licensed under the MIT license.
  */
 
-import { Certificate } from '@fidm/x509'
+import { Certificate, type DistinguishedName as x509DistinguishedName } from '@fidm/x509'
 import { type JumbfResult, type ContentBox, decode as jumbfDecode } from './jumbf.js'
 import { decode as cborDecode } from './cbor.js'
 import { Buffer } from 'buffer' // required for polyfill
@@ -17,7 +17,26 @@ export interface COSE {
   3: Uint8Array
 }
 
-export interface CertificateWithThumbprint extends Certificate {
+export interface DistinguishedName {
+  CN: string
+  C: string
+  O: string
+  OU: string
+  L: string
+  ST: string
+}
+
+export type isoDateString = string
+
+export interface CertificateInfo {
+  issuer: DistinguishedName
+  subject: DistinguishedName
+  validFrom: isoDateString
+  validTo: isoDateString
+  isCA: boolean
+}
+
+export interface CertificateWithThumbprint extends CertificateInfo {
   sha256Thumbprint: string
 }
 
@@ -35,7 +54,10 @@ export async function createCertificateFromDer (der: Uint8Array): Promise<Certif
   const sha256Thumbprint = await calculateSha256CertThumbprintFromDer(der)
   const pem = DERtoPEM(der)
   const cert = Certificate.fromPEM(Buffer.from(pem, 'utf-8'))
-  const certWithTP = cert as CertificateWithThumbprint
+
+  const certInfo = parseCertificate(cert)
+
+  const certWithTP = certInfo as CertificateWithThumbprint
   certWithTP.sha256Thumbprint = sha256Thumbprint
   console.debug('sha256Thumbprint: ', sha256Thumbprint)
   return certWithTP
@@ -109,4 +131,49 @@ function getCertChain (jumbf: JumbfResult): Uint8Array[] | null {
     return x5chain
   }
   return null
+}
+
+/*
+  The x509 lib uses getters to return cert properties that are stripped during serialization.
+  This function extracts the properties that are needed for display
+*/
+function parseCertificate (cert: Certificate): CertificateInfo {
+  return {
+    issuer: getDistinguishedName(cert.issuer),
+    subject: getDistinguishedName(cert.subject),
+    validFrom: localDateTime(cert.validFrom.toString()),
+    validTo: localDateTime(cert.validTo.toString()),
+    isCA: cert.isCA
+  }
+}
+
+function getDistinguishedName (dn: x509DistinguishedName): DistinguishedName {
+  const getShortName = (shortName: string): string => {
+    const attr = dn.attributes.find((attr) => attr.shortName === shortName)
+    return attr?.value ?? ''
+  }
+  return {
+    CN: getShortName('CN'),
+    O: getShortName('O'),
+    OU: getShortName('OU'),
+    C: getShortName('C'),
+    L: getShortName('L'),
+    ST: getShortName('ST')
+  }
+}
+
+export function localDateTime (isoDateString: string): string {
+  const date = new Date(isoDateString)
+  const options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    // hour: 'numeric',
+    // minute: 'numeric',
+    // second: 'numeric',
+    // timeZoneName: 'short',
+    hour12: true
+  }
+  const formattedDate = new Intl.DateTimeFormat('en-US', options).format(date)
+  return formattedDate
 }
