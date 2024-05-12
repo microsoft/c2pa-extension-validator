@@ -3,19 +3,11 @@
  *  Licensed under the MIT license.
  */
 
-/*
-    Monitors the document for the addition, removal, and update of media elements (img, video, etc).
-    When a media element is visible, for the first time, an 'inspect' event is fired.
-    When the src of a media element changes, the element's inspection state is reset.
-*/
-
 import { AUTO_SCAN_DEFAULT, MSG_AUTO_SCAN_UPDATED } from './constants'
 import { type MediaElement } from './content'
 import { MediaRecord } from './mediaRecord'
 
 console.debug('Media module loaded')
-
-// const MEDIA_ELEMENT_NODE_TYPES = ['IMG', 'VIDEO', 'AUDIO']
 
 const mediaSelector = MediaRecord.MEDIA_ELEMENT_NODE_TYPES.join(',').toLocaleLowerCase()
 let _autoObserve: boolean
@@ -60,7 +52,6 @@ export class MediaMonitor {
         }
         const src = MediaRecord.getSrc(node)
         if (src === media.src) { // this can happen when the src is set to the same value
-          console.debug('%cMediaElement src not changed', 'color: orange', node)
           return
         }
         MediaMonitor._remove(node)
@@ -74,7 +65,7 @@ export class MediaMonitor {
       console.error('Monitor already started')
       return
     }
-    console.debug('%cMonitor: Start', 'color: #DDDDDD')
+
     MediaMonitor._monitoring = true
     if (MediaMonitor._onMonitoringStartCallback != null) {
       MediaMonitor._onMonitoringStartCallback(MediaMonitor)
@@ -94,17 +85,15 @@ export class MediaMonitor {
     if (MediaMonitor._onMonitoringStopCallback != null) {
       MediaMonitor._onMonitoringStopCallback(MediaMonitor)
     }
-    console.debug('%cMonitor: Stop', 'color: #DDDDDD')
+
     MediaMonitor.mutationObserver.disconnect()
-    // MediaMonitor._mediaRecords.clear()
     MediaMonitor._monitoring = false
   }
 
   public static add (element: MediaElement): MediaRecord {
     const exitingInstance = MediaMonitor.lookup(element)
-    // console.debug('%cMediaElement added:', 'color: #707070', element.nodeName, MediaRecord.getSrc(element))
+
     if (exitingInstance != null) {
-      console.debug('%cMediaElement already exists:', 'color: orange', exitingInstance.src)
       return exitingInstance
     }
     const newRecord = new MediaRecord(element)
@@ -117,14 +106,16 @@ export class MediaMonitor {
 
   private static _remove (element: MediaElement): void {
     const storedInstance = MediaMonitor._mediaRecords.get(element)
-    // console.debug('%cMediaElement removed:', 'color: #808050', element.nodeName, MediaRecord.getSrc(element))
+
     if (storedInstance == null) {
       console.error('%cMediaElement does not exist:', 'color: orange', MediaRecord.getSrc(element))
       return
     }
+
     if (MediaMonitor._removeCallback != null) {
       MediaMonitor._removeCallback(storedInstance)
     }
+
     MediaMonitor._mediaRecords.delete(element)
   }
 
@@ -175,7 +166,14 @@ export class MediaMonitor {
 
     if (node.childElementCount === 0) return mediaElements
 
-    return mediaElements.concat(Array.from((node).querySelectorAll<MediaElement>(mediaSelector)))
+    Array.from((node).querySelectorAll<MediaElement>(mediaSelector))
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+      .filter(MediaRecord.isMediaElement)
+      .forEach(mediaElement => {
+        mediaElements.push(mediaElement)
+      })
+
+    return mediaElements
   }
 
   public static mediaRecordsFromNode (parentNode: Node): MediaRecord[] {

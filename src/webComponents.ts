@@ -5,19 +5,14 @@
 
 import { LitElement, html, css, type TemplateResult } from 'lit'
 import { customElement, property } from 'lit/decorators.js'
-import { type C2paResult } from './c2pa'
+import { type ExtensionC2paIngredient, type C2paResult } from './c2pa'
 import { type CertificateWithThumbprint } from './certs/certs'
-import { localDateTime } from './utils'
 import { MSG_L3_INSPECT_URL } from './constants'
-import { type ManifestStore } from 'c2pa'
 
 /*
-  The C2pa library does not export all its types, se we extract them from
+  The C2pa library does not export all its types, we extract them from
   the types that are exported
 */
-type ValidationStatus = ManifestStore['validationStatus'][number]
-type Signature = C2paResult['l2']['signature']
-type Ingredient = ManifestStore['activeManifest']['ingredients'][number]
 type Activity = Exclude<C2paResult['editsAndActivity'], null>[number]
 
 const useSeparators = false
@@ -320,24 +315,16 @@ export class C2paOverlay extends LitElement {
     if (newValue === this._c2paResult || newValue == null) {
       return
     }
-
     const oldValue = this._c2paResult
     this._c2paResult = newValue
     this.status = this.setStatus(newValue)
     this.requestUpdate('c2paResult', oldValue)
-
-    if ((newValue?.source?.thumbnail.blob) != null) {
-      if (this.thumbprintUrl != null) {
-        URL.revokeObjectURL(this.thumbprintUrl)
-      }
-      const blob = newValue?.source?.thumbnail.blob
-      this.thumbprintUrl = URL.createObjectURL(blob)
-    } else {
-      this.thumbprintUrl = ''
+    this.thumbprintUrl = newValue?.source?.thumbnail.data
+    if (this.thumbprintUrl === '' && newValue?.source?.type === 'video/mp4') {
+      this.thumbprintUrl = chrome.runtime.getURL('icons/video.svg')
     }
-
-    this.signer = newValue?.manifestStore?.activeManifest.signatureInfo?.issuer ?? 'unknown entity'
-
+    const activeManifest = newValue?.manifestStore?.manifests[newValue.manifestStore.activeManifest]
+    this.signer = activeManifest.signatureInfo.issuer ?? 'unknown entity'
     this.trustList = newValue?.trustList?.tlInfo.name ?? 'unknown'
   }
 
@@ -347,7 +334,7 @@ export class C2paOverlay extends LitElement {
     return { errors, trusted }
   }
 
-  private validationSection (validation: ValidationStatus[] | undefined): TemplateResult[] {
+  private validationSection (validation: string[]): TemplateResult[] {
     const isTrusted = this.status?.trusted === true
     const areErrors = this.status?.errors === true
 
@@ -357,7 +344,7 @@ export class C2paOverlay extends LitElement {
 
     const result = []
 
-    const errors = (validation ?? []).map((v) => html`<li class="errorEntry">${v.explanation}</li>`)
+    const errors = (validation ?? []).map((v) => html`<li class="errorEntry">${v}</li>`)
     if (areErrors) {
       result.push(html`
         <div id="errors">
@@ -385,10 +372,6 @@ export class C2paOverlay extends LitElement {
   }
 
   private readonly handleClick = (): void => {
-    console.debug('sendMessage:', {
-      action: MSG_L3_INSPECT_URL,
-      data: this.c2paResult?.url
-    })
     void chrome.runtime.sendMessage({
       action: MSG_L3_INSPECT_URL,
       data: this.c2paResult?.url
@@ -402,7 +385,11 @@ export class C2paOverlay extends LitElement {
     let mediaType = (this.c2paResult?.source?.type ?? 'unknown/unknown').split('/')[0]
     mediaType = mediaType.charAt(0).toUpperCase() + mediaType.slice(1)
     const signingCert = this.c2paResult?.certChain?.[0]
-    // const parsedCert = signingCert
+    const c2paResult = this._c2paResult
+    if (c2paResult == null) {
+      return html`<div>No c2pa result</div>`
+    }
+    const activeManifest = c2paResult.manifestStore.manifests[c2paResult.manifestStore.activeManifest]
     const trustlist = this.c2paResult?.trustList
     const trustlistLogo = trustlist?.tlInfo.logo_icon != null ? trustlist?.tlInfo.logo_icon : 'icons/verified.svg'
     return html`
@@ -454,7 +441,7 @@ export class C2paOverlay extends LitElement {
               </div>`}
           </div>
       </div>
-      ${this.validationSection(this._c2paResult?.manifestStore?.validationStatus)}
+      ${this.validationSection(c2paResult.manifestStore.validationStatus)}
       <div id="inspectionLink">
           For more details, inspect the image in the <span id="mciLink" @click="${this.handleClick}"><u>Microsoft Content Integrity</u></span> page.
       </div>
@@ -468,12 +455,12 @@ export class C2paOverlay extends LitElement {
         ${useSeparators ? html`<div class="separator"></div>` : ''}
         <c2pa-collapsible>
           <span slot="header">Ingredients</span>
-          <div slot="content"><c2pa-grid-display .items="${ingredientItems(this.c2paResult?.manifestStore?.activeManifest.ingredients)}"></c2pa-grid-display></div>
+          <div slot="content"><c2pa-grid-display .items="${ingredientItems(activeManifest.ingredients)}"></c2pa-grid-display></div>
         </c2pa-collapsible>
         ${useSeparators ? html`<div class="separator"></div>` : ''}
         <c2pa-collapsible>
           <span slot="header">Signature</span>
-          <div slot="content"><c2pa-grid-display .items="${signatureItems(this.c2paResult?.l2.signature ?? null)}"></c2pa-grid-display></div>
+          <div slot="content"><c2pa-grid-display .items="${signatureItems(activeManifest.signatureInfo ?? null)}"></c2pa-grid-display></div>
         </c2pa-collapsible>
         ${useSeparators ? html`<div class="separator"></div>` : ''}
         <c2pa-collapsible>
@@ -650,62 +637,22 @@ function certificateItems (certificates: CertificateWithThumbprint[]): IconTextI
   })
 }
 
-// interface CertificateProperties {
-//   issuer: { cn: string, o: string, ou: string, c: string, l: string, st: string }
-//   subject: { cn: string, o: string, ou: string, c: string, l: string, st: string }
-//   validFrom: string
-//   validTo: string
-// }
-
-/*
-  The x509 lib uses getters to return cert properties that are stripped during serialization.
-  This function extracts the properties that are needed for display
-*/
-// function parseCertificate (cert: CertificateWithThumbprint): CertificateProperties {
-//   const getShortName = (cert: CertificateWithThumbprint, shortName: string): string => {
-//     const attr = cert.subject.attributes.find((attr) => attr.shortName === shortName)
-//     return attr?.value ?? 'unknown'
-//   }
-//   return {
-//     issuer: {
-//       cn: getShortName(cert, 'CN'),
-//       o: getShortName(cert, 'O'),
-//       ou: getShortName(cert, 'OU'),
-//       c: getShortName(cert, 'C'),
-//       l: getShortName(cert, 'L'),
-//       st: getShortName(cert, 'ST')
-//     },
-//     subject: {
-//       cn: getShortName(cert, 'CN'),
-//       o: getShortName(cert, 'O'),
-//       ou: getShortName(cert, 'OU'),
-//       c: getShortName(cert, 'C'),
-//       l: getShortName(cert, 'L'),
-//       st: getShortName(cert, 'ST')
-//     },
-//     validFrom: localDateTime(cert.validFrom.toString()),
-//     validTo: localDateTime(cert.validTo.toString())
-//   }
-// }
-
-function signatureItems (signature: Signature): IconTextItem[] {
+function signatureItems (signature: { issuer: string }): IconTextItem[] {
   if (signature == null) {
     return [{
       icon: unknownSvg,
       text: ['None']
     }]
   }
-  const dateStr = signature.isoDateString
   return [{
     icon: signSvg,
     text: [
-      signature.issuer ?? 'unknown',
-      dateStr != null ? localDateTime(dateStr) : 'unknown'
+      signature.issuer ?? 'unknown'
     ]
   }]
 }
 
-function ingredientItems (ingredients: Ingredient[] | undefined): IconTextItem[] {
+function ingredientItems (ingredients: ExtensionC2paIngredient[] | undefined): IconTextItem[] {
   if (ingredients == null || ingredients.length === 0) {
     return [{
       icon: unknownSvg,
@@ -714,7 +661,7 @@ function ingredientItems (ingredients: Ingredient[] | undefined): IconTextItem[]
   }
   return ingredients.map((ingredient) => {
     return {
-      icon: ingredient.thumbnail?.blob != null ? URL.createObjectURL(ingredient.thumbnail.blob) : null,
+      icon: ingredient.thumbnail.data,
       text: [
         ingredient.title,
         ingredient.format

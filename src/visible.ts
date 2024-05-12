@@ -109,25 +109,21 @@ export function unobserve (mediaRecord: MediaRecord): void {
 function isStyleVisible (element: HTMLElement): boolean {
   const computedStyle = window.getComputedStyle(element)
   if (computedStyle.display === 'none') {
-    console.debug('%cdisplay:none', 'color: #BB417C')
     return false
   }
   if (computedStyle.visibility === 'hidden') {
-    console.debug('%cvisibility:hidden', 'color: #BB417C')
     return false
   }
 
   if (computedStyle.opacity !== '') {
     const opacity = parseFloat(computedStyle.opacity)
     if (opacity < MIN_OPACITY) {
-      console.debug('%cLow Opacity:', 'color: #BB417C', opacity)
       return false
     }
   }
   if (computedStyle.filter !== 'none' && computedStyle.filter !== '') {
     const brightness = parseFloat(computedStyle.filter.replace(/brightness\(|\)/g, ''))
     if (brightness < MIN_BRIGHTNESS) {
-      console.debug('%cLow Brightness:', 'color: #BB417C', brightness)
       return false
     }
   }
@@ -136,7 +132,6 @@ function isStyleVisible (element: HTMLElement): boolean {
 
 function isPossitionVisible (element: HTMLElement): boolean {
   if (element.offsetWidth < MIN_VISIBLE_WIDTH || element.offsetHeight < MIN_VISIBLE_HEIGHT) {
-    console.debug('%cElement too small:', 'color: #BB417C', element.offsetWidth, element.offsetHeight)
     return false
   }
   const rect = element.getBoundingClientRect()
@@ -159,12 +154,10 @@ function isPossitionVisible (element: HTMLElement): boolean {
   }
 
   if (elementsAtCenter.length === 0) {
-    console.debug('%cNo Elements at Center:', 'color: #BB417C', centerX, centerY, element)
     return false
   }
 
   if (elementsAtCenter[0] !== element) {
-    console.debug('%cObscured:', 'color: #BB417C', elementsAtCenter[0])
     return false
   }
 
@@ -256,24 +249,21 @@ function isElementTransparent (element: HTMLElement): boolean {
 
 window.addEventListener('resize', () => {
   // eslint-disable-next-line @typescript-eslint/unbound-method
-  const visibleMediaRecords = MediaMonitor.all.filter((mediaRecord) => mediaRecord.state.visible)
-  visibleMediaRecords.forEach((mediaRecord) => {
+  const viewportMediaRecords = MediaMonitor.all.filter((mediaRecord) => mediaRecord.state.viewport)
+  viewportMediaRecords.forEach((mediaRecord) => {
     update(mediaRecord, 'resize')
   })
 })
 
 window.addEventListener('scroll', function () {
-  const visibleMediaRecords = MediaMonitor.all.filter((mediaRecord) => mediaRecord.state.viewport)
-  visibleMediaRecords.forEach((mediaRecord) => {
+  const viewportMediaRecords = MediaMonitor.all.filter((mediaRecord) => mediaRecord.state.viewport)
+  viewportMediaRecords.forEach((mediaRecord) => {
     update(mediaRecord, 'scroll')
   })
 })
 
 window.addEventListener('click', function (event) {
-  // Coordinates relative to the whole document
-  const x = event.pageX
-  const y = event.pageY
-
-  // Log coordinates to the console
-  console.log(`Cursor coordinates within the document: X = ${x}, Y = ${y}`)
+  const x = Math.floor(event.pageX)
+  const y = Math.floor(event.pageY)
+  console.debug('click', x, y)
 })

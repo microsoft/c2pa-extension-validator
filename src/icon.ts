@@ -58,8 +58,12 @@ export class CrIcon {
 
   public remove (): void {
     this._clickListener != null && this._crImg.removeEventListener('click', this._clickListener)
+    console.debug('Removing CrIcon:', this._crImg.src)
     this._crImg.remove()
-    // CrIcon._store.delete(this)
+  }
+
+  public get img (): HTMLImageElement {
+    return this._crImg
   }
 
   public hide (): void {

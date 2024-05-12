@@ -44,12 +44,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     Populate the IFrame with C2PA validation results for a media element.
   */
   if (message.action === MSG_DISPLAY_C2PA_OVERLAY) {
-    console.debug('%cCONTENT: VALIDATION_STATUS:', 'color: #A0FF12', message)
     overlay.show(message.data.position.x as number, message.data.position.y as number)
   }
 
   if (message.action === MSG_REMOTE_INSPECT_URL) {
-    console.debug(MSG_REMOTE_INSPECT_URL)
     const url = message.data as string
     pasteUrlIntoInput(url)
   }

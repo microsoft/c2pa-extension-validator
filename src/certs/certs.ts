@@ -59,7 +59,7 @@ export async function createCertificateFromDer (der: Uint8Array): Promise<Certif
 
   const certWithTP = certInfo as CertificateWithThumbprint
   certWithTP.sha256Thumbprint = sha256Thumbprint
-  console.debug('sha256Thumbprint: ', sha256Thumbprint)
+
   return certWithTP
 }
 

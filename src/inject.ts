@@ -6,9 +6,7 @@
 import { type C2paError, type C2paResult } from './c2pa'
 import { type MediaElement } from './content'
 import { CrIcon } from './icon'
-import { deserialize, serialize } from './serialize'
 import { checkTrustListInclusion } from './trustlistProxy'
-import { blobToDataURL } from './utils'
 import { type MediaRecord } from './mediaRecord'
 import * as VisibilityMonitor from './visible'
 import { MediaMonitor } from './mediaMonitor' // requires treeshake: { moduleSideEffects: [path.resolve('src/mediaMonitor.ts')] }, in rollup.config.js
@@ -39,7 +37,6 @@ interface TabAndFrameId {
 }
 
 const topLevelFrame = window === window.top
-// let _autoObserve = AUTO_SCAN_DEFAULT
 let messageCounter = 0
 const media = new Map<MediaElement, { validation: C2paResult, icon: CrIcon, status: VALIDATION_STATUS }>()
 let _id: TabAndFrameId
@@ -123,7 +120,7 @@ async function postWithResponse <T> (message: unknown): Promise<T> {
 
 async function handleValidationResult (mediaElement: MediaElement, c2paResult: C2paResult | C2paError): Promise<void> {
   if (c2paResult instanceof Error || c2paResult.manifestStore == null) {
-    console.error('Error validating image:', c2paResult)
+    console.error('Error validating image 1:', c2paResult)
     return
   }
 
@@ -142,7 +139,7 @@ async function handleValidationResult (mediaElement: MediaElement, c2paResult: C
     const offsets = await getOffsets(mediaElement)
     sendToContent({
       action: MSG_OPEN_OVERLAY,
-      data: { c2paResult: await serialize(c2paResult), position: { x: offsets.x + offsets.width, y: offsets.y } }
+      data: { c2paResult, position: { x: offsets.x + offsets.width, y: offsets.y } }
     })
   }
 }
@@ -195,7 +192,7 @@ async function c2paValidateImage (url: string): Promise<C2paResult | C2paError> 
   if (result instanceof Error) {
     return result as C2paError
   }
-  return deserialize(result) as C2paResult
+  return result
 }
 
 /*
@@ -234,11 +231,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === MSG_REQUEST_C2PA_ENTRIES) {
     void (async () => {
       for (const [, entry] of media.entries()) {
-        const blob = entry.validation.source.thumbnail.blob
         const response = {
-          name: entry.validation.source.metadata.filename,
+          name: entry.validation.source.filename,
           status: entry.status,
-          thumbnail: blob != null ? await blobToDataURL(blob) : null
+          thumbnail: entry.validation.source.thumbnail.data
         }
         void chrome.runtime.sendMessage({ action: MSG_RESPONSE_C2PA_ENTRIES, data: response })
       }
@@ -251,11 +247,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === MSG_C2PA_RESULT_FROM_CONTEXT && _id != null) {
     if (data?.frame !== _id.frame || data?.c2paResult == null || data.url == null || _lastContextTarget == null) return
     if (data.url !== _lastContextTarget?.src && data.url !== _lastContextTarget?.currentSrc) {
-      console.debug('Context menu result URL mismatch:', data.url, _lastContextTarget?.src)
       return
     }
     const c2paResultOrError = data.c2paResult as C2paResult | C2paError
-    console.debug('MSG_C2PA_RESULT_FROM_CONTEXT:', _lastContextTarget, data.c2paResult)
+
     MediaMonitor.add(_lastContextTarget)
     void handleValidationResult(_lastContextTarget, c2paResultOrError)
   }
@@ -269,23 +264,21 @@ let _lastContextTarget: MediaElement | null = null
 
 document.addEventListener('contextmenu', event => {
   _lastContextTarget = event.target as MediaElement
-  console.debug('CONTEXT MENU:', event)
 })
 
 MediaMonitor.onAdd = (mediaRecord: MediaRecord): void => {
-  console.debug('%cMedia element added:', 'color: #707070', mediaRecord.src)
+  console.debug('MediaMonitor.onAdd:', mediaRecord)
   setIcon(mediaRecord)
   VisibilityMonitor.observe(mediaRecord)
 }
 
 MediaMonitor.onRemove = (mediaRecord: MediaRecord): void => {
-  console.debug('%cMedia element removed:', 'color: #808060', mediaRecord.src)
   mediaRecord.icon = null
   VisibilityMonitor.unobserve(mediaRecord)
 }
 
 MediaMonitor.onMonitoringStart = (): void => {
-  console.debug('%cMonitoring started:', 'color: #60A080')
+  console.debug('MediaMonitor.onMonitoringStart')
   MediaMonitor.all.forEach((mediaRecord) => {
     setIcon(mediaRecord)
     VisibilityMonitor.observe(mediaRecord)
@@ -300,36 +293,35 @@ MediaMonitor.onMonitoringStop = (): void => {
 }
 
 VisibilityMonitor.onVisible((mediaRecord: MediaRecord): void => {
-  // setIcon(mediaRecord)
-  console.debug('%cVisible:', 'color: #75FA8D', mediaRecord.element.src.split('/').pop())
+  setIcon(mediaRecord)
 })
 
 VisibilityMonitor.onNotVisible((mediaRecord: MediaRecord): void => {
-  console.debug('%cNot Visible:', 'color: #C9716F', mediaRecord.element.src.split('/').pop())
   mediaRecord.icon = null
 })
 
 VisibilityMonitor.onEnterViewport((mediaRecord: MediaRecord): void => {
-  if (!mediaRecord.state.evaluated && mediaRecord.src != null) {
+  if (!mediaRecord.state.evaluated && mediaRecord.src !== '') {
     mediaRecord.state.evaluated = true
-    void c2paValidateImage(mediaRecord.src).then((c2paResult) => {
-      console.debug(`%cresult received: ${Date.now()}`, 'color:yellow')
-      console.debug('C2PA Result:', c2paResult)
-      if (c2paResult instanceof Error || c2paResult.manifestStore == null) {
-        console.error('Error validating image:', c2paResult)
-        return
-      }
-      mediaRecord.state.c2pa = c2paResult
-      setIcon(mediaRecord)
-      if (mediaRecord.icon === null) return
-      mediaRecord.icon.onClick = async () => {
-        const offsets = await getOffsets(mediaRecord.element)
-        sendToContent({
-          action: MSG_OPEN_OVERLAY,
-          data: { c2paResult: await serialize(c2paResult), position: { x: offsets.x + offsets.width, y: offsets.y } }
-        })
-      }
-    })
+    void c2paValidateImage(mediaRecord.src)
+      .then((c2paResult) => {
+        if (c2paResult instanceof Error || c2paResult.manifestStore == null) {
+          return // This is not a c2pa element
+        }
+        mediaRecord.state.c2pa = c2paResult
+        setIcon(mediaRecord)
+        if (mediaRecord.icon === null) return
+        mediaRecord.icon.onClick = async () => {
+          const offsets = await getOffsets(mediaRecord.element)
+          sendToContent({
+            action: MSG_OPEN_OVERLAY,
+            data: { c2paResult, position: { x: offsets.x + offsets.width, y: offsets.y } }
+          })
+        }
+      })
+      .catch((error) => {
+        console.error('Error validating image 3:', error)
+      })
   }
 })
 
@@ -351,7 +343,7 @@ function setIcon (mediaRecord: MediaRecord): void {
   if (mediaRecord.state.c2pa == null) return
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  let c2paStatus = mediaRecord.state.c2pa.manifestStore!.validationStatus.length > 0 ? 'error' : 'success'
+  let c2paStatus = mediaRecord.state.c2pa.manifestStore.validationStatus.length > 0 ? 'error' : 'success'
   if (mediaRecord.state.c2pa.trustList == null) {
     c2paStatus = 'warning'
   }

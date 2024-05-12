@@ -10,7 +10,7 @@ import { type CrIcon } from './icon'
 
 console.debug('MediaRecord module loaded')
 
-const SOURCES_TO_IGNORE = ['chrome-extension:', 'moz-extension:']
+const SOURCES_TO_IGNORE = ['chrome-extension:', 'moz-extension:', 'blob:', 'data:']
 
 type MediaStateTypes = 'image' | 'video' | 'audio' | 'none'
 
@@ -24,7 +24,6 @@ export interface MediaRecordState {
 
 export class MediaRecord {
   private readonly _state: MediaRecordState = { type: 'none', visible: false, evaluated: false, viewport: false, c2pa: null }
-  private readonly _src: string | null = null
   private readonly _element: MediaElement
   private _icon: CrIcon | null = null
 
@@ -32,7 +31,6 @@ export class MediaRecord {
 
   constructor (mediaElement: MediaElement) {
     this._element = mediaElement
-    this._src = MediaRecord.getSrc(mediaElement)
     this.state.type = mediaElement.nodeName.toLowerCase() as MediaStateTypes
   }
 
@@ -47,8 +45,13 @@ export class MediaRecord {
     this._icon = icon
   }
 
-  public get src (): string | null {
-    return this._src
+  public get src (): string {
+    if (IS_DEBUG) {
+      if (this._element.currentSrc == null) {
+        console.error('MediaElement currentSrc is empty:', this._element)
+      }
+    }
+    return this._element.currentSrc
   }
 
   public get element (): MediaElement {
@@ -72,8 +75,10 @@ export class MediaRecord {
       loaded = true
       callback(this)
       imgElement.removeEventListener('load', listener)
+      imgElement.removeEventListener('loadeddata', listener)
     }
     imgElement.addEventListener('load', listener)
+    imgElement.addEventListener('loadeddata', listener)
     if (!IS_DEBUG) return
     // If, for some reason, the load event is not fired, we will log an error after 2 seconds
     // We expect the load event to be allways be fired
