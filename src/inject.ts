@@ -38,7 +38,7 @@ interface TabAndFrameId {
 
 const topLevelFrame = window === window.top
 let messageCounter = 0
-const media = new Map<MediaElement, { validation: C2paResult, icon: CrIcon, status: VALIDATION_STATUS }>()
+// const media = new Map<MediaElement, { validation: C2paResult, icon: CrIcon, status: VALIDATION_STATUS }>()
 let _id: TabAndFrameId
 
 void chrome.runtime.sendMessage({ action: MSG_GET_ID }).then((id) => {
@@ -230,14 +230,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.action === MSG_REQUEST_C2PA_ENTRIES) {
     void (async () => {
-      for (const [, entry] of media.entries()) {
+      const c2paEntries = MediaMonitor.all.filter((mediaRecord) => mediaRecord.state.c2pa != null)
+      c2paEntries.forEach((entry) => {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const c2pa = entry.state.c2pa!
         const response = {
-          name: entry.validation.source.filename,
-          status: entry.status,
-          thumbnail: entry.validation.source.thumbnail.data
+          name: c2pa.source.filename,
+          status: c2pa.manifestStore.validationStatus.length > 0 ? 'error' : c2pa.trustList == null ? 'warning' : 'success',
+          thumbnail: c2pa.source.thumbnail.data
         }
         void chrome.runtime.sendMessage({ action: MSG_RESPONSE_C2PA_ENTRIES, data: response })
-      }
+      })
     })()
     // multiple frames will act on this message, so we send the response as a separate message
   }

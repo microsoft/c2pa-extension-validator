@@ -63,7 +63,7 @@ async function showResults (): Promise<void> {
   if (id == null) {
     return
   }
-  void chrome.tabs.sendMessage(id, { action: MSG_REQUEST_C2PA_ENTRIES })
+  void chrome.tabs.sendMessage(id, { action: MSG_REQUEST_C2PA_ENTRIES, data: null })
 }
 
 function addValidationResult (validationResult: MSG_RESPONSE_C2PA_ENTRIES_PAYLOAD): void {
@@ -74,6 +74,10 @@ function addValidationResult (validationResult: MSG_RESPONSE_C2PA_ENTRIES_PAYLOA
   }
 
   const icon = validationResult.status === 'error' ? iconUrl.invalid : validationResult.status === 'warning' ? iconUrl.untrusted : iconUrl.valid
+
+  if (validationResult.thumbnail === '') {
+    validationResult.thumbnail = chrome.runtime.getURL('icons/video.svg')
+  }
 
   const html = `
           <img src="${icon}" style="width: 30px; height: 30px;">
