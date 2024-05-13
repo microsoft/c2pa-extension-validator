@@ -3,7 +3,7 @@
  *  Licensed under the MIT license.
  */
 
-import { CR_ICON_SIZE, CR_ICON_Z_INDEX, type VALIDATION_STATUS, CR_ICON_MARGIN_LEFT, CR_ICON_MARGIN_TOP, IS_DEBUG } from './constants'
+import { CR_ICON_SIZE, CR_ICON_Z_INDEX, type VALIDATION_STATUS, CR_ICON_MARGIN_LEFT, CR_ICON_MARGIN_TOP } from './constants'
 import { type MediaElement } from './content'
 
 const imageSources: { [key in VALIDATION_STATUS]: string } = {
@@ -32,6 +32,7 @@ function createImg (url: string): HTMLImageElement {
   img.style.padding = '0'
   img.style.margin = '0'
   img.style.zIndex = CR_ICON_Z_INDEX.toString()
+  img.setAttribute('c2pa-icon', '')
   img.setAttribute('src', url)
   img.setAttribute('alt', 'Content Credentials')
   img.setAttribute('title', url)

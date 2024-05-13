@@ -268,12 +268,11 @@ document.addEventListener('contextmenu', event => {
 
 MediaMonitor.onAdd = (mediaRecord: MediaRecord): void => {
   console.debug('MediaMonitor.onAdd:', mediaRecord)
-  setIcon(mediaRecord)
   VisibilityMonitor.observe(mediaRecord)
 }
 
 MediaMonitor.onRemove = (mediaRecord: MediaRecord): void => {
-  mediaRecord.icon = null
+  if (mediaRecord.icon != null) mediaRecord.icon = null
   VisibilityMonitor.unobserve(mediaRecord)
 }
 

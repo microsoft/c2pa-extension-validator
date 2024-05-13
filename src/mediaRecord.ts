@@ -39,9 +39,6 @@ export class MediaRecord {
   }
 
   public set icon (icon: CrIcon | null) {
-    if (this._icon != null) {
-      this._icon.remove()
-    }
     this._icon = icon
   }
 

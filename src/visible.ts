@@ -77,7 +77,7 @@ function intersecting (mediaRecord: MediaRecord): void {
   _resizeObserver.observe(mediaRecord.element)
   mediaRecord.state.viewport = true
   const visible = mediaRecord.state.visible
-  const newVisibleState = isStyleVisible(mediaRecord.element)
+  const newVisibleState = isStyleVisible(mediaRecord.element) && isPossitionVisible(mediaRecord.element)
   if (visible === newVisibleState) return // state has already been updated by another handler
   mediaRecord.state.visible = newVisibleState
   newVisibleState ? isVisible(mediaRecord) : notVisible(mediaRecord)
@@ -219,6 +219,7 @@ function debounce<T extends (...args: unknown[]) => void> (func: T, delay: numbe
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function checkOpacity (element: HTMLElement): boolean {
   let target: HTMLElement | null = element
   while (target != null) {
