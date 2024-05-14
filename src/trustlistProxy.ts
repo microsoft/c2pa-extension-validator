@@ -3,7 +3,7 @@
  *  Licensed under the MIT license.
  */
 
-import { type CertificateWithThumbprint } from './c2pa'
+import { type CertificateWithThumbprint } from './certs/certs'
 import { MSG_ADD_TRUSTLIST, MSG_CHECK_TRUSTLIST_INCLUSION, MSG_GET_TRUSTLIST_INFOS, MSG_REMOVE_TRUSTLIST } from './constants'
 import { type TrustList, type TrustListInfo, type TrustListMatch } from './trustlist'
 export { type TrustListMatch, type TrustList, type TrustListInfo } from './trustlist'

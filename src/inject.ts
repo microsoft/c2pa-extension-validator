@@ -6,14 +6,16 @@
 import { type C2paError, type C2paResult } from './c2pa'
 import { type MediaElement } from './content'
 import { CrIcon } from './icon'
-import { deserialize, serialize } from './serialize'
 import { checkTrustListInclusion } from './trustlistProxy'
-import { blobToDataURL } from './utils'
+import { type MediaRecord } from './mediaRecord'
+import * as VisibilityMonitor from './visible'
+import { MediaMonitor } from './mediaMonitor' // requires treeshake: { moduleSideEffects: [path.resolve('src/mediaMonitor.ts')] }, in rollup.config.js
 import {
-  MSG_VALIDATE_URL, MSG_CHILD_REQUEST, MSG_FRAME_CLICK, MSG_GET_CONTAINER_OFFSET, MSG_PARENT_RESPONSE,
+  MSG_CHILD_REQUEST, MSG_FRAME_CLICK, MSG_GET_CONTAINER_OFFSET, MSG_PARENT_RESPONSE,
   MSG_REQUEST_C2PA_ENTRIES, MSG_RESPONSE_C2PA_ENTRIES, MSG_TRUSTLIST_UPDATE, MSG_OPEN_OVERLAY,
   type VALIDATION_STATUS, MSG_FORWARD_TO_CONTENT, MSG_C2PA_RESULT_FROM_CONTEXT, MSG_GET_ID,
-  MSG_AUTO_SCAN_UPDATED, AUTO_SCAN_DEFAULT
+  MSG_VALIDATE_URL,
+  IS_DEBUG
 } from './constants'
 
 console.debug('%cFRAME:', 'color: magenta', window.location)
@@ -35,30 +37,9 @@ interface TabAndFrameId {
 }
 
 const topLevelFrame = window === window.top
-let _autoObserve = AUTO_SCAN_DEFAULT
 let messageCounter = 0
-const media = new Map<MediaElement, { validation: C2paResult, icon: CrIcon, status: VALIDATION_STATUS }>()
+// const media = new Map<MediaElement, { validation: C2paResult, icon: CrIcon, status: VALIDATION_STATUS }>()
 let _id: TabAndFrameId
-const observer = new MutationObserver((mutationsList: MutationRecord[]) => {
-  mutationsList.forEach(mutation => {
-    if (mutation.addedNodes.length > 0) {
-      processElements(Array.from(mutation.addedNodes), addMediaElement)
-    }
-    if (mutation.removedNodes.length > 0) {
-      processElements(Array.from(mutation.removedNodes), removeMediaElement)
-    }
-    if (mutation.type === 'attributes') {
-      if (mutation.target.nodeName !== 'IMG' && mutation.target.nodeName !== 'VIDEO') return
-      if (mutation.attributeName === 'src') {
-        updateMediaElement(mutation.target as MediaElement, mutation.oldValue ?? '')
-      }
-    }
-  })
-})
-
-void chrome.storage.local.get('autoScan').then((result) => {
-  _autoObserve = result.autoScan ?? AUTO_SCAN_DEFAULT
-})
 
 void chrome.runtime.sendMessage({ action: MSG_GET_ID }).then((id) => {
   _id = id
@@ -137,98 +118,30 @@ async function postWithResponse <T> (message: unknown): Promise<T> {
   })
 }
 
-function addMediaElement (mediaElement: MediaElement): void {
-  if (mediaElement.src.startsWith('chrome-extension:') || mediaElement.src.startsWith('moz-extension:')) return
-  if (mediaElement instanceof HTMLVideoElement) {
-    void validateMediaElement(mediaElement)
-  }
-  if (mediaElement instanceof HTMLImageElement) {
-    // The image my not be loaded yet
-    if (mediaElement.complete) {
-      void validateMediaElement(mediaElement)
-    } else {
-      mediaElement.addEventListener('load', () => {
-        void validateMediaElement(mediaElement)
-      })
-    }
-  }
-}
-
-async function validateMediaElement (mediaElement: MediaElement): Promise<void> {
-  const source = mediaElement.currentSrc ?? mediaElement.src
-  if (source == null || source === '') {
-    console.debug('MediaElement lacks src')
-    return
-  }
-  const c2paResult = await c2paValidateImage(source)
-
-  void handleValidationResult(mediaElement, c2paResult)
-}
-
 async function handleValidationResult (mediaElement: MediaElement, c2paResult: C2paResult | C2paError): Promise<void> {
-  if (c2paResult instanceof Error) {
-    console.error('Error validating image:', c2paResult)
+  if (c2paResult instanceof Error || c2paResult.manifestStore == null) {
+    console.error('Error validating image 1:', c2paResult)
     return
   }
-  if (c2paResult.manifestStore == null) {
-    console.debug('Content: No C2PA manifest found:', mediaElement.currentSrc ?? mediaElement.src)
+
+  const mediaRecord = MediaMonitor.lookup(mediaElement)
+  if (mediaRecord == null) {
+    console.error('Media record not found:', mediaElement)
     return
   }
-  let validationStatus: VALIDATION_STATUS = 'success'
-  if (c2paResult.manifestStore.validationStatus.length > 0) {
-    validationStatus = 'error'
-  } else if (c2paResult.trustList == null) {
-    validationStatus = 'warning'
-  }
-  const c2paIcon = new CrIcon(mediaElement, validationStatus)
-  c2paIcon.onClick = async () => {
+
+  mediaRecord.state.c2pa = c2paResult
+
+  setIcon(mediaRecord)
+
+  if (mediaRecord.icon === null) return
+  mediaRecord.icon.onClick = async () => {
     const offsets = await getOffsets(mediaElement)
     sendToContent({
       action: MSG_OPEN_OVERLAY,
-      data: { c2paResult: await serialize(c2paResult), position: { x: offsets.x + offsets.width, y: offsets.y } }
+      data: { c2paResult, position: { x: offsets.x + offsets.width, y: offsets.y } }
     })
   }
-
-  // remove the previous icon and mediaElement from the map if it exists
-  const previousC2paImage = media.get(mediaElement)
-  if (previousC2paImage != null) {
-    previousC2paImage.icon.remove()
-    media.delete(mediaElement)
-  }
-
-  media.set(mediaElement, { validation: c2paResult, icon: c2paIcon, status: validationStatus })
-}
-
-function removeMediaElement (mediaElement: MediaElement): void {
-  console.debug('%cMedia element removed:', 'color: #FF1010', mediaElement.src)
-  const c2paImage = media.get(mediaElement)
-  if (c2paImage != null) {
-    c2paImage.icon.remove()
-    media.delete(mediaElement)
-  }
-}
-
-function updateMediaElement (mediaElement: MediaElement, oldValue: string): void {
-  removeMediaElement(mediaElement)
-  addMediaElement(mediaElement)
-}
-
-function findMediaElements (parentNode: HTMLElement, handler: (mediaElement: MediaElement) => void): void {
-  const mediaElements = Array.from((parentNode).querySelectorAll<MediaElement>('img, video'))
-  if (parentNode.nodeName === 'IMG' || parentNode.nodeName === 'VIDEO') {
-    mediaElements.unshift(parentNode as MediaElement)
-  }
-  mediaElements.forEach(mediaElement => {
-    handler(mediaElement)
-  })
-}
-
-function processElements (nodeList: Node[], handler: (mediaElement: MediaElement) => void): void {
-  nodeList.forEach(parentNode => {
-    if (parentNode.nodeType === Node.ELEMENT_NODE) {
-      findMediaElements(parentNode as HTMLElement, handler)
-    }
-  })
 }
 
 async function getParentOffset (): Promise<Rect> {
@@ -279,19 +192,7 @@ async function c2paValidateImage (url: string): Promise<C2paResult | C2paError> 
   if (result instanceof Error) {
     return result as C2paError
   }
-  return deserialize(result) as C2paResult
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-  console.debug('%cLOAD:', 'color: brown', document)
-  if (_autoObserve) startObserving()
-})
-
-function startObserving (): void {
-  findMediaElements(document.body, addMediaElement)
-  observer.observe(
-    document.body,
-    { childList: true, subtree: true, attributes: true, attributeFilter: ['src'] /*, attributeOldValue: true */ })
+  return result
 }
 
 /*
@@ -312,16 +213,14 @@ export interface MSG_RESPONSE_C2PA_ENTRIES_PAYLOAD {
 }
 
 function updateTrustLists (): void {
-  for (const [, c2paResult] of media.entries()) {
-    if (c2paResult.validation.certChain != null) {
-      void checkTrustListInclusion(c2paResult.validation.certChain).then((trustListMatch) => {
-        if (c2paResult.validation.manifestStore == null) return
-        const c2paStatus = c2paResult.validation.manifestStore.validationStatus.length > 0 ? 'error' : 'success'
-        c2paResult.validation.trustList = trustListMatch
-        c2paResult.icon.status = c2paStatus === 'error' ? 'error' : trustListMatch === null ? 'warning' : 'success'
-      })
-    }
-  }
+  MediaMonitor.all.forEach((mediaRecord) => {
+    if (mediaRecord.state.c2pa?.certChain == null) return
+    void checkTrustListInclusion(mediaRecord.state.c2pa.certChain).then((trustListMatch) => {
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      mediaRecord.state.c2pa!.trustList = trustListMatch
+      setIcon(mediaRecord)
+    })
+  })
 }
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -331,15 +230,17 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   if (message.action === MSG_REQUEST_C2PA_ENTRIES) {
     void (async () => {
-      for (const [, entry] of media.entries()) {
-        const blob = entry.validation.source.thumbnail.blob
+      const c2paEntries = MediaMonitor.all.filter((mediaRecord) => mediaRecord.state.c2pa != null)
+      c2paEntries.forEach((entry) => {
+        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+        const c2pa = entry.state.c2pa!
         const response = {
-          name: entry.validation.source.metadata.filename,
-          status: entry.status,
-          thumbnail: blob != null ? await blobToDataURL(blob) : null
+          name: c2pa.source.filename,
+          status: c2pa.manifestStore.validationStatus.length > 0 ? 'error' : c2pa.trustList == null ? 'warning' : 'success',
+          thumbnail: c2pa.source.thumbnail.data
         }
         void chrome.runtime.sendMessage({ action: MSG_RESPONSE_C2PA_ENTRIES, data: response })
-      }
+      })
     })()
     // multiple frames will act on this message, so we send the response as a separate message
   }
@@ -349,23 +250,12 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === MSG_C2PA_RESULT_FROM_CONTEXT && _id != null) {
     if (data?.frame !== _id.frame || data?.c2paResult == null || data.url == null || _lastContextTarget == null) return
     if (data.url !== _lastContextTarget?.src && data.url !== _lastContextTarget?.currentSrc) {
-      console.debug('Context menu result URL mismatch:', data.url, _lastContextTarget?.src)
       return
     }
     const c2paResultOrError = data.c2paResult as C2paResult | C2paError
-    console.debug('MSG_C2PA_RESULT_FROM_CONTEXT:', _lastContextTarget, data.c2paResult)
+
+    MediaMonitor.add(_lastContextTarget)
     void handleValidationResult(_lastContextTarget, c2paResultOrError)
-  }
-  if (message.action === MSG_AUTO_SCAN_UPDATED) {
-    _autoObserve = data as boolean
-    _autoObserve ? startObserving() : observer.disconnect()
-    if (!_autoObserve) {
-      // remove all icons for the dom
-      for (const [, c2paImage] of media.entries()) {
-        c2paImage.icon.remove()
-      }
-      media.clear()
-    }
   }
 })
 
@@ -377,5 +267,93 @@ let _lastContextTarget: MediaElement | null = null
 
 document.addEventListener('contextmenu', event => {
   _lastContextTarget = event.target as MediaElement
-  console.debug('CONTEXT MENU:', event)
 })
+
+MediaMonitor.onAdd = (mediaRecord: MediaRecord): void => {
+  console.debug('MediaMonitor.onAdd:', mediaRecord)
+  VisibilityMonitor.observe(mediaRecord)
+}
+
+MediaMonitor.onRemove = (mediaRecord: MediaRecord): void => {
+  if (mediaRecord.icon != null) mediaRecord.icon = null
+  VisibilityMonitor.unobserve(mediaRecord)
+}
+
+MediaMonitor.onMonitoringStart = (): void => {
+  console.debug('MediaMonitor.onMonitoringStart')
+  MediaMonitor.all.forEach((mediaRecord) => {
+    setIcon(mediaRecord)
+    VisibilityMonitor.observe(mediaRecord)
+  })
+}
+
+MediaMonitor.onMonitoringStop = (): void => {
+  MediaMonitor.all.forEach((mediaRecord) => {
+    mediaRecord.icon = null
+    VisibilityMonitor.unobserve(mediaRecord)
+  })
+}
+
+VisibilityMonitor.onVisible((mediaRecord: MediaRecord): void => {
+  setIcon(mediaRecord)
+})
+
+VisibilityMonitor.onNotVisible((mediaRecord: MediaRecord): void => {
+  mediaRecord.icon = null
+})
+
+VisibilityMonitor.onEnterViewport((mediaRecord: MediaRecord): void => {
+  if (!mediaRecord.state.evaluated && mediaRecord.src !== '') {
+    mediaRecord.state.evaluated = true
+    void c2paValidateImage(mediaRecord.src)
+      .then((c2paResult) => {
+        if (c2paResult instanceof Error || c2paResult.manifestStore == null) {
+          return // This is not a c2pa element
+        }
+        mediaRecord.state.c2pa = c2paResult
+        setIcon(mediaRecord)
+        if (mediaRecord.icon === null) return
+        mediaRecord.icon.onClick = async () => {
+          const offsets = await getOffsets(mediaRecord.element)
+          sendToContent({
+            action: MSG_OPEN_OVERLAY,
+            data: { c2paResult, position: { x: offsets.x + offsets.width, y: offsets.y } }
+          })
+        }
+      })
+      .catch((error) => {
+        console.error('Error validating image 3:', error)
+      })
+  }
+})
+
+VisibilityMonitor.onLeaveViewport((mediaRecord: MediaRecord): void => {
+  // do nothing
+})
+
+VisibilityMonitor.onUpdate((mediaRecord: MediaRecord): void => {
+  mediaRecord.icon?.position()
+})
+
+function setIcon (mediaRecord: MediaRecord): void {
+  if (IS_DEBUG && mediaRecord.state.c2pa == null && mediaRecord.icon == null) {
+    mediaRecord.onReady = (mediaRecord) => {
+      mediaRecord.icon = new CrIcon(mediaRecord.element, mediaRecord.state.type as VALIDATION_STATUS)
+    }
+    return
+  }
+  if (mediaRecord.state.c2pa == null) return
+
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  let c2paStatus = mediaRecord.state.c2pa.manifestStore.validationStatus.length > 0 ? 'error' : 'success'
+  if (mediaRecord.state.c2pa.trustList == null) {
+    c2paStatus = 'warning'
+  }
+  if (mediaRecord.icon == null) {
+    mediaRecord.onReady = (mediaRecord) => {
+      mediaRecord.icon = new CrIcon(mediaRecord.element, c2paStatus as VALIDATION_STATUS)
+    }
+    return
+  }
+  mediaRecord.icon.status = c2paStatus as VALIDATION_STATUS
+}

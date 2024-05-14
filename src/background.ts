@@ -20,14 +20,17 @@ chrome.runtime.onInstalled.addListener(function (details) {
   } else if (details.reason === 'chrome_update') {
     console.debug('Chrome has been updated.')
   }
+  createContextMenu()
 })
 
-chrome.contextMenus.create({
-  id: 'validateMediaElement',
-  title: 'Inspect Content Credentials',
-  contexts: ['audio', 'image', 'video'],
-  documentUrlPatterns: ['<all_urls>']
-})
+function createContextMenu (): void {
+  chrome.contextMenus.create({
+    id: 'validateMediaElement',
+    title: 'Inspect Content Credentials',
+    contexts: ['audio', 'image', 'video'],
+    documentUrlPatterns: ['<all_urls>']
+  })
+}
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   const url = info.srcUrl
@@ -74,7 +77,6 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         // This is a temporary workaround to wait for the content script to be ready.
         // We should have the content script send a message to the background script when it is ready. Then we can remove this timeout.
         setTimeout(() => {
-          console.debug('sendMessage:', { action: MSG_REMOTE_INSPECT_URL, data })
           void chrome.tabs.sendMessage(id, { action: MSG_REMOTE_INSPECT_URL, data })
         }, 1000)
       })
@@ -85,7 +87,9 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (action === MSG_VALIDATE_URL) {
-    void validateUrl(data as string).then(sendResponse)
+    void validateUrl(data as string).then((results) => {
+      sendResponse(results)
+    })
     return AWAIT_ASYNC_RESPONSE
   }
 
@@ -102,6 +106,7 @@ async function validateUrl (url: string): Promise<C2paResult | C2paError> {
   }
   const trustListMatch = await checkTrustListInclusion(c2paResult.certChain ?? [])
   c2paResult.trustList = trustListMatch
+
   return c2paResult
 }
 

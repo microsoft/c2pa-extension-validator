@@ -3,27 +3,21 @@
  *  Licensed under the MIT license.
  */
 
-import { createC2pa, type C2pa, type C2paReadResult, createL2ManifestStore, type L2ManifestStore, selectEditsAndActivity, type TranslatedDictionaryCategory } from 'c2pa'
-import { extractCertChain } from './certs/certs.js'
-import { serialize } from './serialize.js'
-import { type Certificate } from '@fidm/x509'
+import { createC2pa, type C2pa, type C2paReadResult, selectEditsAndActivity, type TranslatedDictionaryCategory, type ManifestStore, type ManifestMap } from 'c2pa'
+import { type CertificateWithThumbprint, extractCertChain } from './certs/certs.js'
 import { type TrustListMatch } from './trustlistProxy.js'
 import { AWAIT_ASYNC_RESPONSE, MSG_C2PA_VALIDATE_URL, type MSG_PAYLOAD } from './constants.js'
+import { blobToDataURL } from './utils.js'
 
 console.debug('C2pa: Script: start')
 
 let c2pa: C2pa | null = null
 
-export interface C2paResult extends C2paReadResult {
+export interface C2paResult extends ExtensionC2paResult {
   url: string
   certChain: CertificateWithThumbprint[] | null
   trustList: TrustListMatch | null
-  l2: L2ManifestStore
   editsAndActivity: TranslatedDictionaryCategory[] | null
-}
-
-export interface CertificateWithThumbprint extends Certificate {
-  sha256Thumbprint: string
 }
 
 export interface C2paError extends Error {
@@ -38,7 +32,6 @@ export async function init (): Promise<void> {
     .then(
       (newC2pa) => {
         c2pa = newC2pa
-        console.debug('C2PA initialized')
       },
       (error: unknown) => {
         console.error('Error initializing C2PA:', error)
@@ -59,43 +52,140 @@ export async function validateUrl (url: string): Promise<C2paResult | C2paError>
   if (c2pa == null) {
     return new Error('C2PA not initialized') as C2paError
   }
-  const c2paResult = await c2pa.read(url)
 
-  let certChain: CertificateWithThumbprint[] = []
+  const c2paResult = await c2pa.read(url).catch((error: Error) => {
+    console.error('Error reading C2PA:', url, error)
+    return error
+  })
 
-  if (c2paResult.manifestStore?.activeManifest == null) {
-    const err = new Error('No active manifest found') as C2paError
-    err.url = url
-    return err
+  if (c2paResult instanceof Error) {
+    return { message: c2paResult.message, url, name: c2paResult.name } satisfies C2paError
   }
 
-  const arrayBuffer = await c2paResult.source.arrayBuffer()
-  certChain = await extractCertChain(c2paResult.source.type, new Uint8Array(arrayBuffer)) ?? []
+  if (c2paResult.manifestStore?.activeManifest == null) {
+    return { message: 'No manifest found', url, name: 'No Manifest' } satisfies C2paError
+  }
 
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const l2Full = await createL2ManifestStore(c2paResult.manifestStore)
-  const l2 = l2Full.manifestStore
+  const serializedResult2 = await serializeC2paReadResult(c2paResult)
 
+  const sourceBuffer = await c2paResult.source.arrayBuffer()
+  const certChain = await extractCertChain(c2paResult.source.type, new Uint8Array(sourceBuffer)) ?? []
   const editsAndActivity = ((c2paResult.manifestStore?.activeManifest) != null) ? await selectEditsAndActivity(c2paResult.manifestStore?.activeManifest) : null
-  console.debug(JSON.stringify(editsAndActivity, null, 2))
-
-  const serializedIssuer = await serialize(certChain[0].issuer) as Certificate
-  console.debug('Issuer: ', serializedIssuer)
 
   const result: C2paResult = {
-    ...c2paResult,
+    ...serializedResult2,
     url,
     trustList: null,
     certChain,
-    l2,
     editsAndActivity
   }
 
-  const serializedResult = await serialize(result) as C2paResult
-
-  return serializedResult
+  return result
 }
 
 void init()
 
 console.debug('C2pa: Script: end')
+
+export type dataUrl = string
+
+export interface ExtensionC2paIngredient {
+  title: string
+  format: string
+  instanceId: string
+  thumbnail: {
+    type: string
+    data: dataUrl
+  }
+}
+
+export interface ExtensionC2paManifest {
+  key: string
+  title: string
+  format: string
+  claimGenerator: string
+  signatureInfo: {
+    issuer: string
+  }
+  ingredients: ExtensionC2paIngredient[]
+}
+
+export interface ExtensionC2paResult {
+  manifestStore: {
+    manifests: ExtensionC2paManifest[]
+    activeManifest: number
+    validationStatus: string[]
+  }
+  source: {
+    thumbnail: {
+      type: string
+      data: dataUrl
+    }
+    type: string
+    data: dataUrl
+    filename: string
+  }
+}
+
+async function serializeC2paReadResult (result: C2paReadResult): Promise<ExtensionC2paResult> {
+  const manifestStore: ManifestStore | null = result.manifestStore
+  if (manifestStore == null) {
+    throw new Error('Manifest store is null')
+  }
+  const c2paManifests: ManifestMap = manifestStore.manifests
+  const c2paActiveManifest = manifestStore.activeManifest
+  const manifests: ExtensionC2paManifest[] = Object.entries(c2paManifests).map(([key, value]) => {
+    return {
+      key,
+      title: value.title,
+      format: value.format,
+      claimGenerator: value.claimGenerator,
+      signatureInfo: {
+        issuer: value.signatureInfo?.issuer ?? ''
+      },
+      ingredients: value.ingredients.map(ingredient => {
+        return {
+          title: ingredient.title,
+          format: ingredient.format,
+          instanceId: ingredient.instanceId,
+          thumbnail: {
+            type: ingredient.thumbnail?.contentType ?? '',
+            data: ''
+          }
+        }
+      })
+    }
+  }
+  )
+
+  const activeManifestIndex = Object.values(c2paManifests).indexOf(c2paActiveManifest)
+
+  const thumbnailData = (result.source.thumbnail.contentType?.startsWith('video/') ?? false)
+    ? ''
+    : result.source.thumbnail.blob != null
+      ? await blobToDataURL(result.source.thumbnail.blob)
+      : ''
+
+  const sourceData = (result.source.type?.startsWith('video/') ?? false)
+    ? ''
+    : result.source.blob != null
+      ? await blobToDataURL(result.source.blob)
+      : ''
+
+  return {
+    manifestStore: {
+      manifests,
+      activeManifest: activeManifestIndex,
+      validationStatus: manifestStore.validationStatus.map(status => status.explanation ?? status.code.toString())
+    },
+    source: {
+      thumbnail: {
+        type: result.source.thumbnail.contentType ?? '',
+        data: thumbnailData
+      },
+      type: result.source.type,
+      data: sourceData,
+      filename: result.source.metadata.filename ?? ''
+    }
+  }
+}
