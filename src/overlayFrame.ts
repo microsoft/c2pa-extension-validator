@@ -21,7 +21,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     Populate the IFrame with C2PA validation results for a media element.
   */
   if (message.action === MSG_OPEN_OVERLAY) {
-    const c2paResult = message.data.c2paResult // deserialize(message.data.c2paResult) as C2paResult
+    const c2paResult = message.data.c2paResult
     const position = message.data.position as { x: number, y: number }
     _overlay.c2paResult = c2paResult
     sendToContent({ action: MSG_DISPLAY_C2PA_OVERLAY, data: { position } })
