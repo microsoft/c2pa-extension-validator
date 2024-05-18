@@ -31,14 +31,14 @@ jobs:
     - name: Run the post-build (to zip the dist files)
       run: npm run postbuild
 
-    - name: Upload Chrome zip as artifact
+    - name: Upload Chrome dist folder's zip as an artifact
       uses: actions/upload-artifact@v4
       with:
-        name: chrome-zip
-        path: dist/chrome.zip
+        name: dist-chrome
+        path: dist/chrome/
 
-    - name: Upload Firefox zip as artifact
+    - name: Upload Firefox dist folder's zip as an artifact
       uses: actions/upload-artifact@v4
       with:
-        name: firefox-zip
-        path: dist/firefox.zip
+        name: dist-firefox
+        path: dist/firefox/
