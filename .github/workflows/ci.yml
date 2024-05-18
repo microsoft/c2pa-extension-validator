@@ -28,9 +28,6 @@ jobs:
     - name: Build the project
       run: npm run build
 
-    - name: Run the post-build (to zip the dist files)
-      run: npm run postbuild
-
     - name: Upload Chrome dist folder's zip as an artifact
       uses: actions/upload-artifact@v4
       with:
