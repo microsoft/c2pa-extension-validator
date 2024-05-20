@@ -13,11 +13,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
       name: Check out repository code
 
     - name: Set up Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: '20'
         cache: 'npm'
@@ -28,8 +28,14 @@ jobs:
     - name: Build the project
       run: npm run build
 
-    - name: Archive production artifacts
-      uses: actions/upload-artifact@v3
+    - name: Upload Chrome dist folder's zip as an artifact
+      uses: actions/upload-artifact@v4
       with:
-        name: extension-artifacts
-        path: dist/
+        name: dist-chrome
+        path: dist/chrome/
+
+    - name: Upload Firefox dist folder's zip as an artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: dist-firefox
+        path: dist/firefox/
