@@ -254,4 +254,31 @@ export async function init (): Promise<void> {
   )
 }
 
+// update the trust lists if they are outdated
+export async function refreshTrustLists (): Promise<void> {
+  console.debug('refreshTrustLists called')
+  if (globalTrustLists != null && globalTrustLists.length > 0) {
+    for (let i = 0; i < globalTrustLists.length; i++) {
+      const trustList = globalTrustLists[i];
+      console.debug('Checking trust list: ' + trustList.name)
+      // fetch the trust list if we have a download URL
+      if (trustList.download_url) {
+        fetch(trustList.download_url)
+        .then((response: Response) => response.json())
+        .then((freshTrustList: TrustList) => {
+          if (freshTrustList.last_updated > trustList.last_updated) {
+            console.debug(`Trust list ${trustList.name} is outdated, updating`,
+              trustList.last_updated, freshTrustList.last_updated)
+            globalTrustLists[i] = freshTrustList
+          }
+        })
+      }
+    }
+    // store the trust list
+    chrome.storage.local.set({ trustList: globalTrustLists }, function () {
+      console.debug('Trust lists refreshed')
+    })
+  }
+}
+
 void init()

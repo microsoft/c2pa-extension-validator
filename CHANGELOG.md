@@ -1,5 +1,9 @@
 # CHANGELOG
 
+## vNext (dev)
+
+- Auto-refresh trust lists
+
 ## v0.1.2
 
 - Added support for Firefox

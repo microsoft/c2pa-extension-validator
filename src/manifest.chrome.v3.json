@@ -11,7 +11,8 @@
         "tabs",
         "webNavigation",
         "activeTab",
-        "contextMenus"
+        "contextMenus",
+        "alarms"
     ],
     "host_permissions": [
         "<all_urls>"
