@@ -165,7 +165,7 @@ async function sendMessageToAllTabs (message: MSG_PAYLOAD): Promise<void> {
 
 // trust list refresh alarm (run once a day) TODO: create an option
 function setupTrustListRefreshAlarm(): void {
-  chrome.alarms.create("trustListRefreshAlarm", { delayInMinutes: 1, periodInMinutes: 1 /* FIXME: change back before merging: 1440 */ });
+  chrome.alarms.create("trustListRefreshAlarm", { delayInMinutes: 1, periodInMinutes: 1440 });
 }
 
 chrome.alarms.onAlarm.addListener((alarm) => {
