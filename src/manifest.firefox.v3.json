@@ -52,11 +52,7 @@
         {
             "resources": [
                 "c2pa.worker.js",
-                "icons/cr.svg",
-                "icons/crx.svg",
-                "icons/cr!.svg",
-                "icons/cert.svg",
-                "icons/movie.svg",
+                "icons/*.svg",
                 "toolkit_bg.wasm",
                 "iframe.html",
                 "iframe.js"

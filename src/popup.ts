@@ -61,10 +61,9 @@ async function showResults (): Promise<void> {
   const activeBrowserTab = await chrome.tabs.query({ active: true, currentWindow: true })
   const id = activeBrowserTab[0].id
   if (id == null) {
-    console.debug('No active tab found')
     return
   }
-  void chrome.tabs.sendMessage(id, { action: MSG_REQUEST_C2PA_ENTRIES })
+  void chrome.tabs.sendMessage(id, { action: MSG_REQUEST_C2PA_ENTRIES, data: null })
 }
 
 function addValidationResult (validationResult: MSG_RESPONSE_C2PA_ENTRIES_PAYLOAD): void {
@@ -75,6 +74,10 @@ function addValidationResult (validationResult: MSG_RESPONSE_C2PA_ENTRIES_PAYLOA
   }
 
   const icon = validationResult.status === 'error' ? iconUrl.invalid : validationResult.status === 'warning' ? iconUrl.untrusted : iconUrl.valid
+
+  if (validationResult.thumbnail === '') {
+    validationResult.thumbnail = chrome.runtime.getURL('icons/video.svg')
+  }
 
   const html = `
           <img src="${icon}" style="width: 30px; height: 30px;">
@@ -107,7 +110,6 @@ trustListInput.addEventListener('change', function (event) {
         // set the trust list
         void addTrustList(json)
           .then((trustListInfo: TrustListInfo) => {
-            console.debug(`trust list loaded: ${trustListInfo.name}`)
             void displayTrustListInfos()
           })
       } catch (e) {
@@ -123,7 +125,6 @@ trustListInput.addEventListener('change', function (event) {
  * Displays the trust list info in the popup.
  */
 async function displayTrustListInfos (): Promise<void> {
-  console.debug('displayTrustListInfos called')
   void getTrustListInfos()
     .then(
       (tlis: TrustListInfo[]) => {
@@ -166,7 +167,6 @@ if (trustListInfoElement !== null) {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === MSG_RESPONSE_C2PA_ENTRIES) {
-    console.debug('POPUP.JS: Received C2PA entries', request.data as MSG_RESPONSE_C2PA_ENTRIES_PAYLOAD)
     addValidationResult(request.data as MSG_RESPONSE_C2PA_ENTRIES_PAYLOAD)
   }
 })

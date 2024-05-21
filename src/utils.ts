@@ -86,7 +86,6 @@ export function localDateTime (isoDateString: string): string {
 }
 
 export async function sendMessageWithTimeout<T> (message: unknown, timeout: number = DEFAULT_MSG_TIMEOUT): Promise<T> {
-  console.debug('sendMessageWithTimeout:', message)
   const messagePromise = chrome.runtime.sendMessage(message)
     .catch((error) => {
       console.error('Error sending message:', error)

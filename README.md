@@ -43,6 +43,7 @@ Follow the side-loading instruction for your browser to load the extension:
 The Edge/Chrome `manifest.json` file is located in `dist/chrome`. The Firefox `manifest.json` file is located at `dist/firefox`.
 
 To enable the extension in Firefox, you need to grant specific user permissions:
+
   1. Open the Firefox menu and select `Add-ons`.
   2. Click on the `Extensions` tab.
   3. Find the C2PA Extension Validator and click `Permissions`.
@@ -81,7 +82,7 @@ Note that untrusted *warning* icon is not currently specified in the [C2PA UX re
 
 The extension currently has a few limitations that will be addressed in future releases:
 
-* **Icon and overlay placement**: The extension does not currently account for the visibility of media on the page, which may result in icons and overlays appearing in unexpected locations.
+* **Icon and overlay placement**: The extension's icon and overlay may not be placed correctly on all media types or in all scenarios.
 * **Malicious web pages**: Currently, there are limited countermeasures against web pages that would spoof, alter, or remove the extension's output.
 * **Accessibility**: The extension's UI elements are not fully accessible.
 * **Conflict with other extensions**: The extension may conflict with other extensions that modify the DOM or media elements. It is currently unknown which extensions may conflict with this extension.
