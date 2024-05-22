@@ -40,6 +40,7 @@ export const DEFAULT_MSG_TIMEOUT = 5000 /* 5 sec */
 export const REMOTE_VALIDATION_LINK = 'https://contentintegrity.microsoft.com/check'
 export const AWAIT_ASYNC_RESPONSE = true
 export const AUTO_SCAN_DEFAULT = process.env.AUTO_SCAN?.toLowerCase() === 'true' || false
+export const TRUSTLIST_UPDATE_INTERVAL = 1440 /* 24 hours */
 
 export const CR_ICON_SIZE = '2em'
 export const CR_ICON_Z_INDEX = 10000

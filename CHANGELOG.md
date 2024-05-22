@@ -1,5 +1,12 @@
 # CHANGELOG
 
+## vNext (dev)
+
+- Auto-refresh trust lists
+- Enable context menu validation and added auto-scan option
+- Dynamic icon updates when in web view
+- Create chrome and firefox dist zip artifact
+
 ## v0.1.2
 
 - Added support for Firefox
