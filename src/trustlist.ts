@@ -111,7 +111,7 @@ async function processDownloadedTrustList (tl: TrustList): Promise<void> {
           jwk['x5t#S256'] = await calculateSha256CertThumbprintFromX5c(jwk.x5c[0])
         } catch (error) {
           // log the error, ignore the cert
-          console.error('calculateSha256CertThumbprintFromX5c error:', error, "jwk:", jwk)
+          console.error('calculateSha256CertThumbprintFromX5c error:', error, 'jwk:', jwk)
         }
       }
     }
@@ -227,28 +227,26 @@ export async function checkTrustListInclusion (certChain: CertificateWithThumbpr
 }
 
 // update the trust lists if they are outdated
-export async function refreshTrustLists(): Promise<void> {
+export async function refreshTrustLists (): Promise<void> {
   console.debug('refreshTrustLists called')
   let trustListsUpdated = false
   if (globalTrustLists != null && globalTrustLists.length > 0) {
-    const fetchPromises = globalTrustLists.map((trustList, index) => {
+    const fetchPromises = globalTrustLists.map(async (trustList, index) => {
       console.debug('Checking trust list: ' + trustList.name)
-      if (trustList.download_url) {
-        return fetch(trustList.download_url)
-          .then((response: Response) => response.json())
-          .then(async (freshTrustList: TrustList) => {
-            console.debug(`Trust list ${trustList.name} fetched`, freshTrustList.last_updated, trustList.last_updated)
-            if (freshTrustList.last_updated > trustList.last_updated) {
-              console.debug(`Trust list ${trustList.name} is outdated, updating`, trustList.last_updated, freshTrustList.last_updated);
-              await processDownloadedTrustList(freshTrustList)
-              globalTrustLists[index] = freshTrustList
-              trustListsUpdated = true
-            }
-          })
+      if (trustList.download_url !== '') {
+        const response = await fetch(trustList.download_url)
+        const freshTrustList = await response.json() as TrustList
+        console.debug(`Trust list ${trustList.name} fetched`, freshTrustList.last_updated, trustList.last_updated)
+        if (freshTrustList.last_updated > trustList.last_updated) {
+          console.debug(`Trust list ${trustList.name} is outdated, updating`, trustList.last_updated, freshTrustList.last_updated)
+          await processDownloadedTrustList(freshTrustList)
+          globalTrustLists[index] = freshTrustList
+          trustListsUpdated = true
+        }
       } else {
-        return Promise.resolve()
+        await Promise.resolve()
       }
-    });
+    })
 
     await Promise.all(fetchPromises)
 
