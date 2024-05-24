@@ -3,16 +3,12 @@
  *  Licensed under the MIT license.
  */
 
-import { type CertificateWithThumbprint, calculateSha256CertThumbprintFromX5c } from './certs/certs'
-import { AWAIT_ASYNC_RESPONSE, MSG_ADD_TRUSTLIST, MSG_CHECK_TRUSTLIST_INCLUSION, MSG_GET_TRUSTLIST_INFOS, MSG_REMOVE_TRUSTLIST, type MSG_PAYLOAD } from './constants'
+import { type CertificateInfoExtended, calculateSha256CertThumbprintFromX5c, PEMtoDER, createCertificateFromDer, distinguedNameToString } from './certs/certs'
+import { AWAIT_ASYNC_RESPONSE, MSG_ADD_TRUSTLIST, MSG_CHECK_TRUSTLIST_INCLUSION, MSG_GET_TRUSTLIST_INFOS, MSG_REMOVE_TRUSTLIST, type MSG_PAYLOAD, LOCAL_TRUST_ANCHOR_LIST_NAME } from './constants'
+import { bytesToBase64 } from './utils'
 
 // valid JWK key types (to adhere to C2PA cert profile: https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_certificate_profile)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const VALID_KTY = [
-  'RSA', // sha*WithRSAEncryption and id-RSASSA-PSS
-  'EC', // ecdsa-with-*
-  'OKP' // id-Ed25519
-]
+type ValidKeyTypes = 'RSA' /* sha*WithRSAEncryption and id-RSASSA-PSS */ | 'EC' /* ecdsa-with-* */ | 'OKP' /* id-Ed25519 */
 
 // JWKS format (https://www.rfc-editor.org/rfc/rfc7517#section-4.6)
 interface JWK {
@@ -119,13 +115,92 @@ async function processDownloadedTrustList (tl: TrustList): Promise<void> {
 }
 
 /**
+ * Returns the JWK key type `kty` corresponding to a supported signature alg
+ */
+function sigAlgToKeyType(sigAlg: string): ValidKeyTypes {
+  let sigAlgLC = sigAlg.toLowerCase().replace('-', '')
+  sigAlgLC = sigAlgLC
+  if (sigAlgLC === 'sha256withrsaencryption' || sigAlgLC === 'sha384withrsaencryption' || sigAlgLC === 'sha512withrsaencryption' || sigAlgLC === 'idrsassapss') {
+    return 'RSA'
+  } else if (sigAlgLC === 'ecdsawithsha256' || sigAlgLC === 'ecdsawithsha384' || sigAlgLC === 'ecdsawithsha512') {
+    return 'EC'
+  } else if (sigAlgLC === 'ided25519') {
+    return 'OKP'
+  } else {
+    throw new Error(`Unsupported C2PA sig alg: ${sigAlg}`)
+  }
+}
+
+/**
+ * Adds a trust anchor to the built-in trust anchors list, returns the corresponding trust list info or throws an error 
+ */
+export async function addTrustAnchor(pemCert: string): Promise<void> {
+  console.debug('addTrustAnchor called')
+  if (!pemCert || typeof pemCert !== 'string') {
+    throw new Error('Invalid trust anchor')
+  }
+
+  const derCert = PEMtoDER(pemCert)
+  const cert = await createCertificateFromDer(derCert)
+  console.debug(`cert`, cert)
+  const x5c = bytesToBase64(derCert)
+
+  // create an entity to add to the built-in trust anchor list
+  const DN = distinguedNameToString(cert.subject)
+  const kty = sigAlgToKeyType(cert.signatureAlgorithm)
+  const entity: TrustedEntity = {
+    name: DN,
+    display_name: DN,
+    contact: "", // n/a
+    isCA: true,
+    jwks: {
+        keys: [
+            {
+                kty: kty,
+                x5c: [
+                    x5c
+                ]
+            }
+        ]
+    }
+  }
+  console.debug(`created trust anchor entity ${entity.name}`, entity)
+
+  // find the local trust anchor list
+  const anchorTL = globalTrustLists.find(tl => tl.name === 'Local Trust Anchors')
+  if (!anchorTL)  {
+    // list doesn't exist; create it
+    console.debug('Local Trust Anchors trust list not found; creating it')
+    const tl: TrustList = {
+      name: LOCAL_TRUST_ANCHOR_LIST_NAME,
+      description: LOCAL_TRUST_ANCHOR_LIST_NAME,
+      download_url: '', // n/a
+      website: '', // n/a
+      last_updated: '', // unused for non-downloadable trust lists
+      entities: [entity]
+    }
+    globalTrustLists.push(tl)
+  } else {
+    // add the entity to the list
+    console.debug('Updating local Trust Anchors trust list')
+    anchorTL?.entities.push(entity) // TODO: don't add duplicates
+  }
+
+  // store the trust list
+  chrome.storage.local.set({ trustList: globalTrustLists }, function () {
+    console.debug(`Trust anchor added to local trust anchor list: ${entity.name}`)
+  })
+
+  void notifyTabOfTrustListUpdate()
+}
+
+/**
  * Adds a trust list, returns the corresponding trust list info or throws an error
  */
-export async function addTrustList (tl: TrustList): Promise<TrustListInfo> {
+export async function addTrustList (tl: TrustList): Promise<void> {
   console.debug('addTrustList called')
 
-  if (typeof tl === 'undefined') {
-    // TODO: more validation
+  if (typeof tl === 'undefined' /* TODO: more validation */) {
     throw new Error('Invalid trust list')
   }
 
@@ -140,8 +215,6 @@ export async function addTrustList (tl: TrustList): Promise<TrustListInfo> {
   })
 
   void notifyTabOfTrustListUpdate()
-
-  return getInfoFromTrustList(tl)
 }
 
 /**
@@ -189,7 +262,7 @@ export interface TrustListMatch {
   // trusted entity that matched the certificate chain
   entity: TrustedEntity
   // certificate that matched the trust list
-  cert: CertificateWithThumbprint
+  cert: CertificateInfoExtended
 }
 
 /**
@@ -197,7 +270,7 @@ export interface TrustListMatch {
  * @param certChain a certificate chain
  * @returns a trust list match object if found, otherwise null
  */
-export async function checkTrustListInclusion (certChain: CertificateWithThumbprint[]): Promise<TrustListMatch | null> {
+export async function checkTrustListInclusion (certChain: CertificateInfoExtended[]): Promise<TrustListMatch | null> {
   console.debug('checkTrustListInclusion called')
   if (globalTrustLists != null && globalTrustLists.length > 0) {
     // for each trust list
@@ -278,7 +351,7 @@ export async function init (): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/promise-function-async
     (request: MSG_PAYLOAD, sender, sendResponse) => {
       if (request.action === MSG_CHECK_TRUSTLIST_INCLUSION) {
-        void checkTrustListInclusion(request.data as CertificateWithThumbprint[]).then(sendResponse)
+        void checkTrustListInclusion(request.data as CertificateInfoExtended[]).then(sendResponse)
         return AWAIT_ASYNC_RESPONSE
       }
       if (request.action === MSG_GET_TRUSTLIST_INFOS) {

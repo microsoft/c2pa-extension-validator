@@ -4,7 +4,7 @@
  */
 
 import { createC2pa, type C2pa, type C2paReadResult, selectEditsAndActivity, type TranslatedDictionaryCategory, type ManifestStore, type ManifestMap } from 'c2pa'
-import { type CertificateWithThumbprint, extractCertChain } from './certs/certs.js'
+import { type CertificateInfoExtended, extractCertChain } from './certs/certs.js'
 import { type TrustListMatch } from './trustlistProxy.js'
 import { AWAIT_ASYNC_RESPONSE, MSG_C2PA_VALIDATE_URL, type MSG_PAYLOAD } from './constants.js'
 import { blobToDataURL } from './utils.js'
@@ -15,7 +15,7 @@ let c2pa: C2pa | null = null
 
 export interface C2paResult extends ExtensionC2paResult {
   url: string
-  certChain: CertificateWithThumbprint[] | null
+  certChain: CertificateInfoExtended[] | null
   trustList: TrustListMatch | null
   editsAndActivity: TranslatedDictionaryCategory[] | null
 }

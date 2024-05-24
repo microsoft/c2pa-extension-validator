@@ -36,8 +36,9 @@ export interface CertificateInfo {
   isCA: boolean
 }
 
-export interface CertificateWithThumbprint extends CertificateInfo {
+export interface CertificateInfoExtended extends CertificateInfo {
   sha256Thumbprint: string
+  signatureAlgorithm: string
 }
 
 export async function calculateSha256CertThumbprintFromDer (der: Uint8Array): Promise<string> {
@@ -50,20 +51,21 @@ export async function calculateSha256CertThumbprintFromX5c (x5c: string): Promis
   return await calculateSha256CertThumbprintFromDer(Buffer.from(x5c, 'base64'))
 }
 
-export async function createCertificateFromDer (der: Uint8Array): Promise<CertificateWithThumbprint> {
+export async function createCertificateFromDer (der: Uint8Array): Promise<CertificateInfoExtended> {
   const sha256Thumbprint = await calculateSha256CertThumbprintFromDer(der)
   const pem = DERtoPEM(der)
   const cert = Certificate.fromPEM(Buffer.from(pem, 'utf-8'))
 
   const certInfo = parseCertificate(cert)
 
-  const certWithTP = certInfo as CertificateWithThumbprint
-  certWithTP.sha256Thumbprint = sha256Thumbprint
+  const certInfoEx = certInfo as CertificateInfoExtended
+  certInfoEx.sha256Thumbprint = sha256Thumbprint
+  certInfoEx.signatureAlgorithm = cert.signatureAlgorithm
 
-  return certWithTP
+  return certInfoEx
 }
 
-export async function extractCertChain (type: string, mediaBuffer: Uint8Array): Promise<CertificateWithThumbprint[] | null> {
+export async function extractCertChain (type: string, mediaBuffer: Uint8Array): Promise<CertificateInfoExtended[] | null> {
   const rawManifestBuffer = getManifestFromMetadata(type, mediaBuffer)
   if (rawManifestBuffer == null) {
     return null
@@ -160,6 +162,11 @@ function getDistinguishedName (dn: x509DistinguishedName): DistinguishedName {
     L: getShortName('L'),
     ST: getShortName('ST')
   }
+}
+
+export function distinguedNameToString (dn: DistinguishedName): string {
+  // combine the non-empty DN fields
+  return [dn.CN, dn.O, dn.OU, dn.C, dn.L, dn.ST].filter((field) => field.length > 0).join(', ') 
 }
 
 export function localDateTime (isoDateString: string): string {
