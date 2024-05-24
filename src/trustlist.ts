@@ -132,6 +132,16 @@ function sigAlgToKeyType(sigAlg: string): ValidKeyTypes {
 }
 
 /**
+ * Stores the updated trust lists and notify the tab of the update
+ */
+function storeUpdatedTrustLists(message?: string) {
+  chrome.storage.local.set({ trustList: globalTrustLists }, function () {
+    console.debug(message)
+  })
+  void notifyTabOfTrustListUpdate()
+}
+
+/**
  * Adds a trust anchor to the built-in trust anchors list, returns the corresponding trust list info or throws an error 
  */
 export async function addTrustAnchor(pemCert: string): Promise<void> {
@@ -159,7 +169,8 @@ export async function addTrustAnchor(pemCert: string): Promise<void> {
                 kty: kty,
                 x5c: [
                     x5c
-                ]
+                ],
+                'x5t#S256': cert.sha256Thumbprint
             }
         ]
     }
@@ -183,16 +194,21 @@ export async function addTrustAnchor(pemCert: string): Promise<void> {
   } else {
     // add the entity to the list
     console.debug('Updating local Trust Anchors trust list')
-    anchorTL?.entities.push(entity) // TODO: don't add duplicates
+    // add or replace the entity in the list
+    const existingEntity = anchorTL.entities.find(e => e.name === entity.name)
+    if (existingEntity) {
+      console.debug(`Replacing existing entity ${entity.name}`)
+      const index = anchorTL.entities.indexOf(existingEntity)
+      anchorTL.entities[index] = entity
+    } else {
+      console.debug(`Adding new entity ${entity.name}`)
+      anchorTL?.entities.push(entity)
+    }
   }
 
-  // store the trust list
-  chrome.storage.local.set({ trustList: globalTrustLists }, function () {
-    console.debug(`Trust anchor added to local trust anchor list: ${entity.name}`)
-  })
-
-  void notifyTabOfTrustListUpdate()
+  storeUpdatedTrustLists(`Trust anchor added to local trust anchor list: ${entity.name}`)
 }
+
 
 /**
  * Adds a trust list, returns the corresponding trust list info or throws an error
@@ -209,12 +225,7 @@ export async function addTrustList (tl: TrustList): Promise<void> {
   // set the global trust list
   globalTrustLists.push(tl)
 
-  // store the trust list
-  chrome.storage.local.set({ trustList: globalTrustLists }, function () {
-    console.debug(`Trust list stored: ${tl.name}`)
-  })
-
-  void notifyTabOfTrustListUpdate()
+  storeUpdatedTrustLists(`Trust list stored: ${tl.name}`)
 }
 
 /**
@@ -229,12 +240,7 @@ export async function removeTrustList (index: number): Promise<void> {
   // remove the trust list
   globalTrustLists.splice(index, 1)
 
-  // store the trust list
-  chrome.storage.local.set({ trustList: globalTrustLists }, function () {
-    console.debug(`Trust list removed, index: ${index}, name: ${name}`)
-  })
-
-  void notifyTabOfTrustListUpdate()
+  storeUpdatedTrustLists(`Trust list removed, index: ${index}, name: ${name}`)
 }
 
 /**
@@ -324,12 +330,7 @@ export async function refreshTrustLists (): Promise<void> {
     await Promise.all(fetchPromises)
 
     if (trustListsUpdated) {
-      void notifyTabOfTrustListUpdate()
-
-      // store the trust lists
-      chrome.storage.local.set({ trustList: globalTrustLists }, function () {
-        console.debug('Trust lists refreshed')
-      })
+      storeUpdatedTrustLists('Trust lists refreshed')
     }
   }
 }
