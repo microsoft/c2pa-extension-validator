@@ -24,15 +24,20 @@ for cert_type in "${cert_types[@]}"; do
     done
 done
 
-# sign the test files using the soon-to-expire certificate
+# sign the files for validity period tests
 sourceFile="media/cards.jpg"
-# 1. sign with a time-stamp (asset will remain valid past expiration)
+# 1. sign with a time-stamp and soon-to-expire cert (asset will remain valid past expiration)
 outputFile="media/cards_expired_with_timestamp.jpg"
 manifestFile="trusted/manifest_with_tsa.json"
 echo "Signing $sourceFile with the $manifestFile, output to $outputFile"
 c2patool $sourceFile -m $manifestFile -o $outputFile -f
-# 2. sign without a time-stamp (asset will remain be invalid past expiration)
+# 2. sign without a time-stamp and soon-to-expire cert (asset will be invalid past expiration)
 outputFile="media/cards_expired_without_timestamp.jpg"
+manifestFile="trusted/manifest_without_tsa.json"
+echo "Signing $sourceFile with the $manifestFile, output to $outputFile"
+c2patool $sourceFile -m $manifestFile -o $outputFile -f
+# 3. sign without a time-stamp and valid cert (asset will be valid during cert validity period)
+outputFile="media/cards_trusted_without_timestamp.jpg"
 manifestFile="trusted/manifest_without_tsa.json"
 echo "Signing $sourceFile with the $manifestFile, output to $outputFile"
 c2patool $sourceFile -m $manifestFile -o $outputFile -f
