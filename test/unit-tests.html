@@ -12,7 +12,7 @@
 
     <h2>Valid assets</h2>
 
-    <p>These files are valid (well-formed C2PA manifest from a trusted signer).</p>
+    <p>These files are valid (well-formed C2PA manifest from a trusted signer with a non-expired certificate).</p>
 
     <table>
         <tr>
@@ -29,6 +29,26 @@
                 <video width="320" height="240" controls>
                     <source src="./media/cards_trusted.mp4" type="video/mp4">
 
+            </td>
+        </tr>
+    </table>
+
+    <h2>Valid assets with expired certificates</h2>
+
+    <p>These files are well-formed C2PA manifest from a trusted signer with an expired certificate. Time-stamped
+        manifests should remain valid; others, no.</p>
+    <table>
+        <tr>
+            <td>Valid: time-stamped by trusted TSA</td>
+            <td>Invalid: no time stamp</td>
+            <!-- TODO: time-stamped by untrusted TSA -->
+            <!-- TODO: modified timestamp -->
+            <!-- TODO: multiple TSA timestamps (does c2patool support that?) -->
+            <!-- TODO: expired at time of signing (does c2patool support that?) -->
+        </tr>
+        <tr>
+            <td><img src="./media/cards_expired_with_timestamp.jpg" alt="expired with timestamp JPG" height="300"></td>
+            <td><img src="./media/cards_expired_without_timestamp.jpg" alt="expired without timestamp JPG" height="300">
             </td>
         </tr>
     </table>

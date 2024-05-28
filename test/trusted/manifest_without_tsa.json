@@ -1,0 +1,19 @@
+{
+    "alg": "es256",
+    "private_key": "signer.key",
+    "sign_cert": "signer.crt",
+    "claim_generator": "Test Signer",
+    "title": "Some cards",
+    "assertions": [
+        {
+            "label": "c2pa.actions",
+            "data": {
+                "actions": [
+                    {
+                        "action": "c2pa.created"
+                    }
+                ]
+            }
+        }
+    ]
+}
