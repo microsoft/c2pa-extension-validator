@@ -117,9 +117,8 @@ async function processDownloadedTrustList (tl: TrustList): Promise<void> {
 /**
  * Returns the JWK key type `kty` corresponding to a supported signature alg
  */
-function sigAlgToKeyType(sigAlg: string): ValidKeyTypes {
-  let sigAlgLC = sigAlg.toLowerCase().replace('-', '')
-  sigAlgLC = sigAlgLC
+function sigAlgToKeyType (sigAlg: string): ValidKeyTypes {
+  const sigAlgLC = sigAlg.toLowerCase().replace('-', '')
   if (sigAlgLC === 'sha256withrsaencryption' || sigAlgLC === 'sha384withrsaencryption' || sigAlgLC === 'sha512withrsaencryption' || sigAlgLC === 'idrsassapss') {
     return 'RSA'
   } else if (sigAlgLC === 'ecdsawithsha256' || sigAlgLC === 'ecdsawithsha384' || sigAlgLC === 'ecdsawithsha512') {
@@ -134,7 +133,7 @@ function sigAlgToKeyType(sigAlg: string): ValidKeyTypes {
 /**
  * Stores the updated trust lists and notify the tab of the update
  */
-function storeUpdatedTrustLists(message?: string) {
+function storeUpdatedTrustLists (message?: string): void {
   chrome.storage.local.set({ trustList: globalTrustLists }, function () {
     console.debug(message)
   })
@@ -142,17 +141,17 @@ function storeUpdatedTrustLists(message?: string) {
 }
 
 /**
- * Adds a trust anchor to the built-in trust anchors list, returns the corresponding trust list info or throws an error 
+ * Adds a trust anchor to the built-in trust anchors list, returns the corresponding trust list info or throws an error
  */
-export async function addTrustAnchor(pemCert: string): Promise<void> {
+export async function addTrustAnchor (pemCert: string): Promise<void> {
   console.debug('addTrustAnchor called')
-  if (!pemCert || typeof pemCert !== 'string') {
+  if (pemCert == null || typeof pemCert !== 'string') {
     throw new Error('Invalid trust anchor')
   }
 
   const derCert = PEMtoDER(pemCert)
   const cert = await createCertificateFromDer(derCert)
-  console.debug(`cert`, cert)
+  console.debug('cert', cert)
   const x5c = bytesToBase64(derCert)
 
   // create an entity to add to the built-in trust anchor list
@@ -161,25 +160,25 @@ export async function addTrustAnchor(pemCert: string): Promise<void> {
   const entity: TrustedEntity = {
     name: DN,
     display_name: DN,
-    contact: "", // n/a
+    contact: '', // n/a
     isCA: true,
     jwks: {
-        keys: [
-            {
-                kty: kty,
-                x5c: [
-                    x5c
-                ],
-                'x5t#S256': cert.sha256Thumbprint
-            }
-        ]
+      keys: [
+        {
+          kty,
+          x5c: [
+            x5c
+          ],
+          'x5t#S256': cert.sha256Thumbprint
+        }
+      ]
     }
   }
   console.debug(`created trust anchor entity ${entity.name}`, entity)
 
   // find the local trust anchor list
   const anchorTL = globalTrustLists.find(tl => tl.name === 'Local Trust Anchors')
-  if (!anchorTL)  {
+  if (anchorTL == null) {
     // list doesn't exist; create it
     console.debug('Local Trust Anchors trust list not found; creating it')
     const tl: TrustList = {
@@ -196,7 +195,7 @@ export async function addTrustAnchor(pemCert: string): Promise<void> {
     console.debug('Updating local Trust Anchors trust list')
     // add or replace the entity in the list
     const existingEntity = anchorTL.entities.find(e => e.name === entity.name)
-    if (existingEntity) {
+    if (existingEntity != null) {
       console.debug(`Replacing existing entity ${entity.name}`)
       const index = anchorTL.entities.indexOf(existingEntity)
       anchorTL.entities[index] = entity
@@ -211,7 +210,6 @@ export async function addTrustAnchor(pemCert: string): Promise<void> {
 
   storeUpdatedTrustLists(`Trust anchor added to local trust anchor list: ${entity.name}`)
 }
-
 
 /**
  * Adds a trust list, returns the corresponding trust list info or throws an error
