@@ -204,6 +204,9 @@ export async function addTrustAnchor(pemCert: string): Promise<void> {
       console.debug(`Adding new entity ${entity.name}`)
       anchorTL?.entities.push(entity)
     }
+    // update the global trust list
+    const index = globalTrustLists.indexOf(anchorTL)
+    globalTrustLists[index] = anchorTL
   }
 
   storeUpdatedTrustLists(`Trust anchor added to local trust anchor list: ${entity.name}`)
