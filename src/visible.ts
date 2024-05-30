@@ -46,7 +46,7 @@ window.addEventListener('DOMContentLoaded', () => {
 })
 
 function update (mediaRecord: MediaRecord, type: string): void {
-  const visible = isStyleVisible(mediaRecord.element) && isPossitionVisible(mediaRecord.element)
+  const visible = isStyleVisible(mediaRecord.element) && isPositionVisible(mediaRecord.element)
   const visibilityUpdated = mediaRecord.state.visible !== visible
   if (visibilityUpdated) {
     mediaRecord.state.visible = visible
@@ -76,7 +76,7 @@ function intersecting (mediaRecord: MediaRecord): void {
   _resizeObserver.observe(mediaRecord.element)
   mediaRecord.state.viewport = true
   const visible = mediaRecord.state.visible
-  const newVisibleState = isStyleVisible(mediaRecord.element) && isPossitionVisible(mediaRecord.element)
+  const newVisibleState = isStyleVisible(mediaRecord.element) && isPositionVisible(mediaRecord.element)
   if (visible === newVisibleState) return // state has already been updated by another handler
   mediaRecord.state.visible = newVisibleState
   newVisibleState ? isVisible(mediaRecord) : notVisible(mediaRecord)
@@ -129,7 +129,7 @@ function isStyleVisible (element: HTMLElement): boolean {
   return true
 }
 
-function isPossitionVisible (element: HTMLElement): boolean {
+function isPositionVisible (element: HTMLElement): boolean {
   if (element.offsetWidth < MIN_VISIBLE_WIDTH || element.offsetHeight < MIN_VISIBLE_HEIGHT) {
     return false
   }

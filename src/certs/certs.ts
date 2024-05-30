@@ -164,7 +164,7 @@ function getDistinguishedName (dn: x509DistinguishedName): DistinguishedName {
   }
 }
 
-export function distinguedNameToString (dn: DistinguishedName): string {
+export function distinguishedNameToString (dn: DistinguishedName): string {
   // combine the non-empty DN fields
   return [dn.CN, dn.O, dn.OU, dn.C, dn.L, dn.ST].filter((field) => field.length > 0).join(', ')
 }

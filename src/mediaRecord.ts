@@ -92,7 +92,7 @@ export class MediaRecord {
     imgElement.addEventListener('loadeddata', listener)
     if (!IS_DEBUG) return
     // If, for some reason, the load event is not fired, we will log an error after 2 seconds
-    // We expect the load event to be allways be fired
+    // We expect the load event to be always be fired
     setTimeout(() => {
       if (!loaded) {
         console.error('MediaElement ready timeout:', this._element)
@@ -108,7 +108,7 @@ export class MediaRecord {
 
   public static isMediaElement (element: Node): element is MediaElement {
     if (!(element instanceof HTMLElement)) return false
-    // We ingore media elements from this extension
+    // We ignore media elements from this extension
     if (SOURCES_TO_IGNORE.some(source => (MediaRecord.getSrc(element as MediaElement) ?? '').startsWith(source))) {
       return false
     }

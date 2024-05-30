@@ -90,7 +90,7 @@ function addValidationResult (validationResult: MSG_RESPONSE_C2PA_ENTRIES_PAYLOA
   validationEntries.innerHTML += html
 }
 
-function createFileInputEventListener(callback: (fileContents: string) => void): (event: Event) => void {
+function createFileInputEventListener (callback: (fileContents: string) => void): (event: Event) => void {
   return function (event: Event): void {
     const eventTarget = event.target as HTMLInputElement
     if (eventTarget.files != null && eventTarget.files.length > 0) {
@@ -111,18 +111,19 @@ const trustListInput = document.getElementById('trust-list-input') as HTMLInputE
 trustListInput.addEventListener('change', createFileInputEventListener((fileContents: string): void => {
   const json = JSON.parse(fileContents) as TrustList
   try {
-    void addTrustList(json).then(() => void displayTrustListInfos())
+    // eslint-disable-next-line no-void
+    void addTrustList(json).then(() => { void displayTrustListInfos() })
   } catch (e) {
-    console.error(`Can't parse trust list file`)
+    console.error('Can\'t parse trust list file')
   }
 }))
 
 const trustAnchorInput = document.getElementById('trust-anchor-input') as HTMLInputElement
 trustAnchorInput.addEventListener('change', createFileInputEventListener((fileContents: string): void => {
   try {
-    void addTrustAnchor(fileContents).then(() => void displayTrustListInfos())
+    void addTrustAnchor(fileContents).then(() => { void displayTrustListInfos() })
   } catch (e) {
-    console.error(`Can't parse trust anchor file`)
+    console.error('Can\'t parse trust anchor file')
   }
 }))
 
