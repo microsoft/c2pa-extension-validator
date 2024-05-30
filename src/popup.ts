@@ -8,6 +8,7 @@ import packageManifest from '../package.json'
 import { AUTO_SCAN_DEFAULT, MSG_AUTO_SCAN_UPDATED, MSG_REQUEST_C2PA_ENTRIES, MSG_RESPONSE_C2PA_ENTRIES } from './constants.js'
 import { type MSG_RESPONSE_C2PA_ENTRIES_PAYLOAD } from './inject.js'
 import { type ToggleSwitch } from './components/toggle.js'
+import { addTrustAnchor } from './trustlist.js'
 
 console.debug('popup.js: load')
 
@@ -89,37 +90,41 @@ function addValidationResult (validationResult: MSG_RESPONSE_C2PA_ENTRIES_PAYLOA
   validationEntries.innerHTML += html
 }
 
-const trustListInput = document.getElementById(
-  'trust-list-input'
-) as HTMLInputElement
-
-// Add event listener to the input to load a trust list
-trustListInput.addEventListener('change', function (event) {
-  const eventTarget = event.target as HTMLInputElement
-  if ((eventTarget.files != null) && eventTarget.files.length > 0) {
-    const file = eventTarget.files[0]
-    // read the file
-    const reader = new FileReader()
-    reader.readAsText(file, 'UTF-8')
-    reader.onload = function (evt) {
-      // parse the file contents as JSON
-      const json = JSON.parse(
-        evt?.target?.result as string
-      ) as TrustList
-      try {
-        // set the trust list
-        void addTrustList(json)
-          .then((trustListInfo: TrustListInfo) => {
-            void displayTrustListInfos()
-          })
-      } catch (e) {
-        console.debug('Invalid origin data source: ' + String(e))
+function createFileInputEventListener(callback: (fileContents: string) => void): (event: Event) => void {
+  return function (event: Event): void {
+    const eventTarget = event.target as HTMLInputElement
+    if (eventTarget.files != null && eventTarget.files.length > 0) {
+      const file = eventTarget.files[0]
+      const reader = new FileReader()
+      reader.readAsText(file, 'UTF-8')
+      reader.onload = function (evt): void {
+        const fileContents = evt?.target?.result as string
+        callback(fileContents)
       }
+    } else {
+      console.debug('No file selected')
     }
-  } else {
-    console.debug('No file selected')
   }
-})
+}
+
+const trustListInput = document.getElementById('trust-list-input') as HTMLInputElement
+trustListInput.addEventListener('change', createFileInputEventListener((fileContents: string): void => {
+  const json = JSON.parse(fileContents) as TrustList
+  try {
+    void addTrustList(json).then(() => void displayTrustListInfos())
+  } catch (e) {
+    console.error(`Can't parse trust list file`)
+  }
+}))
+
+const trustAnchorInput = document.getElementById('trust-anchor-input') as HTMLInputElement
+trustAnchorInput.addEventListener('change', createFileInputEventListener((fileContents: string): void => {
+  try {
+    void addTrustAnchor(fileContents).then(() => void displayTrustListInfos())
+  } catch (e) {
+    console.error(`Can't parse trust anchor file`)
+  }
+}))
 
 /**
  * Displays the trust list info in the popup.

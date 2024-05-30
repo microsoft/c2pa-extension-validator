@@ -3,10 +3,10 @@
  *  Licensed under the MIT license.
  */
 
-import { MSG_GET_ID, MSG_L3_INSPECT_URL, MSG_REMOTE_INSPECT_URL, MSG_FORWARD_TO_CONTENT, REMOTE_VALIDATION_LINK, MSG_VALIDATE_URL, AWAIT_ASYNC_RESPONSE, MSG_C2PA_RESULT_FROM_CONTEXT, AUTO_SCAN_DEFAULT, MSG_AUTO_SCAN_UPDATED, type MSG_PAYLOAD } from './constants'
+import { MSG_GET_ID, MSG_L3_INSPECT_URL, MSG_REMOTE_INSPECT_URL, MSG_FORWARD_TO_CONTENT, REMOTE_VALIDATION_LINK, MSG_VALIDATE_URL, AWAIT_ASYNC_RESPONSE, MSG_C2PA_RESULT_FROM_CONTEXT, AUTO_SCAN_DEFAULT, MSG_AUTO_SCAN_UPDATED, type MSG_PAYLOAD, TRUSTLIST_UPDATE_INTERVAL } from './constants'
 import 'c2pa'
 import { validateUrl as c2paValidateUrl } from './c2paProxy'
-import { checkTrustListInclusion } from './trustlist'
+import { checkTrustListInclusion, refreshTrustLists } from './trustlist'
 import { type C2paError, type C2paResult } from './c2pa'
 
 console.debug('Background: Script: start')
@@ -162,6 +162,29 @@ async function sendMessageToAllTabs (message: MSG_PAYLOAD): Promise<void> {
     void chrome.tabs.sendMessage(tab.id, message)
   })
 }
+
+// trust list refresh alarm (run once a day) TODO: create an option
+function setupTrustListRefreshAlarm (): void {
+  void chrome.alarms.create('trustListRefreshAlarm', { delayInMinutes: 1, periodInMinutes: TRUSTLIST_UPDATE_INTERVAL })
+}
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'trustListRefreshAlarm') {
+    refreshTrustLists()
+      .then(() => { console.debug('Trust lists refresh completed successfully.') })
+      .catch((error) => { console.error('Error refreshing trust lists:', error) })
+  }
+})
+
+chrome.runtime.onInstalled.addListener(() => {
+  console.debug('Extension installed. Setting up trust list refresh alarm.')
+  setupTrustListRefreshAlarm()
+})
+
+chrome.runtime.onStartup.addListener(() => {
+  console.debug('Browser started. Ensuring trust list refresh alarm is active.')
+  setupTrustListRefreshAlarm()
+})
 
 void init()
 
