@@ -70,6 +70,7 @@ export async function validateUrl (url: string): Promise<C2paResult | C2paError>
 
   const sourceBuffer = await c2paResult.source.arrayBuffer()
   const certChain = await extractCertChain(c2paResult.source.type, new Uint8Array(sourceBuffer)) ?? []
+
   const editsAndActivity = ((c2paResult.manifestStore?.activeManifest) != null) ? await selectEditsAndActivity(c2paResult.manifestStore?.activeManifest) : null
 
   const result: C2paResult = {

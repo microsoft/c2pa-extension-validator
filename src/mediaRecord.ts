@@ -27,9 +27,20 @@ export class MediaRecord {
   private readonly _element: MediaElement
   private _icon: CrIcon | null = null
 
+  private static _i = 0
+
   public static MEDIA_ELEMENT_NODE_TYPES = ['IMG', 'VIDEO', 'AUDIO']
 
   constructor (mediaElement: MediaElement) {
+    console.trace(`${MediaRecord._i}MediaRecord created:`, mediaElement)
+
+    if (IS_DEBUG) {
+      if (mediaElement.getAttribute('c2pa:id') != null) {
+        console.warn('MediaRecord already assigned:', mediaElement)
+      } else {
+        mediaElement.setAttribute('c2pa:id', String(MediaRecord._i++))
+      }
+    }
     this._element = mediaElement
     this.state.type = mediaElement.nodeName.toLowerCase() as MediaStateTypes
   }
@@ -39,6 +50,9 @@ export class MediaRecord {
   }
 
   public set icon (icon: CrIcon | null) {
+    if (this._icon != null) {
+      this._icon.remove()
+    }
     this._icon = icon
   }
 

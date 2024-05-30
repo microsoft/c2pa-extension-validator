@@ -3,7 +3,6 @@
  *  Licensed under the MIT license.
  */
 
-import { IS_DEBUG } from './constants'
 import { type MediaElement } from './content'
 import { MediaMonitor } from './mediaMonitor'
 import { type MediaRecord } from './mediaRecord'
@@ -138,8 +137,6 @@ function isPossitionVisible (element: HTMLElement): boolean {
   const centerX = rect.left + (rect.width / 2)
   const centerY = rect.top + (rect.height / 2)
 
-  IS_DEBUG && mark((element as HTMLImageElement).src, centerX, centerY)
-
   /*
     There is an issue with this elementsFromPoint check:
     - If an IMG has a Picture element as a parent, the Picture can have a height of 0 while the IMG has a height > 0
@@ -162,23 +159,6 @@ function isPossitionVisible (element: HTMLElement): boolean {
   }
 
   return true
-}
-
-let markDiv: HTMLDivElement | null = null
-
-function mark (src: string, x: number, y: number): void {
-  if (markDiv == null) {
-    markDiv = document.createElement('div')
-    document.body.appendChild(markDiv)
-  }
-  markDiv.style.position = 'absolute'
-  markDiv.style.left = (x - 5) + 'px'
-  markDiv.style.top = (y - 5) + 'px'
-  markDiv.style.width = '10px'
-  markDiv.style.height = '10px'
-  markDiv.style.border = '1px solid red'
-  markDiv.style.zIndex = '10000'
-  markDiv.title = src
 }
 
 let _onEnterViewportCallback: (mediaRecord: MediaRecord) => void
