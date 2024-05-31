@@ -23,7 +23,7 @@ The extension can either be downloaded from this repository or built locally.
 
 ### Download instructions
 
-Either download and unzip the last stable version ([chrome](TODO), [firefox](TODO)) or the latest dev one from the [Build Browser Extension](https://github.com/microsoft/c2pa-extension-validator/actions/workflows/ci.yml) Action CI (click the latest workflow run, and see the Artifacts section).   
+Either download and unzip the last stable version or the latest dev one from the [Build Browser Extension](https://github.com/microsoft/c2pa-extension-validator/actions/workflows/ci.yml) Action CI (click the latest workflow run, and see the Artifacts section).   
 
 ### Build instructions
 
