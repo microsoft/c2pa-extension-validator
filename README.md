@@ -7,30 +7,38 @@ This project contains a Edge/Chrome/Firefox browser extension that can validate 
 1. encourage experimentation with C2PA technologies, and
 2. enable rapid prototyping of new C2PA features.
 
-The extension must be built and side-loaded into a browser; see the [setup](#setup) section. The extension doesn't contain a built-it certificate trust list, these must be imported by the user; see the [trust setup](#trust-setup) section.  
+The extension must be side-loaded into a browser; see the [setup](#setup) section. The extension doesn't contain a built-it certificate trust list, these must be imported by the user; see the [trust setup](#trust-setup) section.  
 
 The extension makes use of [c2pa](https://github.com/contentauth/c2pa-js) library from the [Content Authenticity Initiative](https://github.com/contentauth).
 
 The following asset types can currently be verified by the extension:
 
-* Images: JPEG, PNG, WEBP
-* Videos: mp4
+* Image: JPEG, PNG, WEBP, AVIF, SVG
+* Video: MP4
+* Audio: MP3, WAV
 
 ## Setup
 
+The extension can either be downloaded from this repository or built locally. 
+
+### Download instructions
+
+Either download and unzip the last stable version ([chrome](TODO), [firefox](TODO)) or the latest dev one from the [Build Browser Extension](https://github.com/microsoft/c2pa-extension-validator/actions/workflows/ci.yml) Action CI (click the latest workflow run, and see the Artifacts section).   
+
+### Build instructions
+
 As a prerequisite, install the [pnpm](https://pnpm.io/installation) package manager.
 
-### Install dependencies
-
+Firstly, install the dependencies:
 ```bash
 pnpm install
 ```
 
-### Build the extension
-
+Secondly, build the extension:
 ```bash
 pnpm run build
 ```
+The Edge/Chrome `manifest.json` file is located in `dist/chrome`. The Firefox `manifest.json` file is located at `dist/firefox`.
 
 ### Install the extension in a browser
 
@@ -39,8 +47,6 @@ Follow the side-loading instruction for your browser to load the extension:
 * [Edge](https://learn.microsoft.com/en-us/microsoft-edge/extensions-chromium/getting-started/extension-sideloading)  
 * [Chrome](https://developer.chrome.com/docs/extensions/mv3/getstarted/development-basics/#load-unpacked)  
 * [Firefox](https://extensionworkshop.com/documentation/develop/temporary-installation-in-firefox/)
-
-The Edge/Chrome `manifest.json` file is located in `dist/chrome`. The Firefox `manifest.json` file is located at `dist/firefox`.
 
 To enable the extension in Firefox, you need to grant specific user permissions:
 
@@ -55,12 +61,13 @@ Visit these pages to test the extension:
 
 * [Public test page](./test/public-tests.html), containing valid assets from various test issuers
 * [Unit test page](./test/unit-tests.html), containing valid, untrusted, and invalid assets of different media types
+* [Origin test page](./test/origin-tests.html), containing assets from [project Origin](https://www.originproject.info/) publishers
 
 ## Usage
 
 ### Trust Setup
 
-Users must import a list of trusted signers for C2PA assets to be validated properly; the trust lists must be formatted as [described here](https://github.com/christianpaquin/c2pa-explorations/blob/main/trust-lists/trust-lists.md). This can be done through the `Options` tab of the browser extension's toolbar popup window.
+Users must import a list of trusted signers or add them individually as trust anchors for C2PA assets to be validated properly; the trust lists must be formatted as [described here](https://github.com/christianpaquin/c2pa-explorations/blob/main/trust-lists/trust-lists.md). This can be done through the `Options` tab of the browser extension's toolbar popup window.
 
 ### Asset Validation
 
