@@ -3,7 +3,7 @@
 # NOTE: first generate the test certs by calling generate-cert-chain.sh
 
 cert_types=("trusted" "untrusted")
-extensions=("jpg" "mov" "mp4" "png" "webp")
+extensions=("jpg" "mov" "mp4" "png" "webp" "avif" "svg")
 audio_extensions=("mp3" "wav")
 
 # sign the test files
