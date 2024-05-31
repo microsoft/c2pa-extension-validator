@@ -117,7 +117,7 @@ function tiff (buffer: Uint8Array): Uint8Array | null {
 
 function wav (buffer: Uint8Array): Uint8Array | null {
   const riffChunks = wavDecode(buffer)
-  return riffChunks.find((chunk) => chunk.id === 'WAVE')?.data ?? null
+  return riffChunks.find((chunk) => chunk.id === 'C2PA')?.data ?? null
 }
 
 function mp3 (buffer: Uint8Array): Uint8Array | null {
