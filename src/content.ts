@@ -6,7 +6,7 @@
 import { MSG_DISPLAY_C2PA_OVERLAY, MSG_FRAME_CLICK, MSG_REMOTE_INSPECT_URL } from './constants'
 import { C2paOverlay } from './overlay'
 
-export type MediaElement = (HTMLImageElement | HTMLVideoElement)
+export type MediaElement = (HTMLImageElement | HTMLVideoElement | HTMLAudioElement)
 
 console.debug('%cCONTENT:', 'color: cornsilk', window.location.href)
 

@@ -16,10 +16,10 @@ export function decode (buffer: ArrayBuffer): Array<{ type: string, data: Uint8A
   }
 
   while (reader.remaining > 0) {
-    const length = reader.uint32(reader.bigEndian)
+    const length = reader.uint32(false)
     const type = reader.string(4)
     const data = reader.Uint8Array(length)
-    const crc = reader.uint32(reader.bigEndian)
+    const crc = reader.uint32(false)
     chunks.push({ type, data, crc })
     if (type === 'IEND') break
   }

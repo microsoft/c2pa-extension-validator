@@ -27,9 +27,20 @@ export class MediaRecord {
   private readonly _element: MediaElement
   private _icon: CrIcon | null = null
 
+  private static _i = 0
+
   public static MEDIA_ELEMENT_NODE_TYPES = ['IMG', 'VIDEO', 'AUDIO']
 
   constructor (mediaElement: MediaElement) {
+    console.trace(`${MediaRecord._i}MediaRecord created:`, mediaElement)
+
+    if (IS_DEBUG) {
+      if (mediaElement.getAttribute('c2pa:id') != null) {
+        console.warn('MediaRecord already assigned:', mediaElement)
+      } else {
+        mediaElement.setAttribute('c2pa:id', String(MediaRecord._i++))
+      }
+    }
     this._element = mediaElement
     this.state.type = mediaElement.nodeName.toLowerCase() as MediaStateTypes
   }
@@ -39,6 +50,9 @@ export class MediaRecord {
   }
 
   public set icon (icon: CrIcon | null) {
+    if (this._icon != null) {
+      this._icon.remove()
+    }
     this._icon = icon
   }
 
@@ -78,7 +92,7 @@ export class MediaRecord {
     imgElement.addEventListener('loadeddata', listener)
     if (!IS_DEBUG) return
     // If, for some reason, the load event is not fired, we will log an error after 2 seconds
-    // We expect the load event to be allways be fired
+    // We expect the load event to be always be fired
     setTimeout(() => {
       if (!loaded) {
         console.error('MediaElement ready timeout:', this._element)
@@ -94,7 +108,7 @@ export class MediaRecord {
 
   public static isMediaElement (element: Node): element is MediaElement {
     if (!(element instanceof HTMLElement)) return false
-    // We ingore media elements from this extension
+    // We ignore media elements from this extension
     if (SOURCES_TO_IGNORE.some(source => (MediaRecord.getSrc(element as MediaElement) ?? '').startsWith(source))) {
       return false
     }

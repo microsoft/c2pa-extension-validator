@@ -3,7 +3,6 @@
  *  Licensed under the MIT license.
  */
 
-import { IS_DEBUG } from './constants'
 import { type MediaElement } from './content'
 import { MediaMonitor } from './mediaMonitor'
 import { type MediaRecord } from './mediaRecord'
@@ -47,7 +46,7 @@ window.addEventListener('DOMContentLoaded', () => {
 })
 
 function update (mediaRecord: MediaRecord, type: string): void {
-  const visible = isStyleVisible(mediaRecord.element) && isPossitionVisible(mediaRecord.element)
+  const visible = isStyleVisible(mediaRecord.element) && isPositionVisible(mediaRecord.element)
   const visibilityUpdated = mediaRecord.state.visible !== visible
   if (visibilityUpdated) {
     mediaRecord.state.visible = visible
@@ -77,7 +76,7 @@ function intersecting (mediaRecord: MediaRecord): void {
   _resizeObserver.observe(mediaRecord.element)
   mediaRecord.state.viewport = true
   const visible = mediaRecord.state.visible
-  const newVisibleState = isStyleVisible(mediaRecord.element) && isPossitionVisible(mediaRecord.element)
+  const newVisibleState = isStyleVisible(mediaRecord.element) && isPositionVisible(mediaRecord.element)
   if (visible === newVisibleState) return // state has already been updated by another handler
   mediaRecord.state.visible = newVisibleState
   newVisibleState ? isVisible(mediaRecord) : notVisible(mediaRecord)
@@ -130,15 +129,13 @@ function isStyleVisible (element: HTMLElement): boolean {
   return true
 }
 
-function isPossitionVisible (element: HTMLElement): boolean {
+function isPositionVisible (element: HTMLElement): boolean {
   if (element.offsetWidth < MIN_VISIBLE_WIDTH || element.offsetHeight < MIN_VISIBLE_HEIGHT) {
     return false
   }
   const rect = element.getBoundingClientRect()
   const centerX = rect.left + (rect.width / 2)
   const centerY = rect.top + (rect.height / 2)
-
-  IS_DEBUG && mark((element as HTMLImageElement).src, centerX, centerY)
 
   /*
     There is an issue with this elementsFromPoint check:
@@ -162,23 +159,6 @@ function isPossitionVisible (element: HTMLElement): boolean {
   }
 
   return true
-}
-
-let markDiv: HTMLDivElement | null = null
-
-function mark (src: string, x: number, y: number): void {
-  if (markDiv == null) {
-    markDiv = document.createElement('div')
-    document.body.appendChild(markDiv)
-  }
-  markDiv.style.position = 'absolute'
-  markDiv.style.left = (x - 5) + 'px'
-  markDiv.style.top = (y - 5) + 'px'
-  markDiv.style.width = '10px'
-  markDiv.style.height = '10px'
-  markDiv.style.border = '1px solid red'
-  markDiv.style.zIndex = '10000'
-  markDiv.title = src
 }
 
 let _onEnterViewportCallback: (mediaRecord: MediaRecord) => void

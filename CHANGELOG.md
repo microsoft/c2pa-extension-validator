@@ -7,6 +7,9 @@
 - Dynamic icon updates when in web view
 - Create chrome and firefox dist zip artifact
 - Add individual trust anchors list
+- Add support for AVIF and SVG image formats
+- Add support for MP3 and WAV audio formats
+- Add support for AVI video format
 
 ## v0.1.2
 

@@ -2,6 +2,18 @@
 
 <head>
     <title>C2PA test page</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th,
+        td {
+            border: 1px solid black;
+            padding: 10px;
+        }
+    </style>
 </head>
 
 <body>
@@ -14,21 +26,57 @@
 
     <p>These files are valid (well-formed C2PA manifest from a trusted signer).</p>
 
+    <h3>Image</h3>
     <table>
         <tr>
             <td>JPG</td>
             <td>PNG</td>
             <td>WEBP</td>
-            <td>MP4</td>
+            <td>AVIF</td>
+            <td>SVG</td>
         </tr>
         <tr>
             <td><img src="./media/cards_trusted.jpg" alt="trusted JPG" height="300"></td>
             <td><img src="./media/cards_trusted.png" alt="trusted PNG" height="300"></td>
             <td><img src="./media/cards_trusted.webp" alt="trusted WEBP" height="300"></td>
+            <td><img src="./media/cards_trusted.avif" alt="trusted AVIF" height="300"></td>
+            <td><img src="./media/cards_trusted.svg" alt="trusted SVG" height="200"></td>
+        </tr>
+    </table>
+
+    <h3>Video</h3>
+    <table>
+        <tr>
+            <td>MP4</td>
+        </tr>
+        <tr>
             <td>
                 <video width="320" height="240" controls>
                     <source src="./media/cards_trusted.mp4" type="video/mp4">
+                    Your browser does not support the video tag.
+                </video>
+            </td>
+        </tr>
+    </table>
 
+    <h3>Audio</h3>
+    <table>
+        <tr>
+            <td>MP3</td>
+            <td>WAV</td>
+        </tr>
+        <tr>
+            <td>
+                <audio controls>
+                    <source src="./media/cicadas_trusted.mp3" type="audio/mpeg">
+                    Your browser does not support the audio element.
+                </audio>
+            </td>
+            <td>
+                <audio controls>
+                    <source src="./media/cicadas_trusted.wav" type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
             </td>
         </tr>
     </table>
