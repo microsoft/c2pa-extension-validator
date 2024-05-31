@@ -47,8 +47,15 @@ export class ByteReader {
     this.#noAdvance = false
   }
 
-  littleEndian = true
-  bigEndian = false
+  private littleEndian = true
+
+  get endianness (): 'big' | 'little' {
+    return this.littleEndian ? 'little' : 'big'
+  }
+
+  set endianness (value: 'big' | 'little') {
+    this.littleEndian = value === 'little'
+  }
 
   /**
      * Reads a single byte from the buffer.
@@ -71,7 +78,9 @@ export class ByteReader {
      * @returns {number} The next 24-bit unsigned integer in the buffer.
      */
   uint24 = (littleEndian?: boolean | undefined): number => {
-    return this.#view.getUint16(this.advance(3), littleEndian)
+    const uint8 = this.#view.getUint8(this.advance(1))
+    const uint16 = this.#view.getUint16(this.advance(2), littleEndian)
+    return (uint8 << 16) + uint16
   }
 
   /**
@@ -119,6 +128,17 @@ export class ByteReader {
   move = (offset: number): this => {
     this.test(offset)
     this.#index += offset
+    return this
+  }
+
+  /**
+     * Moves the current reading to the absolute specified offset from the beginning of the buffer.
+     * @param offset The offset by which to move the reading position.
+     * @returns {ByteReader} This ByteReader instance for chaining.
+     */
+  absolute = (offset: number): this => {
+    this.test(offset)
+    this.#index = offset
     return this
   }
 

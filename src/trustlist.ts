@@ -3,7 +3,7 @@
  *  Licensed under the MIT license.
  */
 
-import { type CertificateInfoExtended, calculateSha256CertThumbprintFromX5c, PEMtoDER, createCertificateFromDer, distinguedNameToString } from './certs/certs'
+import { type CertificateInfoExtended, calculateSha256CertThumbprintFromX5c, PEMtoDER, createCertificateFromDer, distinguishedNameToString } from './certs/certs'
 import { AWAIT_ASYNC_RESPONSE, MSG_ADD_TRUSTLIST, MSG_CHECK_TRUSTLIST_INCLUSION, MSG_GET_TRUSTLIST_INFOS, MSG_REMOVE_TRUSTLIST, type MSG_PAYLOAD, LOCAL_TRUST_ANCHOR_LIST_NAME } from './constants'
 import { bytesToBase64 } from './utils'
 
@@ -155,7 +155,7 @@ export async function addTrustAnchor (pemCert: string): Promise<void> {
   const x5c = bytesToBase64(derCert)
 
   // create an entity to add to the built-in trust anchor list
-  const DN = distinguedNameToString(cert.subject)
+  const DN = distinguishedNameToString(cert.subject)
   const kty = sigAlgToKeyType(cert.signatureAlgorithm)
   const entity: TrustedEntity = {
     name: DN,

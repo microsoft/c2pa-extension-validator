@@ -3,20 +3,32 @@
 # NOTE: first generate the test certs by calling generate-cert-chain.sh
 
 cert_types=("trusted" "untrusted")
-extensions=("jpg" "mov" "mp4" "png" "webp")
+extensions=("jpg" "mov" "mp4" "png" "webp" "avif" "svg")
+audio_extensions=("mp3" "wav")
 
 # sign the test files
 for cert_type in "${cert_types[@]}"; do
-    certdir="./${cert_type}" # This specifies the certificate directory.
-    echo "Signing test files using the $certdir certificates"
+    certdir="./${cert_type}"
+    echo "Signing image/video test files using the $certdir certificates"
 
     # copy the test manifests file into the cert directory
     cp manifest_with_ta.json $certdir/
     cp manifest_without_ta.json $certdir/
 
+    # sign the image/video files 
     for ext in "${extensions[@]}"; do
         sourceFile="media/cards.$ext"
-        outputFile="media/cards_${cert_type}.$ext" # Modified to use cert_type directly
+        outputFile="media/cards_${cert_type}.$ext"
+        echo "Signing $sourceFile with the $certdir/manifest_with_ta.json, output to $outputFile"
+
+        # Sign the test files
+        c2patool $sourceFile -m $certdir/manifest_with_ta.json -o $outputFile -f
+    done
+
+    # sign the audio files
+    for ext in "${audio_extensions[@]}"; do
+        sourceFile="media/cicadas.$ext"
+        outputFile="media/cicadas_${cert_type}.$ext"
         echo "Signing $sourceFile with the $certdir/manifest_with_ta.json, output to $outputFile"
 
         # Sign the test files
