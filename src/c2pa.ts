@@ -161,7 +161,8 @@ async function serializeC2paReadResult (result: C2paReadResult): Promise<Extensi
 
   const activeManifestIndex = Object.values(c2paManifests).indexOf(c2paActiveManifest)
 
-  const thumbnailData = (result.source.thumbnail.contentType?.startsWith('video/') ?? false)
+  const thumbnailData =
+  !(result.source.thumbnail.contentType?.startsWith('image/') ?? false)
     ? ''
     : result.source.thumbnail.blob != null
       ? await blobToDataURL(result.source.thumbnail.blob)

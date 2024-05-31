@@ -3,7 +3,7 @@
  *  Licensed under the MIT license.
  */
 
-import { CR_ICON_SIZE, CR_ICON_Z_INDEX, type VALIDATION_STATUS, CR_ICON_MARGIN_RIGHT, CR_ICON_MARGIN_TOP } from './constants'
+import { CR_ICON_SIZE, CR_ICON_Z_INDEX, type VALIDATION_STATUS, CR_ICON_MARGIN_RIGHT, CR_ICON_MARGIN_TOP, CR_ICON_AUDIO_MARGIN_TOP, CR_ICON_AUDIO_MARGIN_RIGHT } from './constants'
 import { type MediaElement } from './content'
 
 const imageSources: { [key in VALIDATION_STATUS]: string } = {
@@ -89,7 +89,7 @@ export class CrIcon {
     this.position()
   }
 
-  public position (topOffset = CR_ICON_MARGIN_TOP, rightOffset = CR_ICON_MARGIN_RIGHT): void {
+  public position (topOffset = this._status === 'audio' ? CR_ICON_AUDIO_MARGIN_TOP : CR_ICON_MARGIN_TOP, rightOffset = this._status === 'audio' ? CR_ICON_AUDIO_MARGIN_RIGHT : CR_ICON_MARGIN_RIGHT): void {
     if (this._crImg == null) {
       throw new Error('Icon not created')
     }

@@ -320,8 +320,11 @@ export class C2paOverlay extends LitElement {
     this.status = this.setStatus(newValue)
     this.requestUpdate('c2paResult', oldValue)
     this.thumbprintUrl = newValue?.source?.thumbnail.data
-    if (this.thumbprintUrl === '' && newValue?.source?.type === 'video/mp4') {
+    if (this.thumbprintUrl === '' && newValue?.source?.type.startsWith('video/')) {
       this.thumbprintUrl = chrome.runtime.getURL('icons/video.svg')
+    }
+    if (this.thumbprintUrl === '' && newValue?.source?.type.startsWith('audio/')) {
+      this.thumbprintUrl = chrome.runtime.getURL('icons/audio.svg')
     }
     const activeManifest = newValue?.manifestStore?.manifests[newValue.manifestStore.activeManifest]
     this.signer = activeManifest.signatureInfo.issuer ?? 'unknown entity'
@@ -392,11 +395,12 @@ export class C2paOverlay extends LitElement {
     const activeManifest = c2paResult.manifestStore.manifests[c2paResult.manifestStore.activeManifest]
     const trustlist = this.c2paResult?.trustList
     const trustlistLogo = trustlist?.tlInfo.logo_icon != null ? trustlist?.tlInfo.logo_icon : 'icons/verified.svg'
+    const thumbnailUrl = this.thumbprintUrl ?? (this._c2paResult?.source?.type?.startsWith('audio/') === true ? chrome.runtime.getURL('icons/video.svg') : chrome.runtime.getURL('icons/video.svg'))
     return html`
     <div id='container'>
       <div class='title'>
           <div class="thumbnailFrame clickable">
-              <img class="thumbnail" id="thumbnail" src="${this.thumbprintUrl ?? chrome.runtime.getURL('icons/video.svg')}">
+              <img class="thumbnail" id="thumbnail" src="${thumbnailUrl}">
           </div>
           <div>
               <div id="divSigned">${mediaType} ${manifestCount > 1 ? 'last ' : ''}signed by ${trusted ? '' : html`<span class="bold">unknown</span> entity `}<span class="bold">${this.signer}</span> 
