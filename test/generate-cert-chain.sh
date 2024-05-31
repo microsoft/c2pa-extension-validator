@@ -3,6 +3,8 @@
 # Leaf cert uses P-256 and is valid for 1 year, CA and root CA use the increasingly stronger
 # P-384 and P-521, and are valid for 5 and 10 years, respectively.
 
+# TODO: add OCSP responder for test CA
+
 # Define an array with the desired directory names
 cert_types=("trusted" "untrusted")
 
@@ -31,6 +33,12 @@ for cert_type in "${cert_types[@]}"; do
     # Concatenate certificates to form the chain
     cat "$certdir/signer.crt" "$certdir/CA.crt" "$certdir/root_CA.crt" > "$certdir/chain.pem"
 done
+
+# Create a short-lived trusted certificate (to test assets signed by valid but expired certs)
+mkdir -p "expired" 
+openssl req -new -newkey ec:<(openssl ecparam -name prime256v1) -keyout "expired/signer.key" -out "expired/signer.csr" -nodes -subj "/O=C2PA Extension Validator/OU=Test/CN=Test Expired Signer" -config openssl_ca.cnf -extensions v3_signer -sha256
+openssl x509 -req -in "expired/signer.csr" -out "expired/signer.crt" -CA "trusted/CA.crt" -CAkey "trusted/CA.key" -CAcreateserial -days 1 -extfile openssl_ca.cnf -extensions v3_signer -sha384
+cat "expired/signer.crt" "trusted/CA.crt" "trusted/root_CA.crt" > "expired/chain.pem"
 
 # print information to add to trust list
 fingerprint=$(openssl x509 -in trusted/signer.crt -sha256 -noout -fingerprint | tr -d ':' | tr 'A-Z' 'a-z')

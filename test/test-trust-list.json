@@ -43,6 +43,10 @@
                     {
                         "kty": "EC",
                         "x5t#S256": "ddf7029d1e81dbd24cd9b71ad8a70388e73eda06c4ff9f1c422b7dba303d11a3"
+                    },
+                    {
+                        "kty": "EC",
+                        "x5t#S256": "35df02bcf0309dc19e0ca401611b5118552344e0b36ea95806813c5e2f688320"
                     }
                 ]
             }

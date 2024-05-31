@@ -24,7 +24,7 @@
 
     <h2>Valid assets</h2>
 
-    <p>These files are valid (well-formed C2PA manifest from a trusted signer).</p>
+    <p>These files are valid (well-formed C2PA manifest from a trusted signer with a non-expired certificate).</p>
 
     <h3>Image</h3>
     <table>
@@ -78,6 +78,31 @@
                     Your browser does not support the audio element.
                 </audio>
             </td>
+        </tr>
+    </table>
+
+    <h2>Validity period tests</h2>
+
+    <p>These files are well-formed C2PA manifest from a trusted signer. Time-stamped
+        manifests should remain valid if the signer certificate is expired; others, no.</p>
+    <table>
+        <tr>
+            <td>Valid: expired cert, time-stamped by trusted TSA</td>
+            <td>Valid: no timestamp but still valid cert</td>
+            <td>Invalid: expired cert, no time stamp</td>
+            <td>Invalid: expired cert, time-stamped by untrusted TSA</td>
+            <!-- TODO: modified timestamp -->
+            <!-- TODO: multiple TSA timestamps (does c2patool support that?) -->
+            <!-- TODO: expired at time of signing (does c2patool support that?) -->
+        </tr>
+        <tr>
+            <td><img src="./media/cards_expired_with_timestamp.jpg" alt="expired with timestamp JPG" height="300"></td>
+            <td><img src="./media/cards_trusted_without_timestamp.jpg" alt="valid without timestamp JPG" height="300">
+            </td>
+            <td><img src="./media/cards_expired_without_timestamp.jpg" alt="expired without timestamp JPG" height="300">
+            </td>
+            <td><img src="./media/cards_expired_with_untrusted_timestamp.jpg" alt="expired with untrusted timestamp JPG"
+                    height="300"></td>
         </tr>
     </table>
 
