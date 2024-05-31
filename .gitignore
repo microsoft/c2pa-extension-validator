@@ -4,6 +4,9 @@ node_modules
 dist
 # intermediate test files
 test/untrusted
+test/expired/*.key
+test/expired/*.csr
+test/expired/*.srl
 test/trusted/*.key
 test/trusted/*.csr
 test/trusted/*.srl
