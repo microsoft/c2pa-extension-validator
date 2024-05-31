@@ -10,7 +10,8 @@
         "tabs",
         "webNavigation",
         "activeTab",
-        "contextMenus"
+        "contextMenus",
+        "alarms"
     ],
     "background": {
         "scripts": [
