@@ -2,6 +2,10 @@
 
 ## vNext (dev)
 
+- ...
+
+## v0.1.3
+
 - Auto-refresh trust lists
 - Enable context menu validation and added auto-scan option
 - Dynamic icon updates when in web view
