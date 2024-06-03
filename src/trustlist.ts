@@ -4,8 +4,8 @@
  */
 
 import { type CertificateInfoExtended, calculateSha256CertThumbprintFromX5c, PEMtoDER, createCertificateFromDer, distinguishedNameToString } from './certs/certs'
-import { AWAIT_ASYNC_RESPONSE, MSG_ADD_TRUSTLIST, MSG_CHECK_TRUSTLIST_INCLUSION, MSG_GET_TRUSTLIST_INFOS, MSG_REMOVE_TRUSTLIST, type MSG_PAYLOAD, LOCAL_TRUST_ANCHOR_LIST_NAME } from './constants'
-import { bytesToBase64 } from './utils'
+import { AWAIT_ASYNC_RESPONSE, MSG_ADD_TRUSTLIST, MSG_GET_TRUSTLIST_INFOS, MSG_REMOVE_TRUSTLIST, type MSG_PAYLOAD, LOCAL_TRUST_ANCHOR_LIST_NAME, MSG_TRUSTLIST_UPDATE } from './constants'
+import { bytesToBase64, sendMessageToAllTabs } from './utils'
 
 // valid JWK key types (to adhere to C2PA cert profile: https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_certificate_profile)
 type ValidKeyTypes = 'RSA' /* sha*WithRSAEncryption and id-RSASSA-PSS */ | 'EC' /* ecdsa-with-* */ | 'OKP' /* id-Ed25519 */
@@ -137,7 +137,7 @@ function storeUpdatedTrustLists (message?: string): void {
   chrome.storage.local.set({ trustList: globalTrustLists }, function () {
     console.debug(message)
   })
-  void notifyTabOfTrustListUpdate()
+  void notifyTabsOfTrustListUpdate()
 }
 
 /**
@@ -277,9 +277,9 @@ export interface TrustListMatch {
  * @param certChain a certificate chain
  * @returns a trust list match object if found, otherwise null
  */
-export async function checkTrustListInclusion (certChain: CertificateInfoExtended[]): Promise<TrustListMatch | null> {
+export function checkTrustListInclusion (certChain: CertificateInfoExtended[], trustLists: TrustList[] = globalTrustLists): TrustListMatch | null {
   console.debug('checkTrustListInclusion called')
-  if (globalTrustLists != null && globalTrustLists.length > 0) {
+  if (trustLists != null && trustLists.length > 0) {
     // for each trust list
     for (const trustList of globalTrustLists) {
       // for each entity's certs in the list (current and expired), check if it matches a cert in the chain
@@ -292,11 +292,7 @@ export async function checkTrustListInclusion (certChain: CertificateInfoExtende
               // found a match
               const tlInfo = getInfoFromTrustList(trustList)
               console.debug('Trust list match:', entity, cert)
-              return await Promise.resolve({
-                tlInfo,
-                entity,
-                cert
-              })
+              return { tlInfo, entity, cert }
             }
           }
         }
@@ -336,26 +332,20 @@ export async function refreshTrustLists (): Promise<void> {
   }
 }
 
-async function notifyTabOfTrustListUpdate (): Promise<void> {
-  const tabId = await getActiveTabId()
-  if (tabId == null) return
-  void chrome.tabs.sendMessage(tabId, { action: 'MSG_TRUSTLIST_UPDATE', data: null })
+async function notifyTabsOfTrustListUpdate (): Promise<void> {
+  void sendMessageToAllTabs({ action: MSG_TRUSTLIST_UPDATE, data: null })
 }
 
-async function getActiveTabId (): Promise<number | undefined> {
-  const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
-  return tabs?.[0]?.id
-}
-
+/*
+ *  Initialization the trust list module and message listeners
+ *  Other modules import functions from this module, but they don't want the listeners
+ *  So the init function needs to be called explicitly
+ */
 export async function init (): Promise<void> {
   void loadTrustLists()
   chrome.runtime.onMessage.addListener(
     // eslint-disable-next-line @typescript-eslint/promise-function-async
     (request: MSG_PAYLOAD, sender, sendResponse) => {
-      if (request.action === MSG_CHECK_TRUSTLIST_INCLUSION) {
-        void checkTrustListInclusion(request.data as CertificateInfoExtended[]).then(sendResponse)
-        return AWAIT_ASYNC_RESPONSE
-      }
       if (request.action === MSG_GET_TRUSTLIST_INFOS) {
         void getTrustListInfos().then(sendResponse)
         return AWAIT_ASYNC_RESPONSE
@@ -371,5 +361,3 @@ export async function init (): Promise<void> {
     }
   )
 }
-
-void init()

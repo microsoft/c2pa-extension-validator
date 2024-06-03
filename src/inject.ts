@@ -6,7 +6,7 @@
 import { type C2paError, type C2paResult } from './c2pa'
 import { type MediaElement } from './content'
 import { CrIcon } from './icon'
-import { checkTrustListInclusion } from './trustlistProxy'
+import { checkTrustListInclusion, loadTrustLists } from './trustlist'
 import { type MediaRecord } from './mediaRecord'
 import * as VisibilityMonitor from './visible'
 import { MediaMonitor } from './mediaMonitor' // requires treeshake: { moduleSideEffects: [path.resolve('src/mediaMonitor.ts')] }, in rollup.config.js
@@ -133,15 +133,6 @@ async function handleValidationResult (mediaElement: MediaElement, c2paResult: C
   mediaRecord.state.c2pa = c2paResult
 
   setIcon(mediaRecord)
-
-  if (mediaRecord.icon === null) return
-  mediaRecord.icon.onClick = async () => {
-    const offsets = await getOffsets(mediaElement)
-    sendToContent({
-      action: MSG_OPEN_OVERLAY,
-      data: { c2paResult, position: { x: offsets.x + offsets.width, y: offsets.y } }
-    })
-  }
 }
 
 async function getParentOffset (): Promise<Rect> {
@@ -212,14 +203,12 @@ export interface MSG_RESPONSE_C2PA_ENTRIES_PAYLOAD {
   thumbnail: string | null
 }
 
-function updateTrustLists (): void {
+async function updateTrustLists (): Promise<void> {
+  await loadTrustLists()
   MediaMonitor.all.forEach((mediaRecord) => {
     if (mediaRecord.state.c2pa?.certChain == null) return
-    void checkTrustListInclusion(mediaRecord.state.c2pa.certChain).then((trustListMatch) => {
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      mediaRecord.state.c2pa!.trustList = trustListMatch
-      setIcon(mediaRecord)
-    })
+    mediaRecord.state.c2pa.trustList = checkTrustListInclusion(mediaRecord.state.c2pa.certChain)
+    setIcon(mediaRecord)
   })
 }
 
@@ -245,7 +234,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     // multiple frames will act on this message, so we send the response as a separate message
   }
   if (message.action === MSG_TRUSTLIST_UPDATE) {
-    updateTrustLists()
+    void updateTrustLists()
   }
   if (message.action === MSG_C2PA_RESULT_FROM_CONTEXT && _id != null) {
     if (data?.frame !== _id.frame || data?.c2paResult == null || data.url == null || _lastContextTarget == null) return
@@ -275,7 +264,9 @@ MediaMonitor.onAdd = (mediaRecord: MediaRecord): void => {
 }
 
 MediaMonitor.onRemove = (mediaRecord: MediaRecord): void => {
-  if (mediaRecord.icon != null) mediaRecord.icon = null
+  if (mediaRecord.icon != null) {
+    mediaRecord.icon.remove()
+  }
   VisibilityMonitor.unobserve(mediaRecord)
 }
 
@@ -336,12 +327,14 @@ VisibilityMonitor.onUpdate((mediaRecord: MediaRecord): void => {
 })
 
 function setIcon (mediaRecord: MediaRecord): void {
+  // Add placeholder icon when debugging
   if (IS_DEBUG && mediaRecord.state.c2pa == null && mediaRecord.icon == null) {
     mediaRecord.onReady = (mediaRecord) => {
       mediaRecord.icon = new CrIcon(mediaRecord.element, mediaRecord.state.type as VALIDATION_STATUS)
     }
     return
   }
+
   if (mediaRecord.state.c2pa == null) return
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -349,10 +342,19 @@ function setIcon (mediaRecord: MediaRecord): void {
   if (mediaRecord.state.c2pa.trustList == null) {
     c2paStatus = 'warning'
   }
+
   if (mediaRecord.icon == null) {
     mediaRecord.onReady = (mediaRecord) => {
       mediaRecord.icon = new CrIcon(mediaRecord.element, c2paStatus as VALIDATION_STATUS)
+      mediaRecord.icon.onClick = async () => {
+        const offsets = await getOffsets(mediaRecord.element)
+        sendToContent({
+          action: MSG_OPEN_OVERLAY,
+          data: { c2paResult: mediaRecord.state.c2pa, position: { x: offsets.x + offsets.width, y: offsets.y } }
+        })
+      }
     }
+
     return
   }
   mediaRecord.icon.status = c2paStatus as VALIDATION_STATUS

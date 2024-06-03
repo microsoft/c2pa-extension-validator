@@ -95,9 +95,7 @@ function notIntersecting (mediaRecord: MediaRecord): void {
   observe(mediaRecord)
 }
 
-export function observe (
-  mediaRecord: MediaRecord
-): void {
+export function observe (mediaRecord: MediaRecord): void {
   _intersectionObserver.observe(mediaRecord.element)
 }
 

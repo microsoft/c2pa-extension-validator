@@ -3,13 +3,20 @@
  *  Licensed under the MIT license.
  */
 
-import { MSG_GET_ID, MSG_L3_INSPECT_URL, MSG_REMOTE_INSPECT_URL, MSG_FORWARD_TO_CONTENT, REMOTE_VALIDATION_LINK, MSG_VALIDATE_URL, AWAIT_ASYNC_RESPONSE, MSG_C2PA_RESULT_FROM_CONTEXT, AUTO_SCAN_DEFAULT, MSG_AUTO_SCAN_UPDATED, type MSG_PAYLOAD, TRUSTLIST_UPDATE_INTERVAL } from './constants'
 import 'c2pa'
 import { validateUrl as c2paValidateUrl } from './c2paProxy'
-import { checkTrustListInclusion, refreshTrustLists } from './trustlist'
+import { init as initTrustlist, checkTrustListInclusion, refreshTrustLists } from './trustlist'
 import { type C2paError, type C2paResult } from './c2pa'
+import {
+  MSG_GET_ID, MSG_L3_INSPECT_URL, MSG_REMOTE_INSPECT_URL, MSG_FORWARD_TO_CONTENT, REMOTE_VALIDATION_LINK,
+  MSG_VALIDATE_URL, AWAIT_ASYNC_RESPONSE, MSG_C2PA_RESULT_FROM_CONTEXT, AUTO_SCAN_DEFAULT, MSG_AUTO_SCAN_UPDATED,
+  TRUSTLIST_UPDATE_INTERVAL
+} from './constants'
+import { sendMessageToAllTabs } from './utils'
 
 console.debug('Background: Script: start')
+
+void initTrustlist()
 
 chrome.runtime.onInstalled.addListener(function (details) {
   if (details.reason === 'install') {
@@ -87,9 +94,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   }
 
   if (action === MSG_VALIDATE_URL) {
-    void validateUrl(data as string).then((results) => {
-      sendResponse(results)
-    })
+    void validateUrl(data as string).then(sendResponse)
     return AWAIT_ASYNC_RESPONSE
   }
 
@@ -104,8 +109,7 @@ async function validateUrl (url: string): Promise<C2paResult | C2paError> {
   if (c2paResult instanceof Error) {
     return c2paResult
   }
-  const trustListMatch = await checkTrustListInclusion(c2paResult.certChain ?? [])
-  c2paResult.trustList = trustListMatch
+  c2paResult.trustList = checkTrustListInclusion(c2paResult.certChain ?? [])
 
   return c2paResult
 }
@@ -151,16 +155,6 @@ async function openOrSwitchToTab (url: string): Promise<chrome.tabs.Tab> {
   }
 
   return tab
-}
-
-async function sendMessageToAllTabs (message: MSG_PAYLOAD): Promise<void> {
-  const tabs = await chrome.tabs.query({})
-  tabs.filter(tab => tab.id != null).forEach(function (tab) {
-    if (tab.id == null) {
-      return
-    }
-    void chrome.tabs.sendMessage(tab.id, message)
-  })
 }
 
 // trust list refresh alarm (run once a day) TODO: create an option

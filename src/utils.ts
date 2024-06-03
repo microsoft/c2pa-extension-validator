@@ -4,7 +4,7 @@
  */
 
 import 'dotenv/config'
-import { DEFAULT_MSG_TIMEOUT } from './constants'
+import { DEFAULT_MSG_TIMEOUT, type MSG_PAYLOAD } from './constants'
 
 export const DEBUG = process.env.NODE_ENV?.toUpperCase() !== 'PRODUCTION'
 
@@ -126,4 +126,19 @@ export function dataURLtoBlob (dataurl: string): Blob | null {
 
   // Create and return a Blob from the typed array
   return new Blob([u8arr], { type: mimeType })
+}
+
+export async function sendMessageToAllTabs (message: MSG_PAYLOAD): Promise<void> {
+  const tabs = await chrome.tabs.query({})
+  tabs.filter(tab => tab.id != null).forEach(function (tab) {
+    if (tab.id == null) {
+      return
+    }
+    void chrome.tabs.sendMessage(tab.id, message)
+  })
+}
+
+export async function getActiveTabId (): Promise<number | undefined> {
+  const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+  return tabs?.[0]?.id
 }
