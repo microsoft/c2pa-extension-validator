@@ -4,7 +4,7 @@
  */
 
 import { type CertificateInfoExtended, calculateSha256CertThumbprintFromX5c, PEMtoDER, createCertificateFromDer, distinguishedNameToString } from './certs/certs'
-import { AWAIT_ASYNC_RESPONSE, MSG_ADD_TRUSTLIST, MSG_GET_TRUSTLIST_INFOS, MSG_REMOVE_TRUSTLIST, type MSG_PAYLOAD, LOCAL_TRUST_ANCHOR_LIST_NAME, MSG_TRUSTLIST_UPDATE } from './constants'
+import { AWAIT_ASYNC_RESPONSE, MSG_ADD_TRUSTLIST, MSG_GET_TRUSTLIST_INFOS, MSG_REMOVE_TRUSTLIST, type MSG_PAYLOAD, LOCAL_TRUST_ANCHOR_LIST_NAME, MSG_TRUSTLIST_UPDATE, LOCAL_TRUST_TSA_LIST_NAME } from './constants'
 import { bytesToBase64, sendMessageToAllTabs } from './utils'
 
 // valid JWK key types (to adhere to C2PA cert profile: https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_certificate_profile)
@@ -143,8 +143,8 @@ function storeUpdatedTrustLists (message?: string): void {
 /**
  * Adds a trust anchor to the built-in trust anchors list, returns the corresponding trust list info or throws an error
  */
-export async function addTrustAnchor (pemCert: string): Promise<void> {
-  console.debug('addTrustAnchor called')
+export async function addTrustAnchor (pemCert: string, tsa = false): Promise<void> {
+  console.debug(`addTrustAnchor called. tsa: ${tsa}`)
   if (pemCert == null || typeof pemCert !== 'string') {
     throw new Error('Invalid trust anchor')
   }
@@ -177,13 +177,14 @@ export async function addTrustAnchor (pemCert: string): Promise<void> {
   console.debug(`created trust anchor entity ${entity.name}`, entity)
 
   // find the local trust anchor list
-  const anchorTL = globalTrustLists.find(tl => tl.name === 'Local Trust Anchors')
+  const listName = tsa ? LOCAL_TRUST_TSA_LIST_NAME : LOCAL_TRUST_ANCHOR_LIST_NAME
+  const anchorTL = globalTrustLists.find(tl => tl.name === listName)
   if (anchorTL == null) {
     // list doesn't exist; create it
-    console.debug('Local Trust Anchors trust list not found; creating it')
+    console.debug(`${listName} trust list not found; creating it`)
     const tl: TrustList = {
-      name: LOCAL_TRUST_ANCHOR_LIST_NAME,
-      description: LOCAL_TRUST_ANCHOR_LIST_NAME,
+      name: listName,
+      description: listName,
       download_url: '', // n/a
       website: '', // n/a
       last_updated: '', // unused for non-downloadable trust lists
@@ -192,7 +193,7 @@ export async function addTrustAnchor (pemCert: string): Promise<void> {
     globalTrustLists.push(tl)
   } else {
     // add the entity to the list
-    console.debug('Updating local Trust Anchors trust list')
+    console.debug(`Updating the ${listName} trust list`)
     // add or replace the entity in the list
     const existingEntity = anchorTL.entities.find(e => e.name === entity.name)
     if (existingEntity != null) {
@@ -208,7 +209,7 @@ export async function addTrustAnchor (pemCert: string): Promise<void> {
     globalTrustLists[index] = anchorTL
   }
 
-  storeUpdatedTrustLists(`Trust anchor added to local trust anchor list: ${entity.name}`)
+  storeUpdatedTrustLists(`Trust anchor added to the ${listName} list: ${entity.name}`)
 }
 
 /**
@@ -228,6 +229,28 @@ export async function addTrustList (tl: TrustList): Promise<void> {
 
   storeUpdatedTrustLists(`Trust list stored: ${tl.name}`)
 }
+
+/**
+ * Adds a trust file, either a trust list or a single certificate
+ * @param content file content
+ */
+export async function addTrustFile(content: string): Promise<void> {
+  if (content.startsWith('{')) {
+    const json = JSON.parse(content) as TrustList
+    addTrustList(json)
+  } else {
+    addTrustAnchor(content)
+  }
+}
+
+/**
+ * Adds a TSA trust file, either a trust list or a single certificate
+ * @param content file content
+ */
+export async function addTSATrustFile(content: string): Promise<void> {
+  addTrustAnchor(content, true)
+}
+
 
 /**
  * Removes a trust list from the trust list array.

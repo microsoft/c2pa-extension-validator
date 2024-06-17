@@ -42,6 +42,7 @@ export const AWAIT_ASYNC_RESPONSE = true
 export const AUTO_SCAN_DEFAULT = process.env.AUTO_SCAN?.toLowerCase() === 'true' || false
 export const TRUSTLIST_UPDATE_INTERVAL = 1440 /* 24 hours */
 export const LOCAL_TRUST_ANCHOR_LIST_NAME = 'Local Trust Anchors'
+export const LOCAL_TRUST_TSA_LIST_NAME = 'Local TSA Anchors'
 
 export const CR_ICON_SIZE = '2em'
 export const CR_ICON_Z_INDEX = 10000

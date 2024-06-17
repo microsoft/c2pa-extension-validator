@@ -8,7 +8,7 @@ import packageManifest from '../package.json'
 import { AUTO_SCAN_DEFAULT, MSG_AUTO_SCAN_UPDATED, MSG_REQUEST_C2PA_ENTRIES, MSG_RESPONSE_C2PA_ENTRIES } from './constants.js'
 import { type MSG_RESPONSE_C2PA_ENTRIES_PAYLOAD } from './inject.js'
 import { type ToggleSwitch } from './components/toggle.js'
-import { addTrustAnchor } from './trustlist.js'
+import { addTSATrustFile, addTrustFile } from './trustlist.js'
 
 console.debug('popup.js: load')
 
@@ -85,9 +85,10 @@ function addValidationResult (validationResult: MSG_RESPONSE_C2PA_ENTRIES_PAYLOA
           <img src="${validationResult.thumbnail}" style="width: 40px; height: 40px">
           <div>${decodeURIComponent(validationResult.name)}</div>
           `
-  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  const validationEntries = document.getElementById('validationEntries')!
-  validationEntries.innerHTML += html
+  const validationEntries = document.getElementById('validationEntries');
+  if (validationEntries !== null) {
+    validationEntries.innerHTML += html;
+  }
 }
 
 function createFileInputEventListener (callback: (fileContents: string) => void): (event: Event) => void {
@@ -107,25 +108,26 @@ function createFileInputEventListener (callback: (fileContents: string) => void)
   }
 }
 
-const trustListInput = document.getElementById('trust-list-input') as HTMLInputElement
-trustListInput.addEventListener('change', createFileInputEventListener((fileContents: string): void => {
-  const json = JSON.parse(fileContents) as TrustList
+const trustFileInput = document.getElementById('trust-file-input') as HTMLInputElement
+trustFileInput.addEventListener('change', createFileInputEventListener((fileContents: string): void => {
   try {
     // eslint-disable-next-line no-void
-    void addTrustList(json).then(() => { void displayTrustListInfos() })
+    void addTrustFile(fileContents).then(() => { void displayTrustListInfos() })
   } catch (e) {
-    console.error('Can\'t parse trust list file')
+    console.error('Can\'t parse trust file')
   }
 }))
 
-const trustAnchorInput = document.getElementById('trust-anchor-input') as HTMLInputElement
-trustAnchorInput.addEventListener('change', createFileInputEventListener((fileContents: string): void => {
+const tsaFileInput = document.getElementById('tsa-file-input') as HTMLInputElement
+tsaFileInput.addEventListener('change', createFileInputEventListener((fileContents: string): void => {
   try {
-    void addTrustAnchor(fileContents).then(() => { void displayTrustListInfos() })
+    // eslint-disable-next-line no-void
+    void addTSATrustFile(fileContents).then(() => { void displayTrustListInfos() })
   } catch (e) {
-    console.error('Can\'t parse trust anchor file')
+    console.error('Can\'t parse TSA trust file')
   }
 }))
+
 
 /**
  * Displays the trust list info in the popup.
