@@ -4,10 +4,7 @@
  */
 
 import { Certificate, type DistinguishedName as x509DistinguishedName } from '@fidm/x509'
-import { type JumbfResult, type ContentBox, decode as jumbfDecode } from './jumbf.js'
-import { decode as cborDecode } from './cbor.js'
 import { Buffer } from 'buffer' // required for polyfill
-import { getManifestFromMetadata } from './metadata.js'
 import { bytesToHex } from '../utils.js'
 
 export interface COSE {
@@ -51,7 +48,7 @@ export async function calculateSha256CertThumbprintFromX5c (x5c: string): Promis
   return await calculateSha256CertThumbprintFromDer(Buffer.from(x5c, 'base64'))
 }
 
-export async function createCertificateFromDer (der: Uint8Array): Promise<CertificateInfoExtended> {
+export async function certificateFromDer (der: Uint8Array): Promise<CertificateInfoExtended> {
   const sha256Thumbprint = await calculateSha256CertThumbprintFromDer(der)
   const pem = DERtoPEM(der)
   const cert = Certificate.fromPEM(Buffer.from(pem, 'utf-8'))
@@ -63,36 +60,6 @@ export async function createCertificateFromDer (der: Uint8Array): Promise<Certif
   certInfoEx.signatureAlgorithm = cert.signatureAlgorithm
 
   return certInfoEx
-}
-
-export async function extractCertChain (type: string, mediaBuffer: Uint8Array): Promise<CertificateInfoExtended[] | null> {
-  const rawManifestBuffer = getManifestFromMetadata(type, mediaBuffer)
-  if (rawManifestBuffer == null) {
-    return null
-  }
-  /*
-    The manifest buffer is decoded into a JUMBF structure.
-  */
-  const jumpf = jumbfDecode(rawManifestBuffer)
-
-  /*
-    The JUMBF structure is parsed to extract the COSE cbor data
-    The COSE cbor data is parsed to extract the x5chain array of buffers
-  */
-  const x5chain = getCertChain(jumpf)
-  if (x5chain == null) {
-    return null
-  }
-
-  /*
-    The x5chain array of buffers is converted into PEM strings
-    The PEM strings are parsed into Certificate objects
-  */
-  const certificates = await Promise.all(x5chain.map(async (buffer) => {
-    const cert = await createCertificateFromDer(buffer)
-    return cert
-  }))
-  return certificates
 }
 
 /**
@@ -112,27 +79,6 @@ export function DERtoPEM (der: Uint8Array): string {
 export function PEMtoDER (pem: string): Uint8Array {
   const base64String = pem.replace(/-----BEGIN CERTIFICATE-----/, '').replace(/-----END CERTIFICATE-----/, '').replace(/\r?\n|\r/g, '')
   return Buffer.from(base64String, 'base64')
-}
-
-function getCertChain (jumbf: JumbfResult): Uint8Array[] | null {
-  const jumbfBox = jumbf.labels['c2pa.signature']
-  if (jumbfBox == null || jumbfBox.boxes.length === 0 || jumbfBox.boxes[0].type !== 'cbor') {
-    return null
-  }
-  const cborContentBox = jumbfBox.boxes[0] as ContentBox
-  const cbor = cborDecode(cborContentBox.data)
-  const cose = (cbor as { tag: number | string, value: COSE }).value
-  if (cose?.[1]?.x5chain != null) {
-    let x5chain = cose[1].x5chain
-    x5chain = x5chain instanceof Uint8Array ? [x5chain] : x5chain
-    return x5chain
-  } else if ((cose?.[1]?.sigTst) != null) {
-    const cb = cborDecode(cose[0]) as Record<number, Uint8Array[]>
-    let x5chain = cb[33] // 33 = x5chain
-    x5chain = x5chain instanceof Uint8Array ? [x5chain] : x5chain
-    return x5chain
-  }
-  return null
 }
 
 /*
@@ -166,7 +112,7 @@ function getDistinguishedName (dn: x509DistinguishedName): DistinguishedName {
 
 export function distinguishedNameToString (dn: DistinguishedName): string {
   // combine the non-empty DN fields
-  return [dn.CN, dn.O, dn.OU, dn.C, dn.L, dn.ST].filter((field) => field.length > 0).join(', ')
+  return [dn.CN, dn.O, dn.OU, dn.C, dn.L, dn.ST].filter((field) => field != null && field.length > 0).join(', ')
 }
 
 export function localDateTime (isoDateString: string): string {
