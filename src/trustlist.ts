@@ -325,6 +325,16 @@ export function checkTrustListInclusion (certChain: CertificateInfoExtended[], t
   return null
 }
 
+/**
+ * Checks if a certificate chain is included in the TSA trust list (either the leaf certificate or one of the CA anchors)
+ * @param certChain a certificate chain
+ * @returns a trust list match object if found, otherwise null
+ */
+export function checkTSATrustListInclusion(certChain: CertificateInfoExtended[]): TrustListMatch | null {
+  console.debug('checkTSATrustListInclusion called')
+  return checkTrustListInclusion(certChain, globalTrustLists.filter(tl => tl.name === LOCAL_TRUST_TSA_LIST_NAME))
+}
+
 // update the trust lists if they are outdated
 export async function refreshTrustLists (): Promise<void> {
   console.debug('refreshTrustLists called')
