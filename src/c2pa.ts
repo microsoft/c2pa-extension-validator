@@ -3,10 +3,13 @@
  *  Licensed under the MIT license.
  */
 
-import { createC2pa, type C2pa, type C2paReadResult, selectEditsAndActivity, type TranslatedDictionaryCategory, type ManifestStore, type ManifestMap } from 'c2pa'
-import { type CertificateInfoExtended, extractCertChain } from './certs/certs.js'
-import { type TrustListMatch } from './trustlistProxy.js'
+import { createC2pa, selectEditsAndActivity, type C2pa, type C2paReadResult, type ManifestMap, type ManifestStore, type TranslatedDictionaryCategory } from 'c2pa'
+import { type CertificateInfoExtended } from './certs/certs.js'
+import { decode as coseDecode, type TSTInfo, type COSE_Sign1 } from './certs/cose.js'
+import { isContentBox, decode as jumbfDecode } from './certs/jumbf.js'
+import { getManifestFromMetadata } from './certs/metadata.js'
 import { AWAIT_ASYNC_RESPONSE, MSG_C2PA_VALIDATE_URL, type MSG_PAYLOAD } from './constants.js'
+import { type TrustListMatch } from './trustlistProxy.js'
 import { blobToDataURL } from './utils.js'
 
 console.debug('C2pa: Script: start')
@@ -16,6 +19,7 @@ let c2pa: C2pa | null = null
 export interface C2paResult extends ExtensionC2paResult {
   url: string
   certChain: CertificateInfoExtended[] | null
+  tstTokens: TSTInfo[] | null
   trustList: TrustListMatch | null
   editsAndActivity: TranslatedDictionaryCategory[] | null
 }
@@ -66,22 +70,63 @@ export async function validateUrl (url: string): Promise<C2paResult | C2paError>
     return { message: 'No manifest found', url, name: 'No Manifest' } satisfies C2paError
   }
 
-  const serializedResult2 = await serializeC2paReadResult(c2paResult)
+  const serializedResult = await serializeC2paReadResult(c2paResult)
 
   const sourceBuffer = await c2paResult.source.arrayBuffer()
-  const certChain = await extractCertChain(c2paResult.source.type, new Uint8Array(sourceBuffer)) ?? []
+
+  const cose = await extractC2paManifest(c2paResult.source.type, new Uint8Array(sourceBuffer))
 
   const editsAndActivity = ((c2paResult.manifestStore?.activeManifest) != null) ? await selectEditsAndActivity(c2paResult.manifestStore?.activeManifest) : null
 
   const result: C2paResult = {
-    ...serializedResult2,
+    ...serializedResult,
     url,
     trustList: null,
-    certChain,
+    certChain: cose?.unprotected?.x5chain ?? cose?.protected.x5chain ?? null,
+    tstTokens: cose?.unprotected?.sigTst?.tstTokens ?? null,
     editsAndActivity
   }
 
   return result
+}
+
+export async function extractC2paManifest (type: string, mediaBuffer: Uint8Array): Promise<COSE_Sign1 | null> {
+  const rawManifestBuffer = getManifestFromMetadata(type, mediaBuffer)
+  if (rawManifestBuffer == null) {
+    return null
+  }
+
+  /*
+    The manifest buffer is decoded into a JUMBF structure.
+  */
+  const jumbf = jumbfDecode(rawManifestBuffer)
+
+  /*
+    C2PA manifest files are expected to have a jumbf box with a label 'c2pa.signature' containing a cbor box
+  */
+  const jumbfBox = jumbf.labels['c2pa.signature']
+  if (jumbfBox == null || jumbfBox.boxes.length === 0 || jumbfBox.boxes[0].type !== 'cbor') {
+    return null
+  }
+
+  const contentBox = jumbfBox.boxes[0]
+
+  /*
+    The first, and only box, should have a 'cbor' type
+  */
+  if (contentBox?.type !== 'cbor' || !isContentBox(contentBox)) {
+    console.error('Expected cbor content-box in jumbf')
+    return null
+  }
+
+  const coseData = contentBox.data
+
+  const cose = await coseDecode(coseData)
+  if (cose == null) {
+    console.error('Could not decode COSE')
+  }
+
+  return cose
 }
 
 void init()
