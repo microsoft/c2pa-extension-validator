@@ -17,6 +17,7 @@
   "license": "MIT",
   "devDependencies": {
     "@contentauth/toolkit": "^0.11.1",
+    "@fidm/asn1": "^1.0.4",
     "@fidm/x509": "^1.2.1",
     "@rollup/plugin-alias": "^5.1.0",
     "@rollup/plugin-commonjs": "^25.0.7",

@@ -26,6 +26,10 @@ export interface ContentBox {
   data: Uint8Array
 }
 
+export function isContentBox (box: JumbfBox | ContentBox): box is ContentBox {
+  return 'data' in box
+}
+
 export interface Toggles {
   request: boolean
   label: boolean

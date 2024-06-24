@@ -3,7 +3,7 @@
  *  Licensed under the MIT license.
  */
 
-import { type CertificateInfoExtended, calculateSha256CertThumbprintFromX5c, PEMtoDER, createCertificateFromDer, distinguishedNameToString } from './certs/certs'
+import { type CertificateInfoExtended, calculateSha256CertThumbprintFromX5c, PEMtoDER, certificateFromDer, distinguishedNameToString } from './certs/certs'
 import { AWAIT_ASYNC_RESPONSE, MSG_ADD_TRUSTLIST, MSG_GET_TRUSTLIST_INFOS, MSG_REMOVE_TRUSTLIST, type MSG_PAYLOAD, LOCAL_TRUST_ANCHOR_LIST_NAME, MSG_TRUSTLIST_UPDATE, LOCAL_TRUST_TSA_LIST_NAME } from './constants'
 import { bytesToBase64, sendMessageToAllTabs } from './utils'
 
@@ -150,7 +150,7 @@ export async function addTrustAnchor (pemCert: string, tsa = false): Promise<voi
   }
 
   const derCert = PEMtoDER(pemCert)
-  const cert = await createCertificateFromDer(derCert)
+  const cert = await certificateFromDer(derCert)
   console.debug('cert', cert)
   const x5c = bytesToBase64(derCert)
 
