@@ -394,6 +394,11 @@ export class C2paOverlay extends LitElement {
     }
     const activeManifest = c2paResult.manifestStore.manifests[c2paResult.manifestStore.activeManifest]
     const trustlist = this.c2paResult?.trustList
+    const tsaTrustlist = this.c2paResult?.tsaTrustList
+    console.log('c2paResult', this.c2paResult) // TODO: delete
+    console.log('tsaTrustlist', tsaTrustlist) // TODO: delete
+    // TODO: use the tsaTrustlist result: if the cert is expired, then we need a tsaTrustlist
+    // match, otherwise the timestamp should be ignored and the asset should be invalid
     const trustlistLogo = trustlist?.tlInfo.logo_icon != null ? trustlist?.tlInfo.logo_icon : 'icons/verified.svg'
     const thumbnailUrl = this.thumbprintUrl ?? (this._c2paResult?.source?.type?.startsWith('audio/') === true ? chrome.runtime.getURL('icons/video.svg') : chrome.runtime.getURL('icons/video.svg'))
     return html`

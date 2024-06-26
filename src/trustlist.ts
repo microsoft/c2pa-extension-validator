@@ -251,7 +251,6 @@ export async function addTSATrustFile(content: string): Promise<void> {
   addTrustAnchor(content, true)
 }
 
-
 /**
  * Removes a trust list from the trust list array.
  * @param index index of the trust list to remove
@@ -301,7 +300,7 @@ export interface TrustListMatch {
  * @returns a trust list match object if found, otherwise null
  */
 export function checkTrustListInclusion (certChain: CertificateInfoExtended[], trustLists: TrustList[] = globalTrustLists): TrustListMatch | null {
-  console.debug('checkTrustListInclusion called')
+  console.debug('checkTrustListInclusion called', certChain, trustLists)
   if (trustLists != null && trustLists.length > 0) {
     // for each trust list
     for (const trustList of globalTrustLists) {
@@ -332,7 +331,7 @@ export function checkTrustListInclusion (certChain: CertificateInfoExtended[], t
  */
 export function checkTSATrustListInclusion(certChain: CertificateInfoExtended[]): TrustListMatch | null {
   console.debug('checkTSATrustListInclusion called')
-  return checkTrustListInclusion(certChain, globalTrustLists.filter(tl => tl.name === LOCAL_TRUST_TSA_LIST_NAME))
+  return checkTrustListInclusion(certChain, globalTrustLists /*.filter(tl => tl.name === LOCAL_TRUST_TSA_LIST_NAME) TODO: uncomment (wasn't working)*/)
 }
 
 // update the trust lists if they are outdated
