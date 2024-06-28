@@ -4,7 +4,7 @@
  */
 
 import { type CertificateInfoExtended, calculateSha256CertThumbprintFromX5c, PEMtoDER, certificateFromDer, distinguishedNameToString } from './certs/certs'
-import { AWAIT_ASYNC_RESPONSE, MSG_ADD_TRUSTLIST, MSG_GET_TRUSTLIST_INFOS, MSG_REMOVE_TRUSTLIST, type MSG_PAYLOAD, LOCAL_TRUST_ANCHOR_LIST_NAME, MSG_TRUSTLIST_UPDATE, LOCAL_TRUST_TSA_LIST_NAME } from './constants'
+import { AWAIT_ASYNC_RESPONSE, MSG_ADD_TRUSTLIST, MSG_GET_TRUSTLIST_INFOS, MSG_REMOVE_TRUSTLIST, type MSG_PAYLOAD, LOCAL_TRUST_ANCHOR_LIST_NAME, MSG_TRUSTLIST_UPDATE, LOCAL_TRUST_TSA_LIST_NAME, MSG_ADD_TRUSTFILE, MSG_ADD_TSA_TRUSTFILE } from './constants'
 import { bytesToBase64, sendMessageToAllTabs } from './utils'
 
 // valid JWK key types (to adhere to C2PA cert profile: https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_certificate_profile)
@@ -58,6 +58,18 @@ export interface TrustListInfo {
   last_updated: string
   logo_icon?: string
   entities_count: number
+}
+
+/**
+ * Information about a trust list match
+ */
+export interface TrustListMatch {
+  // trust list info
+  tlInfo: TrustListInfo
+  // trusted entity that matched the certificate chain
+  entity: TrustedEntity
+  // certificate that matched the trust list
+  cert: CertificateInfoExtended
 }
 
 let globalTrustLists: TrustList[] = []
@@ -133,10 +145,9 @@ function sigAlgToKeyType (sigAlg: string): ValidKeyTypes {
 /**
  * Stores the updated trust lists and notify the tab of the update
  */
-function storeUpdatedTrustLists (message?: string): void {
-  chrome.storage.local.set({ trustList: globalTrustLists }, function () {
-    console.debug(message)
-  })
+async function storeUpdatedTrustLists (message?: string): Promise<void> {
+  await chrome.storage.local.set({ trustList: globalTrustLists })
+  console.debug(message)
   void notifyTabsOfTrustListUpdate()
 }
 
@@ -209,7 +220,7 @@ export async function addTrustAnchor (pemCert: string, tsa = false): Promise<voi
     globalTrustLists[index] = anchorTL
   }
 
-  storeUpdatedTrustLists(`Trust anchor added to the ${listName} list: ${entity.name}`)
+  await storeUpdatedTrustLists(`Trust anchor added to the ${listName} list: ${entity.name}`)
 }
 
 /**
@@ -227,19 +238,19 @@ export async function addTrustList (tl: TrustList): Promise<void> {
   // set the global trust list
   globalTrustLists.push(tl)
 
-  storeUpdatedTrustLists(`Trust list stored: ${tl.name}`)
+  void storeUpdatedTrustLists(`Trust list stored: ${tl.name}`)
 }
 
 /**
  * Adds a trust file, either a trust list or a single certificate
  * @param content file content
  */
-export async function addTrustFile(content: string): Promise<void> {
+export async function addTrustFile (content: string): Promise<void> {
   if (content.startsWith('{')) {
     const json = JSON.parse(content) as TrustList
-    addTrustList(json)
+    await addTrustList(json)
   } else {
-    addTrustAnchor(content)
+    await addTrustAnchor(content)
   }
 }
 
@@ -247,8 +258,8 @@ export async function addTrustFile(content: string): Promise<void> {
  * Adds a TSA trust file, either a trust list or a single certificate
  * @param content file content
  */
-export async function addTSATrustFile(content: string): Promise<void> {
-  addTrustAnchor(content, true)
+export async function addTSATrustFile (content: string): Promise<void> {
+  await addTrustAnchor(content, true)
 }
 
 /**
@@ -263,7 +274,7 @@ export async function removeTrustList (index: number): Promise<void> {
   // remove the trust list
   globalTrustLists.splice(index, 1)
 
-  storeUpdatedTrustLists(`Trust list removed, index: ${index}, name: ${name}`)
+  await storeUpdatedTrustLists(`Trust list removed, index: ${index}, name: ${name}`)
 }
 
 /**
@@ -280,18 +291,6 @@ export async function loadTrustLists (): Promise<void> {
   } else {
     console.debug('No trust list found')
   }
-}
-
-/**
- * Information about a trust list match
- */
-export interface TrustListMatch {
-  // trust list info
-  tlInfo: TrustListInfo
-  // trusted entity that matched the certificate chain
-  entity: TrustedEntity
-  // certificate that matched the trust list
-  cert: CertificateInfoExtended
 }
 
 /**
@@ -329,9 +328,9 @@ export function checkTrustListInclusion (certChain: CertificateInfoExtended[], t
  * @param certChain a certificate chain
  * @returns a trust list match object if found, otherwise null
  */
-export function checkTSATrustListInclusion(certChain: CertificateInfoExtended[]): TrustListMatch | null {
+export function checkTSATrustListInclusion (certChain: CertificateInfoExtended[]): TrustListMatch | null {
   console.debug('checkTSATrustListInclusion called')
-  return checkTrustListInclusion(certChain, globalTrustLists /*.filter(tl => tl.name === LOCAL_TRUST_TSA_LIST_NAME) TODO: uncomment (wasn't working)*/)
+  return checkTrustListInclusion(certChain, globalTrustLists /* .filter(tl => tl.name === LOCAL_TRUST_TSA_LIST_NAME) TODO: uncomment (wasn't working) */)
 }
 
 // update the trust lists if they are outdated
@@ -359,7 +358,7 @@ export async function refreshTrustLists (): Promise<void> {
     await Promise.all(fetchPromises)
 
     if (trustListsUpdated) {
-      storeUpdatedTrustLists('Trust lists refreshed')
+      await storeUpdatedTrustLists('Trust lists refreshed')
     }
   }
 }
@@ -369,7 +368,7 @@ async function notifyTabsOfTrustListUpdate (): Promise<void> {
 }
 
 /*
- *  Initialization the trust list module and message listeners
+ *  Initialize the trust list module and message listeners
  *  Other modules import functions from this module, but they don't want the listeners
  *  So the init function needs to be called explicitly
  */
@@ -384,6 +383,14 @@ export async function init (): Promise<void> {
       }
       if (request.action === MSG_ADD_TRUSTLIST) {
         void addTrustList(request.data as TrustList).then(sendResponse)
+        return AWAIT_ASYNC_RESPONSE
+      }
+      if (request.action === MSG_ADD_TRUSTFILE) {
+        void addTrustFile(request.data as string).then(sendResponse)
+        return AWAIT_ASYNC_RESPONSE
+      }
+      if (request.action === MSG_ADD_TSA_TRUSTFILE) {
+        void addTrustFile(request.data as string).then(sendResponse)
         return AWAIT_ASYNC_RESPONSE
       }
       if (request.action === MSG_REMOVE_TRUSTLIST) {

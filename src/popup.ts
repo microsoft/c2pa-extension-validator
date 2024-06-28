@@ -3,12 +3,11 @@
  *  Licensed under the MIT license.
  */
 
-import { type TrustList, type TrustListInfo, getTrustListInfos, addTrustList, removeTrustList } from './trustlistProxy.js'
+import { type TrustListInfo, getTrustListInfos, removeTrustList, addTSATrustFile, addTrustFile } from './trustlistProxy.js'
 import packageManifest from '../package.json'
 import { AUTO_SCAN_DEFAULT, MSG_AUTO_SCAN_UPDATED, MSG_REQUEST_C2PA_ENTRIES, MSG_RESPONSE_C2PA_ENTRIES } from './constants.js'
 import { type MSG_RESPONSE_C2PA_ENTRIES_PAYLOAD } from './inject.js'
 import { type ToggleSwitch } from './components/toggle.js'
-import { addTSATrustFile, addTrustFile } from './trustlist.js'
 
 console.debug('popup.js: load')
 
@@ -85,9 +84,9 @@ function addValidationResult (validationResult: MSG_RESPONSE_C2PA_ENTRIES_PAYLOA
           <img src="${validationResult.thumbnail}" style="width: 40px; height: 40px">
           <div>${decodeURIComponent(validationResult.name)}</div>
           `
-  const validationEntries = document.getElementById('validationEntries');
+  const validationEntries = document.getElementById('validationEntries')
   if (validationEntries !== null) {
-    validationEntries.innerHTML += html;
+    validationEntries.innerHTML += html
   }
 }
 
@@ -112,7 +111,7 @@ const trustFileInput = document.getElementById('trust-file-input') as HTMLInputE
 trustFileInput.addEventListener('change', createFileInputEventListener((fileContents: string): void => {
   try {
     // eslint-disable-next-line no-void
-    void addTrustFile(fileContents).then(() => { void displayTrustListInfos() })
+    void addTrustFile(fileContents).then(displayTrustListInfos)
   } catch (e) {
     console.error('Can\'t parse trust file')
   }
@@ -122,12 +121,11 @@ const tsaFileInput = document.getElementById('tsa-file-input') as HTMLInputEleme
 tsaFileInput.addEventListener('change', createFileInputEventListener((fileContents: string): void => {
   try {
     // eslint-disable-next-line no-void
-    void addTSATrustFile(fileContents).then(() => { void displayTrustListInfos() })
+    void addTSATrustFile(fileContents).then(displayTrustListInfos)
   } catch (e) {
     console.error('Can\'t parse TSA trust file')
   }
 }))
-
 
 /**
  * Displays the trust list info in the popup.
