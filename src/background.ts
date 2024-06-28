@@ -5,7 +5,7 @@
 
 import 'c2pa'
 import { validateUrl as c2paValidateUrl } from './c2paProxy'
-import { init as initTrustlist, checkTrustListInclusion, refreshTrustLists } from './trustlist'
+import { init as initTrustlist, checkTrustListInclusion, refreshTrustLists, checkTSATrustListInclusion } from './trustlist'
 import { type C2paError, type C2paResult } from './c2pa'
 import {
   MSG_GET_ID, MSG_L3_INSPECT_URL, MSG_REMOTE_INSPECT_URL, MSG_FORWARD_TO_CONTENT, REMOTE_VALIDATION_LINK,
@@ -110,6 +110,10 @@ async function validateUrl (url: string): Promise<C2paResult | C2paError> {
     return c2paResult
   }
   c2paResult.trustList = checkTrustListInclusion(c2paResult.certChain ?? [])
+  if (c2paResult.tstTokens != null) {
+    const tstToken = c2paResult.tstTokens[0] // TODO: for each token
+    c2paResult.tsaTrustList = checkTSATrustListInclusion(tstToken.certChain ?? [])
+  }
 
   return c2paResult
 }

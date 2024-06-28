@@ -137,7 +137,7 @@ async function parseLabels (object: Record<string, unknown>): Promise<Record<str
         object[key] = alg(object[key] as number)
         break
       case 'x5chain':
-        object[key] = await x5Chain(object[key] as Uint8Array[])
+        object[key] = await x5Chain(object[key] as Uint8Array | Uint8Array[])
         break
       case 'sigTst':
         object[key] = await sigTst(object[key] as { tstTokens: Array<{ val: Uint8Array }> })
@@ -174,7 +174,10 @@ function getHashAlgorithmName (oid: string): string {
   return oidToAlgorithmMap[oid] || oid
 }
 
-async function x5Chain (x5ChainBytes: Uint8Array[]): Promise<CertificateInfoExtended[]> {
+async function x5Chain (x5ChainBytes: Uint8Array | Uint8Array[]): Promise<CertificateInfoExtended[]> {
+  if (x5ChainBytes instanceof Uint8Array) {
+    x5ChainBytes = [x5ChainBytes]
+  }
   return await Promise.all(x5ChainBytes.map(async (der) => await certificateFromDer(der)))
 }
 

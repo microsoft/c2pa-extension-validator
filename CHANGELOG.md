@@ -2,7 +2,7 @@
 
 ## vNext (dev)
 
-- ...
+- Added TSA trust list and timestamp validation
 
 ## v0.1.3
 
