@@ -390,7 +390,7 @@ export async function init (): Promise<void> {
         return AWAIT_ASYNC_RESPONSE
       }
       if (request.action === MSG_ADD_TSA_TRUSTFILE) {
-        void addTrustFile(request.data as string).then(sendResponse)
+        void addTSATrustFile(request.data as string).then(sendResponse)
         return AWAIT_ASYNC_RESPONSE
       }
       if (request.action === MSG_REMOVE_TRUSTLIST) {
