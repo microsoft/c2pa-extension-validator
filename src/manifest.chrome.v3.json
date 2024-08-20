@@ -12,7 +12,8 @@
         "webNavigation",
         "activeTab",
         "contextMenus",
-        "alarms"
+        "alarms",
+        "sidePanel"
     ],
     "host_permissions": [
         "<all_urls>"
@@ -20,6 +21,9 @@
     "background": {
         "service_worker": "background.js",
         "type": "module"
+    },
+    "side_panel": {
+        "default_path": "panel.html"
     },
     "action": {
         "default_popup": "popup.html"

@@ -5,12 +5,18 @@
 
 import { type TrustList, type TrustListInfo, getTrustListInfos, addTrustList, removeTrustList } from './trustlistProxy.js'
 import packageManifest from '../package.json'
-import { AUTO_SCAN_DEFAULT, MSG_AUTO_SCAN_UPDATED, MSG_REQUEST_C2PA_ENTRIES, MSG_RESPONSE_C2PA_ENTRIES } from './constants.js'
+import { AUTO_SCAN_DEFAULT, MSG_AUTO_SCAN_UPDATED, MSG_CLOSE_SIDE_PANEL, MSG_REQUEST_C2PA_ENTRIES, MSG_RESPONSE_C2PA_ENTRIES } from './constants.js'
 import { type MSG_RESPONSE_C2PA_ENTRIES_PAYLOAD } from './inject.js'
+import './components/toggle.js'
 import { type ToggleSwitch } from './components/toggle.js'
 import { addTrustAnchor } from './trustlist.js'
+import { getActiveTabId } from './utils.js'
 
-console.debug('popup.js: load')
+console.debug('popup.js: load', process.env.NODE_ENV?.toUpperCase())
+
+const debugMode = process.env.NODE_ENV?.toUpperCase() === 'DEVELOPMENT'
+const sidePanelDiv = document.getElementById('side-panel-container')
+if (sidePanelDiv != null) sidePanelDiv.style.display = debugMode ? 'block' : 'none'
 
 document.addEventListener('DOMContentLoaded', function (): void {
   // Update the version number
@@ -20,16 +26,45 @@ document.addEventListener('DOMContentLoaded', function (): void {
   }
 
   const autoScanToggle = document.getElementById('toggleAutoScan') as ToggleSwitch
+  const sidePanelToggle = document.getElementById('toggleSidePanel') as ToggleSwitch
 
   chrome.storage.local.get('autoScan', (result) => {
     autoScanToggle.checked = result.autoScan ?? AUTO_SCAN_DEFAULT
   })
 
+  chrome.storage.local.get('sidePanel', (result) => {
+    sidePanelToggle.checked = result.sidePanel ?? false
+  })
+
   autoScanToggle.addEventListener('change', (event) => {
-    const checked = (event as CustomEvent).detail.checked
+    const checked = (event as CustomEvent).detail.checked as boolean
     void chrome.storage.local.set({ autoScan: checked })
     void chrome.runtime.sendMessage({ action: MSG_AUTO_SCAN_UPDATED, data: checked })
   })
+
+  sidePanelToggle.addEventListener('change', (event) => {
+    const checked = (event as CustomEvent).detail.checked as boolean
+    void chrome.storage.local.set({ sidePanel: checked })
+
+    if (checked) {
+      void getActiveTabId().then((tabId) => {
+        if (tabId == null) {
+          return
+        }
+        chrome.sidePanel.open({ tabId }, () => {
+          console.log('Side panel opened.')
+        })
+      })
+    } else {
+      void chrome.runtime.sendMessage({ action: MSG_CLOSE_SIDE_PANEL, data: null })
+    }
+  })
+
+  document.getElementById('buttonOpenSidePanel')?.addEventListener('click', () => {
+
+  });
+
+  (document.getElementById('toggleAutoScan') as ToggleSwitch).checked = false
 
   // Add event listeners to switch tabs
   const tabs = document.querySelectorAll('.tab')
