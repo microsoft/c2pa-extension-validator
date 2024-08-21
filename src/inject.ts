@@ -212,6 +212,25 @@ async function updateTrustLists (): Promise<void> {
   })
 }
 
+function getC2PAStatus(c2pa: C2paResult): VALIDATION_STATUS {
+  // make sure we have a manifest store and validation result
+  if (!c2pa.manifestStore.validationStatus) throw new Error('Manifest store not found')
+  // if there are validation errors, return the error status
+  if (c2pa.manifestStore.validationStatus.length > 0) return 'error'
+  // if there is no trust list, return the warning status
+  if (c2pa.trustList == null) return 'warning'
+  // if the cert is expired, make sure the TSA time stamp is trusted
+  // (no easy way to check that, we need to check the cert chain)
+  console.log('checking cert expiration', c2pa.certChain ? c2pa.certChain[0].validTo : 'certChain is null', new Date().toISOString()) // FIXME: delete
+  if (c2pa.certChain && c2pa.certChain[0].validTo < new Date().toISOString()) {
+    console.log('cert is expired, checking TSA trust list', c2pa.tsaTrustList) // FIXME: delete
+    // cert is expired, maked sure we have a match in the TSA trust list
+    if (c2pa.tstTokens == null || c2pa.tsaTrustList == null) return 'warning'
+  }
+  // otherwise, return the success status
+  return 'success'
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   const action = message.action
   const data = message.data
@@ -225,7 +244,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const c2pa = entry.state.c2pa!
         const response = {
           name: c2pa.source.filename,
-          status: c2pa.manifestStore.validationStatus.length > 0 ? 'error' : c2pa.trustList == null ? 'warning' : 'success',
+          status: getC2PAStatus(c2pa),
           thumbnail: c2pa.source.thumbnail.data
         }
         void chrome.runtime.sendMessage({ action: MSG_RESPONSE_C2PA_ENTRIES, data: response })
