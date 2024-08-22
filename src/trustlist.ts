@@ -330,7 +330,7 @@ export function checkTrustListInclusion (certChain: CertificateInfoExtended[], t
  */
 export function checkTSATrustListInclusion (certChain: CertificateInfoExtended[]): TrustListMatch | null {
   console.debug('checkTSATrustListInclusion called')
-  return checkTrustListInclusion(certChain, globalTrustLists /* .filter(tl => tl.name === LOCAL_TRUST_TSA_LIST_NAME) TODO: uncomment (wasn't working) */)
+  return checkTrustListInclusion(certChain, globalTrustLists.filter(tl => tl.name === LOCAL_TRUST_TSA_LIST_NAME))
 }
 
 // update the trust lists if they are outdated
