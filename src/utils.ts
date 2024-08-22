@@ -46,7 +46,7 @@ export async function base64ToBlob (base64: string): Promise<Blob> {
 }
 
 export function base64ToArrayBuffer (base64: string): ArrayBuffer {
-  const binaryString = window.atob(base64)
+  const binaryString = globalThis.atob(base64)
   const len = binaryString.length
   const bytes = new Uint8Array(len)
   for (let i = 0; i < len; i++) {
