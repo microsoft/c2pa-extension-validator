@@ -221,11 +221,13 @@ function getC2PAStatus(c2pa: C2paResult): VALIDATION_STATUS {
   if (c2pa.trustList == null) return 'warning'
   // if the cert is expired, make sure the TSA time stamp is trusted
   // (no easy way to check that, we need to check the cert chain)
-  console.log('checking cert expiration', c2pa.certChain ? c2pa.certChain[0].validTo : 'certChain is null', new Date().toISOString()) // FIXME: delete
-  if (c2pa.certChain && c2pa.certChain[0].validTo < new Date().toISOString()) {
-    console.log('cert is expired, checking TSA trust list', c2pa.tsaTrustList) // FIXME: delete
-    // cert is expired, maked sure we have a match in the TSA trust list
-    if (c2pa.tstTokens == null || c2pa.tsaTrustList == null) return 'warning'
+  if (c2pa.certChain && new Date(c2pa.certChain[0].validTo) < new Date()) {
+    // cert is expired, make sure we have a match in the TSA trust list (if not, timestamp must be ignored)
+    if (c2pa.tstTokens == null || c2pa.tsaTrustList == null) {
+      // add an error to the validation status
+      c2pa.manifestStore.validationStatus.push('certificate is expired and no trusted timestamp found')
+      return 'error'
+    }
   }
   // otherwise, return the success status
   return 'success'
@@ -357,10 +359,7 @@ function setIcon (mediaRecord: MediaRecord): void {
   if (mediaRecord.state.c2pa == null) return
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  let c2paStatus = mediaRecord.state.c2pa.manifestStore.validationStatus.length > 0 ? 'error' : 'success'
-  if (mediaRecord.state.c2pa.trustList == null) {
-    c2paStatus = 'warning'
-  }
+  let c2paStatus = getC2PAStatus(mediaRecord.state.c2pa)
 
   if (mediaRecord.icon == null) {
     mediaRecord.onReady = (mediaRecord) => {
