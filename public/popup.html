@@ -1,11 +1,13 @@
 <!DOCTYPE html>
-<html lang="en" style="height: 400px; width: 400px;">
+<html lang="en" style="height: 400px; width: 400px; overflow: visible;">
 
 <head>
     <meta charset='utf-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
     <title>C2PA Validator</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <script type=" module" src="./toggle.js">
+</script>
     <link rel='stylesheet' type='text/css' media='screen' href='popup.css'>
     <script type='module' src='toggle.js'></script>
     <script type='module' src='popup.js'></script>
@@ -41,12 +43,17 @@
             <h1>Options</h1>
             <hr>
             <div id="trust-list-option">
-                <p>Import a trust list. For format details, see the <a
-                        href="https://github.com/christianpaquin/c2pa-explorations/blob/main/trust-lists/trust-lists.md#list-of-x509-certificates"
-                        target="_blank">specification</a>.</p>
-                <input type="file" id="trust-list-input" accept=".json">
-                <p>Import a X.509 certificate trust anchor.</p>
-                <input type="file" id="trust-anchor-input" accept=".pem,.crt">
+                <p>Import a trust anchor or trust list <span class="info-tooltip">i<span class="tooltip-text">Either a
+                            file with one more more PEM-encoded certificates, or a JSON-encoded trust list (for format
+                            details, see
+                            the <a
+                                href="https://github.com/christianpaquin/c2pa-explorations/blob/main/trust-lists/trust-lists.md#list-of-x509-certificates"
+                                target="_blank">specification</a>)</span></span></p>
+                <input type="file" id="trust-file-input" accept=".json,.pem,.crt">
+                <p>Import a TSA trust anchor.<span class="info-tooltip">i<span class="tooltip-text">A
+                            A file with one or more Trusted Timestamp Authority PEM-encoded certificates</span></span>
+                </p>
+                <input type="file" id="tsa-file-input" accept=".pem,.crt">
                 <div id="trust-list-info"></div>
             </div>
             <br>

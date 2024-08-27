@@ -4,7 +4,7 @@
  */
 
 import { type CertificateInfoExtended, calculateSha256CertThumbprintFromX5c, PEMtoDER, certificateFromDer, distinguishedNameToString } from './certs/certs'
-import { AWAIT_ASYNC_RESPONSE, MSG_ADD_TRUSTLIST, MSG_GET_TRUSTLIST_INFOS, MSG_REMOVE_TRUSTLIST, type MSG_PAYLOAD, LOCAL_TRUST_ANCHOR_LIST_NAME, MSG_TRUSTLIST_UPDATE } from './constants'
+import { AWAIT_ASYNC_RESPONSE, MSG_ADD_TRUSTLIST, MSG_GET_TRUSTLIST_INFOS, MSG_REMOVE_TRUSTLIST, type MSG_PAYLOAD, LOCAL_TRUST_ANCHOR_LIST_NAME, MSG_TRUSTLIST_UPDATE, LOCAL_TRUST_TSA_LIST_NAME, MSG_ADD_TRUSTFILE, MSG_ADD_TSA_TRUSTFILE } from './constants'
 import { bytesToBase64, sendMessageToAllTabs } from './utils'
 
 // valid JWK key types (to adhere to C2PA cert profile: https://c2pa.org/specifications/specifications/2.0/specs/C2PA_Specification.html#_certificate_profile)
@@ -58,6 +58,18 @@ export interface TrustListInfo {
   last_updated: string
   logo_icon?: string
   entities_count: number
+}
+
+/**
+ * Information about a trust list match
+ */
+export interface TrustListMatch {
+  // trust list info
+  tlInfo: TrustListInfo
+  // trusted entity that matched the certificate chain
+  entity: TrustedEntity
+  // certificate that matched the trust list
+  cert: CertificateInfoExtended
 }
 
 let globalTrustLists: TrustList[] = []
@@ -133,18 +145,17 @@ function sigAlgToKeyType (sigAlg: string): ValidKeyTypes {
 /**
  * Stores the updated trust lists and notify the tab of the update
  */
-function storeUpdatedTrustLists (message?: string): void {
-  chrome.storage.local.set({ trustList: globalTrustLists }, function () {
-    console.debug(message)
-  })
+async function storeUpdatedTrustLists (message?: string): Promise<void> {
+  await chrome.storage.local.set({ trustList: globalTrustLists })
+  console.debug(message)
   void notifyTabsOfTrustListUpdate()
 }
 
 /**
  * Adds a trust anchor to the built-in trust anchors list, returns the corresponding trust list info or throws an error
  */
-export async function addTrustAnchor (pemCert: string): Promise<void> {
-  console.debug('addTrustAnchor called')
+export async function addTrustAnchor (pemCert: string, tsa = false): Promise<void> {
+  console.debug(`addTrustAnchor called. tsa: ${tsa}`)
   if (pemCert == null || typeof pemCert !== 'string') {
     throw new Error('Invalid trust anchor')
   }
@@ -177,13 +188,14 @@ export async function addTrustAnchor (pemCert: string): Promise<void> {
   console.debug(`created trust anchor entity ${entity.name}`, entity)
 
   // find the local trust anchor list
-  const anchorTL = globalTrustLists.find(tl => tl.name === 'Local Trust Anchors')
+  const listName = tsa ? LOCAL_TRUST_TSA_LIST_NAME : LOCAL_TRUST_ANCHOR_LIST_NAME
+  const anchorTL = globalTrustLists.find(tl => tl.name === listName)
   if (anchorTL == null) {
     // list doesn't exist; create it
-    console.debug('Local Trust Anchors trust list not found; creating it')
+    console.debug(`${listName} trust list not found; creating it`)
     const tl: TrustList = {
-      name: LOCAL_TRUST_ANCHOR_LIST_NAME,
-      description: LOCAL_TRUST_ANCHOR_LIST_NAME,
+      name: listName,
+      description: listName,
       download_url: '', // n/a
       website: '', // n/a
       last_updated: '', // unused for non-downloadable trust lists
@@ -192,7 +204,7 @@ export async function addTrustAnchor (pemCert: string): Promise<void> {
     globalTrustLists.push(tl)
   } else {
     // add the entity to the list
-    console.debug('Updating local Trust Anchors trust list')
+    console.debug(`Updating the ${listName} trust list`)
     // add or replace the entity in the list
     const existingEntity = anchorTL.entities.find(e => e.name === entity.name)
     if (existingEntity != null) {
@@ -208,7 +220,7 @@ export async function addTrustAnchor (pemCert: string): Promise<void> {
     globalTrustLists[index] = anchorTL
   }
 
-  storeUpdatedTrustLists(`Trust anchor added to local trust anchor list: ${entity.name}`)
+  await storeUpdatedTrustLists(`Trust anchor added to the ${listName} list: ${entity.name}`)
 }
 
 /**
@@ -226,7 +238,28 @@ export async function addTrustList (tl: TrustList): Promise<void> {
   // set the global trust list
   globalTrustLists.push(tl)
 
-  storeUpdatedTrustLists(`Trust list stored: ${tl.name}`)
+  void storeUpdatedTrustLists(`Trust list stored: ${tl.name}`)
+}
+
+/**
+ * Adds a trust file, either a trust list or a single certificate
+ * @param content file content
+ */
+export async function addTrustFile (content: string): Promise<void> {
+  if (content.startsWith('{')) {
+    const json = JSON.parse(content) as TrustList
+    await addTrustList(json)
+  } else {
+    await addTrustAnchor(content)
+  }
+}
+
+/**
+ * Adds a TSA trust file, either a trust list or a single certificate
+ * @param content file content
+ */
+export async function addTSATrustFile (content: string): Promise<void> {
+  await addTrustAnchor(content, true)
 }
 
 /**
@@ -241,7 +274,7 @@ export async function removeTrustList (index: number): Promise<void> {
   // remove the trust list
   globalTrustLists.splice(index, 1)
 
-  storeUpdatedTrustLists(`Trust list removed, index: ${index}, name: ${name}`)
+  await storeUpdatedTrustLists(`Trust list removed, index: ${index}, name: ${name}`)
 }
 
 /**
@@ -261,24 +294,12 @@ export async function loadTrustLists (): Promise<void> {
 }
 
 /**
- * Information about a trust list match
- */
-export interface TrustListMatch {
-  // trust list info
-  tlInfo: TrustListInfo
-  // trusted entity that matched the certificate chain
-  entity: TrustedEntity
-  // certificate that matched the trust list
-  cert: CertificateInfoExtended
-}
-
-/**
  * Checks if a certificate chain is included in a trust list (either the leaf certificate or one of the CA anchors)
  * @param certChain a certificate chain
  * @returns a trust list match object if found, otherwise null
  */
 export function checkTrustListInclusion (certChain: CertificateInfoExtended[], trustLists: TrustList[] = globalTrustLists): TrustListMatch | null {
-  console.debug('checkTrustListInclusion called')
+  console.debug('checkTrustListInclusion called', certChain, trustLists)
   if (trustLists != null && trustLists.length > 0) {
     // for each trust list
     for (const trustList of globalTrustLists) {
@@ -300,6 +321,16 @@ export function checkTrustListInclusion (certChain: CertificateInfoExtended[], t
     }
   }
   return null
+}
+
+/**
+ * Checks if a certificate chain is included in the TSA trust list (either the leaf certificate or one of the CA anchors)
+ * @param certChain a certificate chain
+ * @returns a trust list match object if found, otherwise null
+ */
+export function checkTSATrustListInclusion (certChain: CertificateInfoExtended[]): TrustListMatch | null {
+  console.debug('checkTSATrustListInclusion called')
+  return checkTrustListInclusion(certChain, globalTrustLists.filter(tl => tl.name === LOCAL_TRUST_TSA_LIST_NAME))
 }
 
 // update the trust lists if they are outdated
@@ -327,7 +358,7 @@ export async function refreshTrustLists (): Promise<void> {
     await Promise.all(fetchPromises)
 
     if (trustListsUpdated) {
-      storeUpdatedTrustLists('Trust lists refreshed')
+      await storeUpdatedTrustLists('Trust lists refreshed')
     }
   }
 }
@@ -337,7 +368,7 @@ async function notifyTabsOfTrustListUpdate (): Promise<void> {
 }
 
 /*
- *  Initialization the trust list module and message listeners
+ *  Initialize the trust list module and message listeners
  *  Other modules import functions from this module, but they don't want the listeners
  *  So the init function needs to be called explicitly
  */
@@ -352,6 +383,14 @@ export async function init (): Promise<void> {
       }
       if (request.action === MSG_ADD_TRUSTLIST) {
         void addTrustList(request.data as TrustList).then(sendResponse)
+        return AWAIT_ASYNC_RESPONSE
+      }
+      if (request.action === MSG_ADD_TRUSTFILE) {
+        void addTrustFile(request.data as string).then(sendResponse)
+        return AWAIT_ASYNC_RESPONSE
+      }
+      if (request.action === MSG_ADD_TSA_TRUSTFILE) {
+        void addTSATrustFile(request.data as string).then(sendResponse)
         return AWAIT_ASYNC_RESPONSE
       }
       if (request.action === MSG_REMOVE_TRUSTLIST) {

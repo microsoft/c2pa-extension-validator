@@ -24,6 +24,7 @@ export interface C2paResult extends ExtensionC2paResult {
   certChain: CertificateInfoExtended[] | null
   tstTokens: TSTInfo[] | null
   trustList: TrustListMatch | null
+  tsaTrustList: TrustListMatch | null
   editsAndActivity: TranslatedDictionaryCategory[] | null
 }
 
@@ -91,6 +92,7 @@ export async function validateUrl (url: string): Promise<C2paResult | C2paError>
     ...serializedResult,
     url,
     trustList: null,
+    tsaTrustList: null,
     certChain: cose?.unprotected?.x5chain ?? cose?.protected.x5chain ?? null,
     tstTokens: cose?.unprotected?.sigTst?.tstTokens ?? null,
     editsAndActivity

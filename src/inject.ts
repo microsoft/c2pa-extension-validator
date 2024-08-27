@@ -277,6 +277,27 @@ async function updateTrustLists (): Promise<void> {
   })
 }
 
+function getC2PAStatus (c2pa: C2paResult): VALIDATION_STATUS {
+  // make sure we have a manifest store and validation result
+  if (!c2pa.manifestStore.validationStatus) throw new Error('Manifest store not found')
+  // if there are validation errors, return the error status
+  if (c2pa.manifestStore.validationStatus.length > 0) return 'error'
+  // if there is no trust list, return the warning status
+  if (c2pa.trustList == null) return 'warning'
+  // if the cert is expired, make sure the TSA time stamp is trusted
+  // (no easy way to check that, we need to check the cert chain)
+  if (c2pa.certChain && new Date(c2pa.certChain[0].validTo) < new Date()) {
+    // cert is expired, make sure we have a match in the TSA trust list (if not, timestamp must be ignored)
+    if (c2pa.tstTokens == null || c2pa.tsaTrustList == null) {
+      // add an error to the validation status
+      c2pa.manifestStore.validationStatus.push('certificate is expired and no trusted timestamp found')
+      return 'error'
+    }
+  }
+  // otherwise, return the success status
+  return 'success'
+}
+
 /*
   Listeners for message to the content script
 */
@@ -293,7 +314,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         const c2pa = entry.state.c2pa!
         const response = {
           name: c2pa.source.filename,
-          status: c2pa.manifestStore.validationStatus.length > 0 ? 'error' : c2pa.trustList == null ? 'warning' : 'success',
+          status: getC2PAStatus(c2pa),
           thumbnail: c2pa.source.thumbnail.data
         }
         void chrome.runtime.sendMessage({ action: MSG_RESPONSE_C2PA_ENTRIES, data: response })
@@ -372,10 +393,7 @@ export function setIcon (mediaRecord: MediaRecord): void {
   if (mediaRecord.state.c2pa?.manifestStore == null) return
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  let c2paStatus = mediaRecord.state.c2pa.manifestStore.validationStatus.length > 0 ? 'error' : 'success'
-  if (mediaRecord.state.c2pa.trustList == null) {
-    c2paStatus = 'warning'
-  }
+  const c2paStatus = getC2PAStatus(mediaRecord.state.c2pa)
 
   if (mediaRecord.icon == null) {
     mediaRecord.icon = new CrIcon(mediaRecord.element, c2paStatus as VALIDATION_STATUS)
