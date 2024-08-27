@@ -8,13 +8,16 @@ import { type CertificateInfoExtended } from './certs/certs.js'
 import { decode as coseDecode, type TSTInfo, type COSE_Sign1 } from './certs/cose.js'
 import { isContentBox, decode as jumbfDecode } from './certs/jumbf.js'
 import { getManifestFromMetadata } from './certs/metadata.js'
-import { AWAIT_ASYNC_RESPONSE, MSG_C2PA_VALIDATE_URL, type MSG_PAYLOAD } from './constants.js'
+import { AWAIT_ASYNC_RESPONSE, MSG_C2PA_VALIDATE_BYTES, MSG_C2PA_VALIDATE_URL, type MSG_PAYLOAD } from './constants.js'
 import { type TrustListMatch } from './trustlistProxy.js'
 import { blobToDataURL } from './utils.js'
+import { createThumbnail } from './thumbnail.js'
 
 console.debug('C2pa: Script: start')
 
 let c2pa: C2pa | null = null
+
+export type dataUrl = string
 
 export interface C2paResult extends ExtensionC2paResult {
   url: string
@@ -27,6 +30,7 @@ export interface C2paResult extends ExtensionC2paResult {
 
 export interface C2paError extends Error {
   url: string
+  error: boolean
 }
 
 export async function init (): Promise<void> {
@@ -49,6 +53,11 @@ export async function init (): Promise<void> {
         void validateUrl(request.data as string).then(sendResponse)
         return AWAIT_ASYNC_RESPONSE
       }
+
+      if (request.action === MSG_C2PA_VALIDATE_BYTES) {
+        void validateBytes(request.data as ArrayBuffer).then(sendResponse)
+        return AWAIT_ASYNC_RESPONSE
+      }
     }
   )
 }
@@ -64,11 +73,11 @@ export async function validateUrl (url: string): Promise<C2paResult | C2paError>
   })
 
   if (c2paResult instanceof Error) {
-    return { message: c2paResult.message, url, name: c2paResult.name } satisfies C2paError
+    return { message: c2paResult.message, url, name: c2paResult.name, error: true } satisfies C2paError
   }
 
   if (c2paResult.manifestStore?.activeManifest == null) {
-    return { message: 'No manifest found', url, name: 'No Manifest' } satisfies C2paError
+    return { message: 'No manifest found', url, name: 'No Manifest', error: true } satisfies C2paError
   }
 
   const serializedResult = await serializeC2paReadResult(c2paResult)
@@ -131,12 +140,6 @@ export async function extractC2paManifest (type: string, mediaBuffer: Uint8Array
   return cose
 }
 
-void init()
-
-console.debug('C2pa: Script: end')
-
-export type dataUrl = string
-
 export interface ExtensionC2paIngredient {
   title: string
   format: string
@@ -170,9 +173,13 @@ export interface ExtensionC2paResult {
       data: dataUrl
     }
     type: string
-    data: dataUrl
     filename: string
   }
+}
+
+export async function validateBytes (bytes: ArrayBuffer): Promise<C2paResult | C2paError> {
+  const url = URL.createObjectURL(new Blob([bytes]))
+  return await validateUrl(url)
 }
 
 async function serializeC2paReadResult (result: C2paReadResult): Promise<ExtensionC2paResult> {
@@ -208,18 +215,17 @@ async function serializeC2paReadResult (result: C2paReadResult): Promise<Extensi
 
   const activeManifestIndex = Object.values(c2paManifests).indexOf(c2paActiveManifest)
 
-  const thumbnailData =
-  !(result.source.thumbnail.contentType?.startsWith('image/') ?? false)
-    ? ''
-    : result.source.thumbnail.blob != null
-      ? await blobToDataURL(result.source.thumbnail.blob)
-      : ''
+  if (result.source.thumbnail.blob != null && result.source.thumbnail.blob?.size === result.source.blob?.size) {
+    const thumb =
+      result.source.type?.startsWith('image/')
+        ? await createThumbnail(result.source.blob, 100, 100)
+        : result.source.type?.startsWith('video/')
+          ? undefined // await createVideoThumbnail(result.source.thumbnail.blob, 1, 100, 100)
+          : undefined
+    result.source.thumbnail.blob = thumb
+  }
 
-  const sourceData = (result.source.type?.startsWith('video/') ?? false)
-    ? ''
-    : result.source.blob != null
-      ? await blobToDataURL(result.source.blob)
-      : ''
+  const thumbnailData = result.source.thumbnail.blob != null ? await blobToDataURL(result.source.thumbnail.blob) : ''
 
   return {
     manifestStore: {
@@ -233,8 +239,11 @@ async function serializeC2paReadResult (result: C2paReadResult): Promise<Extensi
         data: thumbnailData
       },
       type: result.source.type,
-      data: sourceData,
       filename: result.source.metadata.filename ?? ''
     }
   }
 }
+
+void init()
+
+console.debug('C2pa: Script: end')

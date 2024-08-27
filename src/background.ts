@@ -4,13 +4,16 @@
  */
 
 import 'c2pa'
-import { validateUrl as c2paValidateUrl } from './c2paProxy'
+
+import { validateUrl as c2paValidateUrl, validateBytes as c2paValidateBytes } from './c2paProxy'
 import { init as initTrustlist, checkTrustListInclusion, refreshTrustLists, checkTSATrustListInclusion } from './trustlist'
 import { type C2paError, type C2paResult } from './c2pa'
 import {
   MSG_GET_ID, MSG_L3_INSPECT_URL, MSG_REMOTE_INSPECT_URL, MSG_FORWARD_TO_CONTENT, REMOTE_VALIDATION_LINK,
   MSG_VALIDATE_URL, AWAIT_ASYNC_RESPONSE, MSG_C2PA_RESULT_FROM_CONTEXT, AUTO_SCAN_DEFAULT, MSG_AUTO_SCAN_UPDATED,
-  TRUSTLIST_UPDATE_INTERVAL
+  TRUSTLIST_UPDATE_INTERVAL,
+  MSG_ACTIVE_TAB_CHANGED,
+  MSG_VALIDATE_BYTES
 } from './constants'
 import { sendMessageToAllTabs } from './utils'
 
@@ -29,15 +32,6 @@ chrome.runtime.onInstalled.addListener(function (details) {
   }
   createContextMenu()
 })
-
-function createContextMenu (): void {
-  chrome.contextMenus.create({
-    id: 'validateMediaElement',
-    title: 'Inspect Content Credentials',
-    contexts: ['audio', 'image', 'video'],
-    documentUrlPatterns: ['<all_urls>']
-  })
-}
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   const url = info.srcUrl
@@ -59,9 +53,9 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
 chrome.webRequest.onBeforeRequest.addListener(
   function (details) {
-    console.debug('Background: Intercepted image request: ', details.url, 'color: #2784BC;')
+    console.debug(`%cBackground: Intercepted image request: ${details.url}`, 'color: #2784BC;')
   },
-  { urls: ['*://*/*.jpg', '*://*/*.mp4'] }
+  { urls: ['*://*/*.*'] }
 )
 
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -98,11 +92,55 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     return AWAIT_ASYNC_RESPONSE
   }
 
+  if (action === MSG_VALIDATE_BYTES) {
+    void validateBytes(data as ArrayBuffer).then(sendResponse)
+    return AWAIT_ASYNC_RESPONSE
+  }
+
   if (action === MSG_AUTO_SCAN_UPDATED) {
     void chrome.storage.local.set({ autoScan: data })
     void sendMessageToAllTabs({ action: MSG_AUTO_SCAN_UPDATED, data })
   }
+
+  // if (action === MSG_OPEN_SIDE_PANEL) {
+  //   chrome.sidePanel.open({ tabId: 0 }, () => {
+  //     console.log('Side panel opened.')
+  //   })
+  // }
 })
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === 'trustListRefreshAlarm') {
+    refreshTrustLists()
+      .then(() => { console.debug('Trust lists refresh completed successfully.') })
+      .catch((error) => { console.error('Error refreshing trust lists:', error) })
+  }
+})
+
+chrome.runtime.onInstalled.addListener(() => {
+  console.debug('Extension installed. Setting up trust list refresh alarm.')
+  setupTrustListRefreshAlarm()
+})
+
+chrome.runtime.onStartup.addListener(() => {
+  console.debug('Browser started. Ensuring trust list refresh alarm is active.')
+  setupTrustListRefreshAlarm()
+})
+
+chrome.tabs.onActivated.addListener((activeInfo) => {
+  chrome.tabs.get(activeInfo.tabId, (tab) => {
+    void chrome.runtime.sendMessage({ action: MSG_ACTIVE_TAB_CHANGED })
+  })
+})
+
+function createContextMenu (): void {
+  chrome.contextMenus.create({
+    id: 'validateMediaElement',
+    title: 'Inspect Content Credentials',
+    contexts: ['audio', 'image', 'video'],
+    documentUrlPatterns: ['<all_urls>']
+  })
+}
 
 async function validateUrl (url: string): Promise<C2paResult | C2paError> {
   const c2paResult = await c2paValidateUrl(url)
@@ -115,6 +153,15 @@ async function validateUrl (url: string): Promise<C2paResult | C2paError> {
     c2paResult.tsaTrustList = checkTSATrustListInclusion(tstToken.certChain ?? [])
   }
 
+  return c2paResult
+}
+
+async function validateBytes (bytes: ArrayBuffer): Promise<C2paResult | C2paError> {
+  const c2paResult = await c2paValidateBytes(bytes)
+  if (c2paResult instanceof Error) {
+    return c2paResult
+  }
+  c2paResult.trustList = checkTrustListInclusion(c2paResult.certChain ?? [])
   return c2paResult
 }
 
@@ -165,24 +212,6 @@ async function openOrSwitchToTab (url: string): Promise<chrome.tabs.Tab> {
 function setupTrustListRefreshAlarm (): void {
   void chrome.alarms.create('trustListRefreshAlarm', { delayInMinutes: 1, periodInMinutes: TRUSTLIST_UPDATE_INTERVAL })
 }
-
-chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === 'trustListRefreshAlarm') {
-    refreshTrustLists()
-      .then(() => { console.debug('Trust lists refresh completed successfully.') })
-      .catch((error) => { console.error('Error refreshing trust lists:', error) })
-  }
-})
-
-chrome.runtime.onInstalled.addListener(() => {
-  console.debug('Extension installed. Setting up trust list refresh alarm.')
-  setupTrustListRefreshAlarm()
-})
-
-chrome.runtime.onStartup.addListener(() => {
-  console.debug('Browser started. Ensuring trust list refresh alarm is active.')
-  setupTrustListRefreshAlarm()
-})
 
 void init()
 
