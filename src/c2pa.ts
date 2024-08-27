@@ -173,7 +173,6 @@ export interface ExtensionC2paResult {
       data: dataUrl
     }
     type: string
-    // data: dataUrl
     filename: string
   }
 }
@@ -240,7 +239,6 @@ async function serializeC2paReadResult (result: C2paReadResult): Promise<Extensi
         data: thumbnailData
       },
       type: result.source.type,
-      // data: sourceData,
       filename: result.source.metadata.filename ?? ''
     }
   }

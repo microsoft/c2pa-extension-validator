@@ -552,7 +552,7 @@ VisibilityMonitor.onLeaveViewport = (mediaRecord: MediaRecord): void => {
 }
 
 /*
-  Some attribute/property has changed, but its visibility state has not necissarily has changed.
+  Some attribute/property has changed, but its visibility state has not necessarily has changed.
 */
 VisibilityMonitor.onUpdate = (mediaRecord: MediaRecord): void => {
   mediaRecord?.icon?.position()

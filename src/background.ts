@@ -148,7 +148,6 @@ async function validateUrl (url: string): Promise<C2paResult | C2paError> {
     return c2paResult
   }
   c2paResult.trustList = checkTrustListInclusion(c2paResult.certChain ?? [])
-
   if (c2paResult.tstTokens != null && c2paResult.tstTokens.length > 0) {
     const tstToken = c2paResult.tstTokens[0] // TODO: for each token
     c2paResult.tsaTrustList = checkTSATrustListInclusion(tstToken.certChain ?? [])
