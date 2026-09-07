@@ -4,7 +4,8 @@
  */
 
 import 'dotenv/config'
-import { DEFAULT_MSG_TIMEOUT, type MSG_PAYLOAD } from './constants'
+import { DEFAULT_MSG_TIMEOUT, MSG_GET_ID, type MSG_PAYLOAD } from './constants'
+import { type TabAndFrameId } from './inject'
 
 export const DEBUG = process.env.NODE_ENV?.toUpperCase() !== 'PRODUCTION'
 
@@ -141,4 +142,93 @@ export async function sendMessageToAllTabs (message: MSG_PAYLOAD): Promise<void>
 export async function getActiveTabId (): Promise<number | undefined> {
   const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
   return tabs?.[0]?.id
+}
+
+export class ShouldNotHappenError extends Error {
+  constructor (message: string) {
+    super(message)
+    this.name = 'ShouldNotHappenError'
+    console.error(this)
+  }
+}
+
+export function elementToString (element: HTMLElement): string {
+  let result = `<${element.tagName.toLowerCase()}`
+
+  if (element.id != null && element.id !== '') {
+    result += ` id='${element.id}'`
+  }
+
+  // Add all other attributes
+  Array.from(element.attributes).forEach(attr => {
+    if (attr.name !== 'id') { // Id is already handled
+      result += ` ${attr.name}='${attr.value}'`
+    }
+  })
+
+  // Determine if the element is self-closing or not
+  const selfClosingTags = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'source', 'track', 'wbr']
+  if (selfClosingTags.includes(element.tagName.toLowerCase())) {
+    result += ' />'
+  } else {
+    result += `></${element.tagName.toLowerCase()}>`
+  }
+
+  return result.replace('://', ':\u200B//')
+}
+
+export function elementPath (element: HTMLElement): string {
+  const path: string[] = []
+  path.push(elementToString(element))
+
+  let parent = element.parentElement
+
+  while (parent != null) {
+    path.push(elementToString(parent))
+    parent = parent.parentElement
+    if (parent?.tagName === 'BODY') break
+  }
+
+  const result = path.reverse().map((element, index) => `${' '.repeat(index)}${element}`).join('\n')
+
+  return result
+}
+
+export function comparePaths (path1: string, path2: string): string {
+  const path1Lines = path1.split('\n')
+  const path2Lines = path2.split('\n')
+  const maxLength = Math.max(path1Lines.length, path2Lines.length)
+  let result = ''
+  for (let i = 0; i < maxLength; i++) {
+    const line1 = path1Lines[i] ?? ''
+    const line2 = path2Lines[i] ?? ''
+    if (line1 === line2) {
+      result += `${line1}\n`
+    } else {
+      result += `${line1}\n${line2}\n`
+    }
+  }
+  return result
+}
+
+export async function getFrameId (): Promise<TabAndFrameId> {
+  const id = await chrome.runtime.sendMessage({ action: MSG_GET_ID })
+  return id
+}
+
+export function showFrame (x: number, y: number, width: number, height: number): void {
+  let frame = document.getElementById('debug-frame')
+  if (frame == null) {
+    frame = document.createElement('div')
+    frame.id = 'debug-frame'
+    frame.style.position = 'fixed'
+    frame.style.top = `${y}px`
+    frame.style.left = `${x}px`
+    frame.style.width = `${width}px`
+    frame.style.height = `${height}px`
+    frame.style.border = '1px solid red'
+    frame.style.zIndex = '999999'
+    document.body.appendChild(frame)
+  }
+  frame.style.display = 'block'
 }

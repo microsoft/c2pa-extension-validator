@@ -123,7 +123,9 @@ const plugins = [
         'public/options.css',
         'public/options.html',
         'public/popup.css',
-        'public/popup.html'
+        'public/popup.html',
+        'public/panel.css',
+        'public/panel.html'
       ].forEach((file) => {
         this.addWatchFile(path.resolve(__dirname, file))
       })
@@ -145,7 +147,7 @@ const onwarn = (warning, warn) => {
   background.js (Chrome v3)
 */
 const backgroundC = {
-  input: ['src/background.ts', 'src/popup.ts', 'src/options.ts', 'src/c2pa.ts', 'src/overlayFrame.ts', 'src/webComponents.ts', 'src/components/toggle.ts'],
+  input: ['src/background.ts', 'src/popup.ts', 'src/options.ts', 'src/panel.ts', 'src/c2pa.ts', 'src/overlayFrame.ts', 'src/webComponents.ts', 'src/components/toggle.ts'],
   treeshake: { moduleSideEffects: [] },
   output: {
     dir: 'dist/chrome',

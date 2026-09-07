@@ -10,7 +10,7 @@ const imageSources: { [key in VALIDATION_STATUS]: string } = {
   success: chrome.runtime.getURL('icons/cr.svg'),
   warning: chrome.runtime.getURL('icons/cr!.svg'),
   error: chrome.runtime.getURL('icons/crx.svg'),
-  img: chrome.runtime.getURL('icons/camera.svg'),
+  image: chrome.runtime.getURL('icons/camera.svg'),
   video: chrome.runtime.getURL('icons/video.svg'),
   audio: chrome.runtime.getURL('icons/audio.svg'),
   none: ''
@@ -21,7 +21,7 @@ const images: { [key in VALIDATION_STATUS]: HTMLImageElement | null } = {
   warning: createImg(imageSources.warning),
   error: createImg(imageSources.error),
   audio: createImg(imageSources.audio),
-  img: createImg(imageSources.img),
+  image: createImg(imageSources.image),
   video: createImg(imageSources.video),
   none: null
 }
@@ -59,10 +59,9 @@ export class CrIcon {
     this.show()
   }
 
-  public remove (): void {
+  public dispose (): void {
     if (this._crImg == null) return
     if (this._clickListener != null) this._crImg.removeEventListener('click', this._clickListener)
-    console.debug('Removing CrIcon:', this._crImg.src)
     this._crImg.remove()
     this._crImg = null
   }

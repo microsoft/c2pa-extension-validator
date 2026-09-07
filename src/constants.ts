@@ -10,10 +10,12 @@ export interface MSG_PAYLOAD {
   frame?: string
 }
 
-export type VALIDATION_STATUS = 'success' | 'warning' | 'error' | 'audio' | 'img' | 'video' | 'none'
+export type VALIDATION_STATUS = 'success' | 'warning' | 'error' | 'audio' | 'image' | 'video' | 'none'
 
 export const MSG_VALIDATE_URL = 'MSG_VALIDATE_URL'
+export const MSG_VALIDATE_BYTES = 'MSG_VALIDATE_BYTES'
 export const MSG_C2PA_VALIDATE_URL = 'MSG_C2PA_VALIDATE_URL'
+export const MSG_C2PA_VALIDATE_BYTES = 'MSG_C2PA_VALIDATE_BYTES'
 export const MSG_DISPLAY_C2PA_OVERLAY = 'MSG_DISPLAY_C2PA_OVERLAY'
 export const MSG_UPDATE_FRAME_HEIGHT = 'MSG_UPDATE_FRAME_HEIGHT'
 export const MSG_OPEN_OVERLAY = 'MSG_OPEN_OVERLAY'
@@ -37,6 +39,14 @@ export const MSG_FORWARD_TO_CONTENT = 'MSG_FORWARD_TO_CONTENT'
 export const MSG_SHOW_CONTEXT_MENU = 'MSG_SHOW_CONTEXT_MENU'
 export const MSG_C2PA_RESULT_FROM_CONTEXT = 'MSG_C2PA_RESULT_FROM_CONTEXT'
 export const MSG_AUTO_SCAN_UPDATED = 'MSG_AUTO_SCAN_UPDATED'
+export const MSG_REQUEST_MEDIA_RECORDS = 'MSG_REQUEST_MEDIA_RECORDS'
+export const MSG_RESPONSE_MEDIA_RECORDS = 'MSG_RESPONSE_MEDIA_RECORDS'
+export const MSG_MEDIA_RECORD_UPDATE = 'MSG_MEDIA_RECORD_UPDATE'
+export const MSG_ACTIVE_TAB_CHANGED = 'MSG_ACTIVE_TAB_CHANGED'
+export const MSG_MEDIA_RECORDS_CLEAR = 'MSG_MEDIA_RECORDS_CLEAR'
+export const MSG_INSPECT_MEDIA_RECORD = 'MSG_INSPECT_MEDIA_RECORD'
+export const MSG_OPEN_SIDE_PANEL = 'MSG_OPEN_SIDE_PANEL'
+export const MSG_CLOSE_SIDE_PANEL = 'MSG_CLOSE_SIDE_PANEL'
 
 export const DEFAULT_MSG_TIMEOUT = 5000 /* 5 sec */
 export const REMOTE_VALIDATION_LINK = 'https://contentintegrity.microsoft.com/check'

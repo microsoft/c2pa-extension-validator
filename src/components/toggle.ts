@@ -5,7 +5,6 @@
 
 import { LitElement, html, css, type TemplateResult } from 'lit'
 import { property } from 'lit/decorators.js'
-import { AUTO_SCAN_DEFAULT } from '../constants'
 
 export class ToggleSwitch extends LitElement {
   static styles = css`
@@ -14,7 +13,8 @@ export class ToggleSwitch extends LitElement {
       --slider-height: 24px;
       --slider-width: 42px;
       --slider-ball-size: 20px;
-      --font-size: 16px;
+      --font-size: 14px;
+      font-family: inherit
     }
 
     .container {
@@ -73,9 +73,10 @@ export class ToggleSwitch extends LitElement {
     input:checked + .slider:before {
       transform: translateX(calc(var(--slider-width) - var(--slider-height)));
     }
+
   `
 
-  @property({ type: Boolean, reflect: true }) checked = AUTO_SCAN_DEFAULT
+  @property({ type: Boolean, reflect: true }) checked = false
   @property({ type: String, reflect: true }) label = 'Toggle'
 
   render (): TemplateResult {

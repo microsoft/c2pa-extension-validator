@@ -12,7 +12,7 @@
 export async function getLocalStorage (
   key: string
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-): Promise<Record<string, any>> {
+): Promise<Record<string, unknown>> {
   return await new Promise((resolve) => {
     chrome.storage.session.get([key], (data) => {
       if (!Object.prototype.hasOwnProperty.call(data, key)) {
